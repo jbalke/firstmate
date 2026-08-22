@@ -37,6 +37,8 @@ MAX_MANIFEST_BYTES=1048576
 . "$SCRIPT_DIR/fm-secondmate-registry-lib.sh"
 # shellcheck source=bin/fm-secondmate-charter-lib.sh
 . "$SCRIPT_DIR/fm-secondmate-charter-lib.sh"
+# shellcheck source=bin/fm-task-data-lib.sh
+. "$SCRIPT_DIR/fm-task-data-lib.sh"
 # shellcheck source=bin/fm-wake-lib.sh
 . "$SCRIPT_DIR/fm-wake-lib.sh"
 # shellcheck source=bin/fm-remote-readiness-lib.sh
@@ -123,7 +125,7 @@ if [ -e "$REG" ] || [ -L "$REG" ]; then
 fi
 
 mkdir -p "$DATA"
-BRIEF="$DATA/$ID/brief.md"
+BRIEF="$(fm_task_data_dir "$DATA" "$ID")/brief.md"
 BRIEF_CREATED=0
 if [ ! -f "$BRIEF" ]; then
   [ -n "${FM_SECONDMATE_CHARTER:-}" ] || die "no filled charter at $BRIEF; set FM_SECONDMATE_CHARTER or scaffold one first"

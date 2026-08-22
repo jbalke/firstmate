@@ -19,6 +19,12 @@ set -u
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 TMP_ROOT=$(fm_test_tmproot fm-brief)
+
+# A scaffolded task's durable data directory. bin/fm-task-data-lib.sh groups it
+# by the project the brief names; a task with no project uses the _none literal.
+task_dir() {  # <home> <project> <task-id>
+  printf '%s\n' "$1/data/tasks/$2/$3"
+}
 BRIEF_HOME="$TMP_ROOT/home"
 mkdir -p "$BRIEF_HOME/data"
 
@@ -204,7 +210,7 @@ test_ship_modes_generate_clean_briefs() {
     mode=${id_mode##*:}
     FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode "$mode" >/dev/null 2>&1; status=$?
     expect_code 0 "$status" "fm-brief.sh $id --mode $mode should exit 0"
-    brief="$home/data/$id/brief.md"
+    brief="$(task_dir "$home" some-proj "$id")/brief.md"
     assert_present "$brief" "$id: brief was not scaffolded"
     assert_grep "# Definition of done" "$brief" "$id: brief missing Definition of done section"
     grep -qx "Delivery contract: mode=$mode" "$brief" \
@@ -216,15 +222,15 @@ test_ship_modes_generate_clean_briefs() {
     # Report and evidence must outlive the disposable worktree, so every mode
     # carves the task data directory out of the stay-in-your-worktree rule and
     # requires both artifacts there.
-    assert_grep "anything under your task data directory \`$home/data/$id/\`" "$brief" \
+    assert_grep "anything under your task data directory \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
       "$id: rule 2 lost the task data-directory carve-out"
-    assert_grep "Write \`$home/data/$id/report.md\` if this task uncovered a **transferable cause**" "$brief" \
+    assert_grep "Write \`$(task_dir "$home" some-proj "$id")/report.md\` if this task uncovered a **transferable cause**" "$brief" \
       "$id: definition of done lost the transferable-cause report requirement"
     assert_grep "the PR body is not a substitute, because working notes are deleted at cleanup" "$brief" \
       "$id: report requirement lost the PR-body-is-not-a-substitute rule"
     assert_grep "Task size is not the test" "$brief" \
       "$id: report requirement lost the size-is-not-the-test rule"
-    assert_grep "Write any screenshot or recording you take to support a claim in the PR body into \`$home/data/$id/\`" "$brief" \
+    assert_grep "Write any screenshot or recording you take to support a claim in the PR body into \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
       "$id: definition of done lost the saved-visual-evidence requirement"
   done
   pass "fm-brief.sh: every ship mode generates cleanly and requires a durable report plus saved evidence"
@@ -247,7 +253,8 @@ test_ship_mode_is_required_and_closed_set() {
     status=$?
     [ "$status" -ne 0 ] || fail "$label: expected a non-zero exit"
     assert_contains "$out" "$expect" "$label: refusal did not explain the contract"
-    assert_absent "$home/data/brief-required-$id/brief.md" "$label: refused scaffold still wrote a brief"
+    assert_absent "$(task_dir "$home" some-proj "brief-required-$id")/brief.md" \
+      "$label: refused scaffold still wrote a brief"
   done <<'ROWS'
 missing --mode||ship briefs require --mode
 empty --mode value|--mode|requires a value
@@ -266,7 +273,7 @@ test_ship_mode_is_explicit_not_registry() {
   write_registry "$home"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-explicit-a5 direct-proj --mode no-mistakes >/dev/null 2>&1 \
     || fail "explicit no-mistakes brief on a direct-PR project should scaffold"
-  brief="$home/data/brief-explicit-a5/brief.md"
+  brief="$(task_dir "$home" direct-proj brief-explicit-a5)/brief.md"
   grep -qx "Delivery contract: mode=no-mistakes" "$brief" \
     || fail "registered direct-PR posture overrode the explicit --mode"
   assert_grep "Firstmate will then instruct you to run /no-mistakes" "$brief" \
@@ -275,7 +282,8 @@ test_ship_mode_is_explicit_not_registry() {
   # An unregistered project is not a blocker either, because nothing is looked up.
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-explicit-a6 never-registered --mode local-only >/dev/null 2>&1 \
     || fail "unregistered project should still scaffold from the explicit mode"
-  grep -qx "Delivery contract: mode=local-only" "$home/data/brief-explicit-a6/brief.md" \
+  grep -qx "Delivery contract: mode=local-only" \
+    "$(task_dir "$home" never-registered brief-explicit-a6)/brief.md" \
     || fail "unregistered project did not honour the explicit --mode"
   pass "fm-brief.sh: the explicit ship mode wins over the registered posture"
 }
@@ -309,25 +317,26 @@ test_faster_paths_use_configured_authority_without_stacked_review() {
   write_registry "$home"
   id="brief-direct-authority-a4"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" direct-proj --mode direct-PR >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
+  brief="$(task_dir "$home" direct-proj "$id")/brief.md"
   assert_grep "The configured merge authority decides whether to merge the PR; firstmate relays the outcome." "$brief" \
     "direct-PR brief lost configured merge authority"
   assert_no_grep "The captain reviews and merges the PR" "$brief" \
     "direct-PR brief hard-coded captain-only authority"
   id="brief-local-authority-a4"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" local-proj --mode local-only >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
+  brief="$(task_dir "$home" local-proj "$id")/brief.md"
   assert_grep "The configured merge authority approves the ready branch, then firstmate merges it into local \`main\` through the guarded fast-forward path." "$brief" \
     "local-only brief lost configured merge authority and guarded landing"
   assert_no_grep "The captain approves the ready branch" "$brief" \
     "local-only brief hard-coded captain-only authority"
   assert_no_grep "Firstmate then reviews your branch diff" "$brief" \
     "local-only brief retained a personal review stacked on the selected delivery path"
-  assert_no_grep "make \`--intent\` preserve all relevant content from this brief" "$home/data/$id/brief.md" \
+  assert_no_grep "make \`--intent\` preserve all relevant content from this brief" "$brief" \
     "local-only brief must not include the no-mistakes --intent contract"
   id="brief-direct-intent-a4"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" direct-proj --mode direct-PR >/dev/null 2>&1
-  assert_no_grep "make \`--intent\` preserve all relevant content from this brief" "$home/data/$id/brief.md" \
+  assert_no_grep "make \`--intent\` preserve all relevant content from this brief" \
+    "$(task_dir "$home" direct-proj "$id")/brief.md" \
     "direct-PR brief must not include the no-mistakes --intent contract"
   pass "fm-brief.sh: faster paths use configured authority without stacked review"
 }
@@ -340,7 +349,7 @@ test_no_mistakes_dod_wording() {
   mkdir -p "$home/data"
   id="brief-wording-b1"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
+  brief="$(task_dir "$home" some-proj "$id")/brief.md"
   assert_present "$brief" "brief was not scaffolded"
   assert_grep "no-mistakes itself provides for the mechanics" "$brief" \
     "no-mistakes DOD lost its guidance-reference sentence"
@@ -373,7 +382,7 @@ test_ship_project_memory_wording() {
   mkdir -p "$home/data"
   id="brief-memory-c1"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
+  brief="$(task_dir "$home" some-proj "$id")/brief.md"
   assert_present "$brief" "brief was not scaffolded"
   assert_grep "Record only project knowledge useful to almost every future session." "$brief" \
     "project-memory contract lost the durable-knowledge bar"
@@ -390,7 +399,7 @@ test_herdr_lab_contract_is_explicit_and_complete() {
   mkdir -p "$home/data"
   id="brief-herdr-lab-d1"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" firstmate --mode no-mistakes --herdr-lab >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
+  brief="$(task_dir "$home" firstmate "$id")/brief.md"
   assert_present "$brief" "Herdr lab brief was not scaffolded"
   assert_grep "# Herdr isolation - HARD SAFETY CONTRACT" "$brief" \
     "Herdr lab brief missing its hard safety contract"
@@ -424,7 +433,7 @@ test_herdr_lab_contract_quotes_foreign_firstmate_path() {
   helper=$(printf '%s' "$foreign_root/bin/fm-herdr-lab.sh" | sed "s/'/'\\\\''/g")
   helper="'$helper'"
   FM_HOME="$home" FM_ROOT_OVERRIDE="$foreign_root" "$ROOT/bin/fm-brief.sh" "$id" foreign --scout --herdr-lab >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
+  brief="$(task_dir "$home" foreign "$id")/brief.md"
   assert_grep "HERDR_LAB_HELPER=$helper" "$brief" \
     "Herdr lab brief must shell-quote an absolute Firstmate helper path"
   assert_no_grep "bin/fm-herdr-lab.sh name $id" "$brief" \
@@ -443,7 +452,7 @@ test_herdr_lab_omission_is_loud_for_ship_and_scout() {
     else
       FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" firstmate --mode no-mistakes >/dev/null 2>&1
     fi
-    brief="$home/data/$id/brief.md"
+    brief="$(task_dir "$home" firstmate "$id")/brief.md"
     assert_grep "# Herdr lifecycle declaration - NOT ENABLED" "$brief" \
       "$kind brief silently omitted the Herdr declaration"
     assert_grep "regenerate the brief with \`--herdr-lab\` before dispatch" "$brief" \
@@ -463,7 +472,7 @@ test_secondmate_no_projects_charter() {
     FM_SECONDMATE_SCOPE='firstmate repo work' \
     "$ROOT/bin/fm-brief.sh" fdev --secondmate --no-projects >/dev/null 2>&1; status=$?
   expect_code 0 "$status" "--no-projects secondmate brief should exit 0"
-  brief="$home/data/fdev/brief.md"
+  brief="$(task_dir "$home" _none fdev)/brief.md"
   assert_present "$brief" "project-less charter was not scaffolded"
   assert_grep "# Project clones" "$brief" "project-less charter dropped the Project clones heading"
   assert_grep "None. This is a project-less domain" "$brief" \
@@ -485,7 +494,8 @@ test_secondmate_no_projects_charter() {
   # Accidental omission (no projects, no signal) still fails loudly, writing nothing.
   FM_HOME="$home" FM_SECONDMATE_CHARTER='x' "$ROOT/bin/fm-brief.sh" oops --secondmate >/dev/null 2>&1; status=$?
   expect_code 1 "$status" "secondmate brief with no projects and no --no-projects must fail"
-  assert_absent "$home/data/oops/brief.md" "loud-failure secondmate brief still wrote a file"
+  assert_absent "$(task_dir "$home" _none oops)/brief.md" \
+    "loud-failure secondmate brief still wrote a file"
 
   # --no-projects is mutually exclusive with a project list.
   FM_HOME="$home" FM_SECONDMATE_CHARTER='x' "$ROOT/bin/fm-brief.sh" oops2 --secondmate --no-projects alpha >/dev/null 2>&1; status=$?
@@ -505,7 +515,7 @@ test_secondmate_marked_request_reporting_contract() {
   FM_HOME="$home" FM_CLASSIFY_PAUSED_VERB=paused \
     FM_SECONDMATE_CHARTER='Handle routed domain work.' \
     "$ROOT/bin/fm-brief.sh" marked-request-reporting --secondmate --no-projects >/dev/null 2>&1
-  brief="$home/data/marked-request-reporting/brief.md"
+  brief="$(task_dir "$home" _none marked-request-reporting)/brief.md"
 
   assert_grep 'A marked request requires one correlated answer after the work' "$brief" \
     "secondmate charter did not require the correlated answer after the work"
@@ -551,7 +561,7 @@ test_secondmate_directory_paths_are_absolute_and_output_is_stable() {
     "$root/cdpath/home/data" "$root/cdpath/home/state" \
     "$root/cdpath/data-override" "$root/cdpath/state-override"
 
-  brief="$home/data/relative-home/brief.md"
+  brief="$(task_dir "$home" _none relative-home)/brief.md"
   FM_HOME="$home" FM_SECONDMATE_CHARTER=x \
     "$ROOT/bin/fm-brief.sh" relative-home --secondmate --no-projects >/dev/null 2>&1
   baseline="$root/absolute-home-charter"
@@ -567,7 +577,7 @@ test_secondmate_directory_paths_are_absolute_and_output_is_stable() {
   assert_grep ">> '$home/state/relative-home.status'" "$brief" \
     "relative FM_HOME did not render an absolute secondmate status path"
 
-  brief="$home/data/relative-state/brief.md"
+  brief="$(task_dir "$home" _none relative-state)/brief.md"
   FM_HOME="$home" FM_STATE_OVERRIDE="$state_override" FM_SECONDMATE_CHARTER=x \
     "$ROOT/bin/fm-brief.sh" relative-state --secondmate --no-projects >/dev/null 2>&1
   baseline="$root/absolute-state-charter"
@@ -583,7 +593,7 @@ test_secondmate_directory_paths_are_absolute_and_output_is_stable() {
   assert_grep ">> '$state_override/relative-state.status'" "$brief" \
     "relative FM_STATE_OVERRIDE did not render an absolute secondmate status path"
 
-  brief="$data_override/relative-data/brief.md"
+  brief="$data_override/tasks/_none/relative-data/brief.md"
   FM_HOME="$home" FM_DATA_OVERRIDE="$data_override" FM_SECONDMATE_CHARTER=x \
     "$ROOT/bin/fm-brief.sh" relative-data --secondmate --no-projects >/dev/null 2>&1
   baseline="$root/absolute-data-charter"
@@ -635,13 +645,13 @@ test_herdr_lab_contract_applies_to_scouts_but_not_secondmates() {
   home="$TMP_ROOT/herdr-kind-home"
   mkdir -p "$home/data"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" herdr-scout firstmate --scout --herdr-lab >/dev/null 2>&1
-  brief="$home/data/herdr-scout/brief.md"
+  brief="$(task_dir "$home" firstmate herdr-scout)/brief.md"
   assert_grep "# Herdr isolation - HARD SAFETY CONTRACT" "$brief" \
     "scout --herdr-lab brief missing the contract"
 
   FM_HOME="$home" FM_SECONDMATE_CHARTER=ops "$ROOT/bin/fm-brief.sh" herdr-secondmate --secondmate firstmate --herdr-lab >/dev/null 2>&1 || status=$?
   expect_code 1 "$status" "secondmate --herdr-lab must be rejected"
-  assert_absent "$home/data/herdr-secondmate/brief.md" \
+  assert_absent "$(task_dir "$home" _none herdr-secondmate)/brief.md" \
     "rejected secondmate --herdr-lab still wrote a brief"
   pass "fm-brief.sh: Herdr lab contract covers scouts and rejects secondmate misuse"
 }
@@ -667,7 +677,11 @@ test_pause_verb_override_renders_all_brief_scaffolds() {
           "$ROOT/bin/fm-brief.sh" "$id" --secondmate --no-projects >/dev/null 2>&1
         ;;
     esac
-    brief="$home/data/$id/brief.md"
+    if [ "$kind" = secondmate ]; then
+      brief="$(task_dir "$home" _none "$id")/brief.md"
+    else
+      brief="$(task_dir "$home" firstmate "$id")/brief.md"
+    fi
     assert_grep "States: working, needs-decision, blocked, awaiting, done, failed." "$brief" \
       "$kind brief did not render the configured pause verb in its states list"
     # shellcheck disable=SC2016 # Literal backticks and braces must remain unexpanded.
@@ -690,14 +704,14 @@ test_scout_and_secondmate_load_decision_hold_policy() {
   mkdir -p "$home/data"
   FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" \
     "$ROOT/bin/fm-brief.sh" sample-investigation sample --scout >/dev/null 2>&1
-  scout="$home/data/sample-investigation/brief.md"
+  scout="$(task_dir "$home" sample sample-investigation)/brief.md"
   assert_grep "$ROOT/.agents/skills/captain-hold-lifecycle/SKILL.md" "$scout" \
     "scout brief did not load the captain-call policy before done"
   assert_grep "pass its shared completion gate for the report and any visual review" "$scout" \
     "scout brief did not cross-reference visual-review completion"
   FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" FM_SECONDMATE_CHARTER='sample reviews' \
     "$ROOT/bin/fm-brief.sh" sample-mate --secondmate --no-projects >/dev/null 2>&1
-  charter="$home/data/sample-mate/brief.md"
+  charter="$(task_dir "$home" _none sample-mate)/brief.md"
   assert_grep "load \`captain-hold-lifecycle\`" "$charter" \
     "secondmate charter did not load the shared captain-call policy for detailed investigations"
   pass "fm-brief.sh: investigation and visual-review completions load the shared decision policy"
@@ -708,7 +722,7 @@ test_scout_and_secondmate_scaffold() {
   local brief
   FM_HOME="$BRIEF_HOME" "$ROOT/bin/fm-brief.sh" brief-scout-q6 alpha --scout >/dev/null 2>&1 \
     || fail "fm-brief.sh scout scaffold exited non-zero"
-  brief="$BRIEF_HOME/data/brief-scout-q6/brief.md"
+  brief="$(task_dir "$BRIEF_HOME" alpha brief-scout-q6)/brief.md"
   assert_present "$brief" "scout brief was not scaffolded"
   assert_grep "SCOUT task" "$brief" "scout brief must declare itself a scout task"
   assert_grep "report.md" "$brief" "scout brief must point at the report deliverable"
@@ -718,7 +732,7 @@ test_scout_and_secondmate_scaffold() {
   FM_SECONDMATE_CHARTER='Supervise the alpha domain.' \
     FM_HOME="$BRIEF_HOME" "$ROOT/bin/fm-brief.sh" brief-sm-q6 --secondmate alpha >/dev/null 2>&1 \
     || fail "fm-brief.sh secondmate scaffold exited non-zero"
-  brief="$BRIEF_HOME/data/brief-sm-q6/brief.md"
+  brief="$(task_dir "$BRIEF_HOME" _none brief-sm-q6)/brief.md"
   assert_present "$brief" "secondmate charter was not scaffolded"
   assert_grep "persistent second mate" "$brief" \
     "secondmate charter must declare its role"

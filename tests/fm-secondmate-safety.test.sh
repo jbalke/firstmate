@@ -60,17 +60,17 @@ test_fm_home_parameterization() {
   [ "$out" = "no-mistakes off" ] || fail "fm-project-mode did not isolate missing registry by home"
 
   FM_HOME="$home_one" "$ROOT/bin/fm-brief.sh" task-a app --mode no-mistakes >/dev/null || fail "brief scaffold failed under FM_HOME"
-  brief="$home_one/data/task-a/brief.md"
+  brief="$home_one/data/tasks/app/task-a/brief.md"
   [ -f "$brief" ] || fail "brief was not written under FM_HOME/data"
   grep -F ">> '$home_one/state/task-a.status'" "$brief" >/dev/null || fail "brief did not shell-quote FM_HOME state path"
 
   FM_HOME="$home_one" "$ROOT/bin/fm-brief.sh" task-b app --scout >/dev/null || fail "scout brief scaffold failed under FM_HOME"
-  brief="$home_one/data/task-b/brief.md"
+  brief="$home_one/data/tasks/app/task-b/brief.md"
   grep -F ">> '$home_one/state/task-b.status'" "$brief" >/dev/null || fail "scout brief did not shell-quote FM_HOME state path"
 
   FM_HOME="$home_one" FM_SECONDMATE_CHARTER='ops domain' "$ROOT/bin/fm-brief.sh" task-c --secondmate app >/dev/null \
     || fail "secondmate brief scaffold failed under FM_HOME"
-  brief="$home_one/data/task-c/brief.md"
+  brief="$home_one/data/tasks/_none/task-c/brief.md"
   grep -F ">> '$home_one/state/task-c.status'" "$brief" >/dev/null || fail "secondmate brief did not shell-quote FM_HOME state path"
 
   printf 'project=x\n' > "$home_one/state/task-a.meta"
@@ -169,7 +169,7 @@ test_home_seed_refuses_broken_registry_symlink() {
   [ -L "$home/data/secondmates.md" ] || fail "home seeding replaced the broken registry symlink"
   [ ! -e "$target" ] || fail "home seeding wrote through the broken registry symlink"
   [ ! -e "$sub" ] || fail "home seeding provisioned a home before broken registry refusal"
-  [ ! -e "$home/data/design" ] || fail "home seeding created a brief before broken registry refusal"
+  [ ! -e "$home/data/tasks/_none/design" ] || fail "home seeding created a brief before broken registry refusal"
   pass "home seeding refuses broken registry symlinks before provisioning"
 }
 
@@ -197,7 +197,7 @@ test_home_seed_refuses_unreadable_registry() {
   fi
   chmod 600 "$registry"
   [ ! -e "$sub" ] || fail "home seeding provisioned a home before unreadable registry refusal"
-  [ ! -e "$home/data/design" ] || fail "home seeding created a brief before unreadable registry refusal"
+  [ ! -e "$home/data/tasks/_none/design" ] || fail "home seeding created a brief before unreadable registry refusal"
   pass "home seeding refuses unreadable registries before provisioning"
 }
 
@@ -629,7 +629,7 @@ test_home_seed_refuses_projectful_reused_charter_for_projectless_home() {
   home="$TMP_ROOT/no-projects-reused-charter-home"
   reusable_sub="$TMP_ROOT/no-projects-reused-charter-valid-subhome"
   stale_sub="$TMP_ROOT/no-projects-reused-charter-stale-subhome"
-  stale_brief="$home/data/stale/brief.md"
+  stale_brief="$home/data/tasks/_none/stale/brief.md"
   stale_brief_before="$TMP_ROOT/no-projects-reused-charter.before"
   err="$TMP_ROOT/no-projects-reused-charter.err"
   mkdir -p "$home/data" "$home/state" "$reusable_sub/data" "$stale_sub/data"
@@ -638,7 +638,7 @@ test_home_seed_refuses_projectful_reused_charter_for_projectless_home() {
 
   scaffold_secondmate_charter "$home" reusable 'firstmate self-development' --no-projects \
     || fail "project-less charter scaffold failed"
-  printf '\n# Custom note\nThe projects above are local clones for work you supervise.\n' >> "$home/data/reusable/brief.md"
+  printf '\n# Custom note\nThe projects above are local clones for work you supervise.\n' >> "$home/data/tasks/_none/reusable/brief.md"
   FM_HOME="$home" "$ROOT/bin/fm-home-seed.sh" reusable "$reusable_sub" --no-projects >/dev/null \
     || fail "project-less seed rejected a reused project-less charter"
   assert_grep 'None. This is a project-less domain' "$reusable_sub/data/charter.md" \
@@ -2813,7 +2813,7 @@ test_secondmate_charter_brief_is_idle_by_default() {
   home="$TMP_ROOT/idle-charter-home"
   mkdir -p "$home/data" "$home/state"
   scaffold_secondmate_charter "$home" idle-sm 'feature work for alpha' alpha
-  brief="$home/data/idle-sm/brief.md"
+  brief="$home/data/tasks/_none/idle-sm/brief.md"
   [ -f "$brief" ] || fail "secondmate charter brief was not scaffolded"
   # Idle contract: waits for routed work, never self-initiates.
   grep -F 'go idle and wait silently for the main firstmate' "$brief" >/dev/null \

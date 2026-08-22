@@ -42,7 +42,8 @@
 #     endpoint.exists is the cheap backend endpoint-presence read.
 #     endpoint.agent_alive is populated for secondmates only, where it is useful
 #     return-channel supervision data; other tasks use "not_checked".
-#   scout_reports[]: present data/<id>/report.md pointers.
+#   scout_reports[]: present task-data report.md pointers, in both the
+#     project-grouped and legacy layouts (bin/fm-task-data-lib.sh).
 #   main_inventory: {valid,reason,orphan_in_flight[],unstructured_current_count} -
 #     main-home current-inventory checks shared with secondmate_home_summary_json
 #     (orphan structured in-flight ids with no state/<id>.meta, and unstructured
@@ -146,6 +147,9 @@ validate_positive_bound FM_SNAPSHOT_REGISTRY_TIMEOUT "$FM_SNAPSHOT_REGISTRY_TIME
 # shellcheck source=bin/fm-backend.sh
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/fm-backend.sh"
+# shellcheck source=bin/fm-task-data-lib.sh
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/fm-task-data-lib.sh"
 # shellcheck source=bin/fm-classify-lib.sh
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/fm-classify-lib.sh"
@@ -455,7 +459,7 @@ task_json_lines() {
       target=$(fm_backend_target_of_meta "$meta")
     fi
     status_log="$STATE/$id.status"
-    report_path="$DATA/$id/report.md"
+    report_path="$(fm_task_data_dir "$DATA" "$id")/report.md"
     pr=$(meta_value "$meta" pr)
     pr_source=meta
     if [ -z "$pr" ]; then
@@ -1364,7 +1368,15 @@ scout_report_lines() {
     jq -n '[]'
     return 0
   fi
-  LC_ALL=C find "$DATA" -mindepth 2 -maxdepth 2 -type f -name report.md -print \
+  # Both layouts: the legacy <id>/report.md and the project-grouped
+  # tasks/<project>/<id>/report.md that replaced it (bin/fm-task-data-lib.sh).
+  {
+    LC_ALL=C find "$DATA" -mindepth 2 -maxdepth 2 -type f -name report.md -print
+    if [ -d "$DATA/$FM_TASK_DATA_SUBDIR" ]; then
+      LC_ALL=C find "$DATA/$FM_TASK_DATA_SUBDIR" -mindepth 3 -maxdepth 3 \
+        -type f -name report.md -print
+    fi
+  } \
     | sort \
     | while IFS= read -r report; do
       id=$(basename "$(dirname "$report")")

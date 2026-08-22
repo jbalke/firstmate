@@ -96,7 +96,9 @@ test_projects_path_scoping() {
     fi
     status=$?
     [ "$status" -ne 0 ] || fail "$label: spawn with missing brief should fail"
-    expected="error: no brief at $home/data/$id/brief.md"
+    # Project-grouped by bin/fm-task-data-lib.sh; the clone is projects/alpha, so
+    # the brief the error names belongs to project "alpha".
+    expected="error: no brief at $home/data/tasks/alpha/$id/brief.md"
     printf '%s\n' "$out" | grep -F "$expected" >/dev/null \
       || fail "$label: projects/alpha was not resolved through the home before the brief check"
     printf '%s\n' "$out" | grep -F 'cd: projects/alpha' >/dev/null \
