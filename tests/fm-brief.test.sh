@@ -213,8 +213,21 @@ test_ship_modes_generate_clean_briefs() {
     assert_grep "mid-task \`working:\` line (including setup complete) is nonterminal" "$brief" \
       "$id: brief missing nonterminal working:/setup-complete gate protection"
     assert_no_grep "EOF" "$brief" "$id: brief leaked a heredoc EOF marker (unterminated heredoc)"
+    # Report and evidence must outlive the disposable worktree, so every mode
+    # carves the task data directory out of the stay-in-your-worktree rule and
+    # requires both artifacts there.
+    assert_grep "anything under your task data directory \`$home/data/$id/\`" "$brief" \
+      "$id: rule 2 lost the task data-directory carve-out"
+    assert_grep "Write \`$home/data/$id/report.md\` if this task uncovered a **transferable cause**" "$brief" \
+      "$id: definition of done lost the transferable-cause report requirement"
+    assert_grep "the PR body is not a substitute, because working notes are deleted at cleanup" "$brief" \
+      "$id: report requirement lost the PR-body-is-not-a-substitute rule"
+    assert_grep "Task size is not the test" "$brief" \
+      "$id: report requirement lost the size-is-not-the-test rule"
+    assert_grep "Write any screenshot or recording you take to support a claim in the PR body into \`$home/data/$id/\`" "$brief" \
+      "$id: definition of done lost the saved-visual-evidence requirement"
   done
-  pass "fm-brief.sh: no-mistakes/direct-PR/local-only briefs generate cleanly"
+  pass "fm-brief.sh: every ship mode generates cleanly and requires a durable report plus saved evidence"
 }
 
 # A ship task's delivery mode is firstmate's per-task decision, so a missing or

@@ -54,6 +54,9 @@
 # it carries the AGENTS.md authoring bar (widely useful knowledge only, pointers
 # over copied detail) and has the crewmate add the fm-ensure-agents-md.sh
 # self-governance section when a touched project AGENTS.md lacks it.
+# Every ship mode also carries a durable-report and saved-evidence requirement in
+# its definition of done, and rule 2 permits writes to the task's own data
+# directory so both survive teardown of the disposable worktree.
 # Refuses to overwrite an existing brief.
 set -eu
 
@@ -429,7 +432,7 @@ If the top-level path is the primary checkout or not the worktree you were launc
 
 # Rules
 $RULE1
-2. Stay inside this worktree; modify nothing outside it.
+2. Stay inside this worktree; the only files you may write outside it are the status file in rule 4 and anything under your task data directory \`$DATA/$ID/\` (the report and saved evidence below).
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
@@ -461,5 +464,16 @@ If you touch a project \`AGENTS.md\` that lacks \`## Maintaining this file\`, ad
 Keep it proportionate: skip \`AGENTS.md\` edits for trivial tasks that produced no durable project knowledge.
 
 $DOD
+
+## Durable report
+Write \`$DATA/$ID/report.md\` if this task uncovered a **transferable cause** - something that would bite a future task on this repo or another.
+Worth a report: a build or dependency-resolution trap, a branch or merge hazard, a failure mode that produces no error, or a test or assertion pattern that was wrong for a reason others will repeat.
+The report is the only artifact that outlives the PR and the worktree; the PR body is not a substitute, because working notes are deleted at cleanup.
+Task size is not the test: a one-file fix with a transferable cause gets a report, and a large task with none does not need one.
+The report must stand alone: what was done, what was found, the evidence, and what a future worker should do differently.
+
+## Saved evidence
+Write any screenshot or recording you take to support a claim in the PR body into \`$DATA/$ID/\`, naming each file for what it shows.
+A scratch or temp path is deleted at cleanup, so evidence left there stops existing when the task closes.
 EOF
 echo "scaffolded: $BRIEF (ship, mode=$MODE; replace {TASK})"
