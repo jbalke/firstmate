@@ -11,8 +11,8 @@
 #   fm-task-data.sh list [filters]
 #   fm-task-data.sh prune [filters] [--images-only] [--archive <dir>] [--yes]
 #                         [--include-protected]
-#   fm-task-data.sh protect <task-id>...
-#   fm-task-data.sh unprotect <task-id>...
+#   fm-task-data.sh protect {<task-id>...|<filters>}
+#   fm-task-data.sh unprotect {<task-id>...|<filters>}
 #
 # Filters (repeatable, and they compose - a folder must match every filter kind
 # that was given, and any one value within a kind):
@@ -35,9 +35,11 @@
 #   - a task still in flight, identified by a live state/<task-id>.meta record;
 #     work under way owns its folder
 #   - a protected folder, identified by a `.protected` marker file inside it.
-#     Use `protect` to add one and `unprotect` to remove it. A marker rather than
-#     a list of ids because the protected body of work grows, and a folder
-#     carries its own protection wherever it is moved or archived.
+#     Use `protect` to add one and `unprotect` to remove it; both take the same
+#     filters as prune, so a whole project is marked in one command. A marker
+#     rather than a hard-coded list of ids because the protected body of work
+#     grows, and a folder carries its own protection wherever it is moved or
+#     archived.
 #
 # Safe to run twice and safe to interrupt: every removal and move is per-file
 # and idempotent, an already-removed file is not an error, and an interrupted
@@ -129,29 +131,18 @@ fi
 
 case "$COMMAND" in
   protect|unprotect)
-    [ "${#POSITIONAL[@]}" -gt 0 ] || die "$COMMAND requires at least one task id"
+    # Either explicit ids or filters, because a body of work worth protecting is
+    # usually a whole project rather than a list someone has to keep up to date.
+    [ "${#POSITIONAL[@]}" -gt 0 ] \
+      || [ "${#FILTER_PROJECTS[@]}" -gt 0 ] \
+      || [ "${#FILTER_TASKS[@]}" -gt 0 ] \
+      || [ -n "$OLDER_THAN" ] \
+      || die "$COMMAND requires at least one task id or filter"
     ;;
   *)
     [ "${#POSITIONAL[@]}" -eq 0 ] || die "unexpected argument '${POSITIONAL[0]}'"
     ;;
 esac
-
-# --- protect / unprotect ----------------------------------------------------
-
-if [ "$COMMAND" = protect ] || [ "$COMMAND" = unprotect ]; then
-  for id in "${POSITIONAL[@]}"; do
-    dir=$(fm_task_data_find "$DATA" "$id") \
-      || die "no task data directory for '$id' under $DATA"
-    if [ "$COMMAND" = protect ]; then
-      : > "$dir/$FM_TASK_DATA_PROTECTED"
-      printf 'protected: %s\n' "$dir"
-    else
-      rm -f -- "$dir/$FM_TASK_DATA_PROTECTED"
-      printf 'unprotected: %s\n' "$dir"
-    fi
-  done
-  exit 0
-fi
 
 # --- collection -------------------------------------------------------------
 
@@ -208,6 +199,41 @@ matches_filters() {  # <dir> <task-id> <project>
   fi
   return 0
 }
+
+# --- protect / unprotect ----------------------------------------------------
+
+# Marking is never destructive, so it reaches in-flight and already-marked
+# folders too; only the prune path cares about those classifications.
+set_protection() {  # <dir>
+  if [ "$COMMAND" = protect ]; then
+    : > "$1/$FM_TASK_DATA_PROTECTED"
+    printf 'protected: %s\n' "$1"
+  else
+    rm -f -- "$1/$FM_TASK_DATA_PROTECTED"
+    printf 'unprotected: %s\n' "$1"
+  fi
+}
+
+if [ "$COMMAND" = protect ] || [ "$COMMAND" = unprotect ]; then
+  marked=0
+  for id in "${POSITIONAL[@]+"${POSITIONAL[@]}"}"; do
+    dir=$(fm_task_data_find "$DATA" "$id") \
+      || die "no task data directory for '$id' under $DATA"
+    set_protection "$dir"
+    marked=$((marked + 1))
+  done
+  if [ "${#POSITIONAL[@]}" -eq 0 ]; then
+    while IFS= read -r dir; do
+      [ -n "$dir" ] || continue
+      matches_filters "$dir" "$(basename -- "$dir")" \
+        "$(fm_task_data_project_of_dir "$DATA" "$dir")" || continue
+      set_protection "$dir"
+      marked=$((marked + 1))
+    done < <(all_task_dirs)
+  fi
+  printf '%s folder(s) %sed.\n' "$marked" "$COMMAND"
+  exit 0
+fi
 
 # Kilobytes a prune would actually reclaim from one folder.
 reclaimable_kb() {  # <dir>
@@ -267,7 +293,8 @@ done < <(all_task_dirs)
 # --- reporting --------------------------------------------------------------
 
 print_rows() {  # <heading> <rows...>
-  local heading=$1 row project last_project= total=0 count=0
+  local heading=$1 row project task_id dir size_kb note
+  local last_project='' total=0 count=0
   shift
   [ "$#" -gt 0 ] || return 0
   printf '%s\n' "$heading"

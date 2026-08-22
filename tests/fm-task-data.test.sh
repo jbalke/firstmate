@@ -228,6 +228,31 @@ test_protected_folder_needs_the_override() {
   pass "fm-task-data.sh: a protected folder is skipped without the override and removed with it"
 }
 
+# The captain's standing rule is that a whole body of work (the co-invest
+# migration reports) is never pruned, so protection must be settable across a
+# project in one command rather than id by id.
+test_protect_accepts_a_whole_project() {
+  local home out
+  home=$(build_fixture protectproject)
+  out=$(run_tool "$home" protect --project front-client)
+  assert_contains "$out" "folder(s) protected" "bulk protect must report a count"
+  assert_present "$home/data/tasks/front-client/ship-a/.protected" \
+    "every folder in the project must be marked"
+  assert_absent "$home/data/tasks/vega-ui/ship-b/.protected" \
+    "another project must not be marked"
+
+  out=$(run_tool "$home" prune --yes)
+  assert_present "$home/data/tasks/front-client/ship-a/report.md" \
+    "a bulk-protected project must survive a prune"
+  assert_absent "$home/data/tasks/vega-ui/ship-b" \
+    "an unprotected project must still be pruned"
+
+  out=$(run_tool "$home" unprotect --project front-client)
+  assert_absent "$home/data/tasks/front-client/ship-a/.protected" \
+    "unprotect must clear the marker across the project"
+  pass "fm-task-data.sh: protect and unprotect accept a whole project"
+}
+
 test_images_only_leaves_every_md_intact() {
   local home out
   home=$(build_fixture imagesonly)
@@ -304,6 +329,7 @@ test_top_level_data_files_are_untouched
 test_dry_run_removes_nothing
 test_in_flight_task_is_refused
 test_protected_folder_needs_the_override
+test_protect_accepts_a_whole_project
 test_images_only_leaves_every_md_intact
 test_filters_compose
 test_archive_moves_instead_of_deleting

@@ -31,6 +31,7 @@
 FM_TASK_DATA_SUBDIR=tasks
 FM_TASK_DATA_NO_PROJECT=_none
 FM_TASK_DATA_MARKER=task.meta
+# shellcheck disable=SC2034 # Read by bin/fm-task-data.sh, not by this library.
 FM_TASK_DATA_PROTECTED=.protected
 
 # Validate a task id used as one path component. Refuses anything that could
@@ -62,11 +63,6 @@ fm_task_data_project_slug() {  # <project>
   esac
   echo "error: '$project' is not a usable project name for a task data directory" >&2
   return 1
-}
-
-# Print the legacy directory for a task. Existence is not checked.
-fm_task_data_legacy_dir() {  # <data-root> <task-id>
-  printf '%s\n' "$1/$2"
 }
 
 # Print the existing durable data directory for a task, or fail with no output.
