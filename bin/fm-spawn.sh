@@ -1642,7 +1642,10 @@ if [ "$KIND" = secondmate ]; then
 else
   PROJ_ABS="$(cd "$(resolve_project_dir_arg "$PROJ")" && pwd)"
   WT=""
-  BRIEF="$(fm_task_data_dir "$DATA" "$ID")/brief.md"
+  # The registry name, from the resolved clone rather than the caller's argument,
+  # which may be a path. Spawn never writes here; naming the project only makes a
+  # missing-brief error point at the directory the brief would actually live in.
+  BRIEF="$(fm_task_data_dir "$DATA" "$ID" "$(basename -- "$PROJ_ABS")")/brief.md"
 fi
 [ -f "$BRIEF" ] || { echo "error: no brief at $BRIEF" >&2; exit 1; }
 
