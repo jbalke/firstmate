@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # Scaffold a crewmate brief or persistent secondmate charter at
-# data/<task-id>/brief.md under the active firstmate home.
+# data/tasks/<project>/<task-id>/brief.md under the active firstmate home
+# (bin/fm-task-data-lib.sh owns that path and its legacy data/<task-id>/
+# fallback), and write the task.meta grouping marker beside it.
+# --title <t> records a human title in that marker; it defaults to the task id
+#   and never appears in the path, so a reworded title never moves a folder.
 # For ordinary tasks, the standard Setup/Rules/Definition-of-done contract is
 # filled in. Firstmate then replaces the {TASK} placeholder with the task
 # description, acceptance criteria, and context, and may adjust other sections
 # when the task genuinely deviates (e.g. working an existing external PR instead
 # of shipping a new one).
-# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--herdr-lab]
-#        fm-brief.sh <task-id> <repo-name> --scout [--herdr-lab]
+# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--title <t>] [--herdr-lab]
+#        fm-brief.sh <task-id> <repo-name> --scout [--title <t>] [--herdr-lab]
 #        fm-brief.sh <task-id> --secondmate {<project>...|--no-projects}
 #   --scout writes the scout contract instead: the deliverable is a report at
-#   data/<task-id>/report.md (no branch, no push, no PR) and the worktree is scratch.
+#   report.md in that directory (no branch, no push, no PR) and the worktree is scratch.
 #   --secondmate writes a persistent secondmate charter. The project list
 #   is cloned into the secondmate home, while the natural-language scope
 #   tells the main firstmate when to route work there; routine churn stays in its own home;
@@ -78,6 +82,8 @@ esac
 . "$SCRIPT_DIR/fm-marker-lib.sh"
 # shellcheck source=bin/fm-classify-lib.sh
 . "$SCRIPT_DIR/fm-classify-lib.sh"
+# shellcheck source=bin/fm-task-data-lib.sh
+. "$SCRIPT_DIR/fm-task-data-lib.sh"
 PAUSED_VERB=${FM_CLASSIFY_PAUSED_VERB:-$FM_CLASSIFY_PAUSED_VERB_DEFAULT}
 
 resolve_directory_input() {
@@ -109,6 +115,7 @@ HERDR_LAB=0
 NO_PROJECTS=0
 MODE=
 MODE_SET=0
+TITLE=
 POS=()
 want_value=
 for a in "$@"; do
@@ -118,6 +125,7 @@ for a in "$@"; do
     esac
     case "$want_value" in
       mode) MODE=$a; MODE_SET=1 ;;
+      title) TITLE=$a ;;
       *) echo "error: internal parser state for --$want_value" >&2; exit 1 ;;
     esac
     want_value=
@@ -130,6 +138,8 @@ for a in "$@"; do
     --no-projects) NO_PROJECTS=1 ;;
     --mode) want_value=mode ;;
     --mode=*) MODE=${a#--mode=}; MODE_SET=1 ;;
+    --title) want_value=title ;;
+    --title=*) TITLE=${a#--title=} ;;
     # yolo never reaches the worker: it is firstmate's merge authority, not a
     # brief input. Refuse it loudly so it is never silently dropped here and then
     # believed to have been recorded.
@@ -169,9 +179,19 @@ if [ "$NO_PROJECTS" -eq 1 ] && [ "$KIND" != secondmate ]; then
   exit 1
 fi
 
-BRIEF="$DATA/$ID/brief.md"
+# The task's durable data directory, project-grouped by bin/fm-task-data-lib.sh.
+# A secondmate charter has no single project, and a ship or scout brief names its
+# repo positionally.
+if [ "$KIND" = secondmate ]; then
+  TASK_PROJECT=
+else
+  TASK_PROJECT=${POS[1]:-}
+fi
+TASK_DIR=$(fm_task_data_dir "$DATA" "$ID" "$TASK_PROJECT") || exit 1
+BRIEF="$TASK_DIR/brief.md"
 [ -e "$BRIEF" ] && { echo "error: $BRIEF already exists" >&2; exit 1; }
-mkdir -p "$DATA/$ID"
+mkdir -p "$TASK_DIR"
+fm_task_data_write_marker "$TASK_DIR" "$TASK_PROJECT" "${TITLE:-$ID}" "$KIND" || exit 1
 
 shell_quote() {
   printf "'"
@@ -340,7 +360,7 @@ The report is the only thing that survives, so anything worth keeping must be in
    daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon.
 
 # Definition of done
-Write your findings to \`$DATA/$ID/report.md\`.
+Write your findings to \`$TASK_DIR/report.md\`.
 The report must stand alone: what you did, what you found, the evidence (commands run, output, file:line references), and what you recommend.
 If your deliverable is a visual artifact the captain will review and iterate on, you may host the Lavish review loop yourself (poll, revise, re-serve, staying alive) instead of handing it back to firstmate.
 Before reporting done, read and follow \`$FM_ROOT/.agents/skills/captain-hold-lifecycle/SKILL.md\` and pass its shared completion gate for the report and any visual review.
@@ -432,7 +452,7 @@ If the top-level path is the primary checkout or not the worktree you were launc
 
 # Rules
 $RULE1
-2. Stay inside this worktree; the only files you may write outside it are the status file in rule 4 and anything under your task data directory \`$DATA/$ID/\` (the report and saved evidence below).
+2. Stay inside this worktree; the only files you may write outside it are the status file in rule 4 and anything under your task data directory \`$TASK_DIR/\` (the report and saved evidence below).
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
@@ -466,14 +486,14 @@ Keep it proportionate: skip \`AGENTS.md\` edits for trivial tasks that produced 
 $DOD
 
 ## Durable report
-Write \`$DATA/$ID/report.md\` if this task uncovered a **transferable cause** - something that would bite a future task on this repo or another.
+Write \`$TASK_DIR/report.md\` if this task uncovered a **transferable cause** - something that would bite a future task on this repo or another.
 Worth a report: a build or dependency-resolution trap, a branch or merge hazard, a failure mode that produces no error, or a test or assertion pattern that was wrong for a reason others will repeat.
 The report is the only artifact that outlives the PR and the worktree; the PR body is not a substitute, because working notes are deleted at cleanup.
 Task size is not the test: a one-file fix with a transferable cause gets a report, and a large task with none does not need one.
 The report must stand alone: what was done, what was found, the evidence, and what a future worker should do differently.
 
 ## Saved evidence
-Write any screenshot or recording you take to support a claim in the PR body into \`$DATA/$ID/\`, naming each file for what it shows.
+Write any screenshot or recording you take to support a claim in the PR body into \`$TASK_DIR/\`, naming each file for what it shows.
 A scratch or temp path is deleted at cleanup, so evidence left there stops existing when the task closes.
 EOF
 echo "scaffolded: $BRIEF (ship, mode=$MODE; replace {TASK})"
