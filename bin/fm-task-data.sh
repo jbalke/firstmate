@@ -17,7 +17,8 @@
 # Filters (repeatable, and they compose - a folder must match every filter kind
 # that was given, and any one value within a kind):
 #   --project <name>      registry name, or _none for the no-project literal
-#   --task <task-id>      exact task id
+#   --task <pattern>      task id, or a shell glob over task ids such as
+#                         'cvui-*'; quote it so the shell does not expand it
 #   --older-than <days>   folder last modified more than <days> days ago
 #
 # prune options:
@@ -150,6 +151,8 @@ esac
 # the legacy top level is one only if it holds task content, because data/ also
 # holds firstmate's own directories (handoff/ and friends) and this is the one
 # tool that deletes things. An unrecognized folder is skipped, never removed.
+# The protection marker counts as content, so marking an otherwise unrecognized
+# folder is what makes it both visible here and permanently safe.
 is_legacy_task_dir() {  # <dir>
   local dir=$1 name
   for name in brief.md report.md "$FM_TASK_DATA_MARKER" "$FM_TASK_DATA_PROTECTED"; do
@@ -159,15 +162,21 @@ is_legacy_task_dir() {  # <dir>
 }
 
 # Every task data directory in both layouts, one per line.
-all_task_dirs() {
-  local dir
+#
+# "all" includes legacy folders that hold no recognized task content. Only the
+# protect path uses it: marking is not destructive, and a body of work can
+# include folders that are neither a brief nor a report - the migration
+# retrospective's own index is one - which must still be markable, and which
+# become visible and permanently safe once marked.
+all_task_dirs() {  # [all]
+  local dir mode=${1:-recognized}
   [ -d "$DATA" ] || return 0
   {
     for dir in "$DATA"/*/; do
       [ -d "$dir" ] || continue
       dir=${dir%/}
       [ "$(basename -- "$dir")" != "$FM_TASK_DATA_SUBDIR" ] || continue
-      is_legacy_task_dir "$dir" || continue
+      [ "$mode" = all ] || is_legacy_task_dir "$dir" || continue
       printf '%s\n' "$dir"
     done
     for dir in "$DATA/$FM_TASK_DATA_SUBDIR"/*/*/; do
@@ -186,13 +195,30 @@ list_contains() {  # <needle> <values...>
   return 1
 }
 
+# --task matches by shell glob, because a body of work is usually named by a
+# shared id prefix rather than by its project: the migration reports on the
+# captain's home are cvui-* inside front-client, which also holds unrelated
+# tasks, and some legacy folders record no usable project at all. An exact id is
+# its own glob, so plain ids keep working.
+list_matches_pattern() {  # <needle> <patterns...>
+  local needle=$1 pattern
+  shift
+  for pattern in "$@"; do
+    # shellcheck disable=SC2254 # The pattern is a deliberate caller-supplied glob.
+    case "$needle" in
+      $pattern) return 0 ;;
+    esac
+  done
+  return 1
+}
+
 matches_filters() {  # <dir> <task-id> <project>
   local dir=$1 id=$2 project=$3
   if [ "${#FILTER_PROJECTS[@]}" -gt 0 ]; then
     list_contains "$project" "${FILTER_PROJECTS[@]}" || return 1
   fi
   if [ "${#FILTER_TASKS[@]}" -gt 0 ]; then
-    list_contains "$id" "${FILTER_TASKS[@]}" || return 1
+    list_matches_pattern "$id" "${FILTER_TASKS[@]}" || return 1
   fi
   if [ -n "$OLDER_THAN" ]; then
     [ -n "$(find "$dir" -maxdepth 0 -mtime "+$OLDER_THAN" -print 2>/dev/null)" ] || return 1
@@ -229,7 +255,7 @@ if [ "$COMMAND" = protect ] || [ "$COMMAND" = unprotect ]; then
         "$(fm_task_data_project_of_dir "$DATA" "$dir")" || continue
       set_protection "$dir"
       marked=$((marked + 1))
-    done < <(all_task_dirs)
+    done < <(all_task_dirs all)
   fi
   printf '%s folder(s) %sed.\n' "$marked" "$COMMAND"
   exit 0

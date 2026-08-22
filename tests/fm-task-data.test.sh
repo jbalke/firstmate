@@ -253,6 +253,97 @@ test_protect_accepts_a_whole_project() {
   pass "fm-task-data.sh: protect and unprotect accept a whole project"
 }
 
+# Shaped like the captain's real home: the migration reports are ~169 LEGACY
+# folders sharing the id prefix cvui-, sitting inside the same front-client
+# project as unrelated tasks, and some legacy folders record no usable project
+# at all. The project is therefore the wrong key for that body of work and the
+# id prefix is the right one, so the protected set must be selectable by it.
+build_migration_fixture() {  # <name>
+  local home id
+  home=$(new_home "$1")
+  for id in cvui-vd28085-a1 cvui-font-pr-images cvui-token-refresh; do
+    mkdir -p "$home/data/$id"
+    printf 'migration report for %s\n' "$id" > "$home/data/$id/report.md"
+    printf 'PNGDATA\n' > "$home/data/$id/evidence.png"
+  done
+  # A legacy folder whose brief recorded no usable project, like cv4-a1 does.
+  mkdir -p "$home/data/cvui-unknown-project"
+  printf 'report\n' > "$home/data/cvui-unknown-project/report.md"
+  # The retrospective's own index: part of the body of work, but neither a brief
+  # nor a report, exactly like data/cvui-migration-retrospective/ on the real home.
+  mkdir -p "$home/data/cvui-migration-retrospective"
+  printf '# Index\n' > "$home/data/cvui-migration-retrospective/INDEX.md"
+  printf 'curation\n' > "$home/data/cvui-migration-retrospective/CURATION.md"
+  # An unrelated front-client task that must stay prunable.
+  scaffold_ship "$home" ab-density-fix front-client >/dev/null 2>&1 \
+    || fail "scaffold ab-density-fix failed"
+  printf '%s\n' "$home"
+}
+
+test_migration_reports_are_protectable_by_id_prefix() {
+  local home out
+  home=$(build_migration_fixture migration)
+
+  # The project is not the key: front-client holds both bodies of work, and one
+  # migration folder records no project at all.
+  out=$(run_tool "$home" list)
+  assert_contains "$out" "ab-density-fix" "the unrelated front-client task must be listed"
+  assert_contains "$out" "cvui-vd28085-a1" "a legacy migration folder must be listed"
+
+  # It is not listed before it is marked: it holds no brief and no report, and
+  # this tool deletes things, so an unrecognized folder stays out of the plan.
+  out=$(run_tool "$home" list)
+  assert_not_contains "$out" "cvui-migration-retrospective" \
+    "an unrecognized folder must not appear in a destructive tool's plan unmarked"
+
+  out=$(run_tool "$home" protect --task 'cvui-*')
+  assert_contains "$out" "5 folder(s) protected" \
+    "the id-prefix glob must reach every migration folder, including the one with no project and the index"
+  assert_present "$home/data/cvui-migration-retrospective/.protected" \
+    "the retrospective index must be markable even though it is neither brief nor report"
+  assert_present "$home/data/cvui-unknown-project/.protected" \
+    "a folder with no usable project must still be protectable"
+  assert_absent "$home/data/tasks/front-client/ab-density-fix/.protected" \
+    "an unrelated task in the same project must not be swept in"
+
+  # A prune of everything must leave the whole protected body of work standing.
+  out=$(run_tool "$home" prune --yes)
+  assert_contains "$out" "protected:" "the skip must be stated plainly"
+  assert_present "$home/data/cvui-vd28085-a1/report.md" "a migration report must survive"
+  assert_present "$home/data/cvui-token-refresh/report.md" "every migration report must survive"
+  assert_present "$home/data/cvui-unknown-project/report.md" \
+    "the no-project migration folder must survive"
+  assert_present "$home/data/cvui-migration-retrospective/INDEX.md" \
+    "the retrospective index must survive"
+  # Marking made it visible, so it is now accounted for rather than merely unseen.
+  out=$(run_tool "$home" list)
+  assert_contains "$out" "cvui-migration-retrospective" \
+    "a marked folder must become visible in the listing"
+  assert_absent "$home/data/tasks/front-client/ab-density-fix" \
+    "the unrelated task must still be pruned"
+
+  # Even a deliberate project-wide prune cannot take them.
+  out=$(run_tool "$home" prune --project front-client --yes)
+  assert_present "$home/data/cvui-font-pr-images/report.md" \
+    "a project-wide prune must not take the protected migration reports"
+  pass "fm-task-data.sh: the migration reports are protectable by their id prefix and survive a prune"
+}
+
+# The images are the bulk and age fastest; the reports are the deliverable. This
+# must work on the protected set too, since dropping pictures is not pruning the
+# body of work.
+test_images_only_on_protected_migration_keeps_every_report() {
+  local home out
+  home=$(build_migration_fixture migrationimages)
+  run_tool "$home" protect --task 'cvui-*' >/dev/null
+  out=$(run_tool "$home" prune --task 'cvui-*' --images-only --include-protected --yes)
+  assert_absent "$home/data/cvui-vd28085-a1/evidence.png" "the image must go"
+  assert_present "$home/data/cvui-vd28085-a1/report.md" "the report must stay"
+  assert_present "$home/data/cvui-font-pr-images/report.md" "every report must stay"
+  assert_present "$home/data/cvui-vd28085-a1/.protected" "the marker must stay"
+  pass "fm-task-data.sh: images-only on the protected migration set keeps every report"
+}
+
 test_images_only_leaves_every_md_intact() {
   local home out
   home=$(build_fixture imagesonly)
@@ -330,6 +421,8 @@ test_dry_run_removes_nothing
 test_in_flight_task_is_refused
 test_protected_folder_needs_the_override
 test_protect_accepts_a_whole_project
+test_migration_reports_are_protectable_by_id_prefix
+test_images_only_on_protected_migration_keeps_every_report
 test_images_only_leaves_every_md_intact
 test_filters_compose
 test_archive_moves_instead_of_deleting
