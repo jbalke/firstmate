@@ -1271,6 +1271,80 @@ teardown_task "$CROSS_RESTART_ID" "$SECOND_HOME_A" > "$TMP_ROOT/cross-restart-te
 "$REAL_TREEHOUSE" return --force "$CROSS_NEW_WT" >/dev/null 2>&1 || true
 pass "real Herdr lab: secondmate restart binding and reclaim stay isolated to the exact child home and parent"
 
+# A projected workspace can vanish while its task record survives: the captain
+# closes it, or Herdr drops it when its last pane dies outside the exact-pane
+# teardown path. Teardown then cannot correlate the endpoint with the journal,
+# so it retains the journal and warns. The next fresh spawn of that id must
+# project a NEW nested child under the same owning parent - in a primary and in
+# a secondmate home alike - instead of degrading to a flat tab in the parent
+# workspace for the rest of that task's life.
+for ORPHAN_PAIR in "orphan-primary|$HOME_DIR|firstmate" "orphan-second|$SECOND_HOME_A|2ndmate-alpha"; do
+  ORPHAN_ID=${ORPHAN_PAIR%%|*}
+  ORPHAN_REST=${ORPHAN_PAIR#*|}
+  ORPHAN_HOME=${ORPHAN_REST%%|*}
+  ORPHAN_PARENT_LABEL=${ORPHAN_REST#*|}
+  mkdir -p "$ORPHAN_HOME/data/$ORPHAN_ID"
+  printf 'Orphaned projection fixture.\n' > "$ORPHAN_HOME/data/$ORPHAN_ID/brief.md"
+  spawn_task "$ORPHAN_ID" "$ORPHAN_HOME" "$PROJECT_DIR" > "$TMP_ROOT/$ORPHAN_ID-first.out" 2> "$TMP_ROOT/$ORPHAN_ID-first.err" \
+    || fail "$ORPHAN_ID projected spawn failed: $(cat "$TMP_ROOT/$ORPHAN_ID-first.err")"
+  ORPHAN_META="$ORPHAN_HOME/state/$ORPHAN_ID.meta"
+  ORPHAN_JOURNAL="$ORPHAN_HOME/state/$ORPHAN_ID.herdr-presentation"
+  ORPHAN_OLD_WT=$(remember_meta_worktree "$ORPHAN_META")
+  ORPHAN_OLD_WSID=$(grep '^herdr_workspace_id=' "$ORPHAN_META" | cut -d= -f2-)
+  ORPHAN_OLD_LABEL=$(lab workspace get "$ORPHAN_OLD_WSID" | jq -r '.result.workspace.label')
+  case "$ORPHAN_OLD_LABEL" in
+    "└ $ORPHAN_ID · p:"*) ;;
+    *) fail "$ORPHAN_ID first spawn was not projected: $ORPHAN_OLD_LABEL" ;;
+  esac
+  ORPHAN_OLD_TOKEN=${ORPHAN_OLD_LABEL##*' · p:'}
+
+  # Lose the projected workspace out from under the still-recorded task.
+  lab workspace close "$ORPHAN_OLD_WSID" >/dev/null 2>&1 \
+    || fail "$ORPHAN_ID fixture could not close its projected workspace"
+  if lab workspace get "$ORPHAN_OLD_WSID" >/dev/null 2>&1; then
+    fail "$ORPHAN_ID fixture did not actually lose its projected workspace"
+  fi
+  [ -f "$ORPHAN_JOURNAL" ] || fail "$ORPHAN_ID fixture lost the orphaned journal before the respawn"
+  [ -f "$ORPHAN_META" ] || fail "$ORPHAN_ID fixture lost its metadata before the respawn"
+
+  ORPHAN_FOCUS=$(focus_snapshot)
+  spawn_task "$ORPHAN_ID" "$ORPHAN_HOME" "$PROJECT_DIR" > "$TMP_ROOT/$ORPHAN_ID-respawn.out" 2> "$TMP_ROOT/$ORPHAN_ID-respawn.err" \
+    || fail "$ORPHAN_ID respawn over an orphaned journal failed: $(cat "$TMP_ROOT/$ORPHAN_ID-respawn.err")"
+  ORPHAN_NEW_WT=$(remember_meta_worktree "$ORPHAN_META")
+  ORPHAN_NEW_WSID=$(grep '^herdr_workspace_id=' "$ORPHAN_META" | cut -d= -f2-)
+  ORPHAN_NEW_LABEL=$(lab workspace get "$ORPHAN_NEW_WSID" | jq -r '.result.workspace.label')
+  [ "$ORPHAN_NEW_WSID" != "$ORPHAN_OLD_WSID" ] \
+    || fail "$ORPHAN_ID respawn claimed the closed workspace id"
+  case "$ORPHAN_NEW_LABEL" in
+    "└ $ORPHAN_ID · p:"*) ;;
+    *) fail "$ORPHAN_ID respawn fell back to the flat $ORPHAN_PARENT_LABEL container instead of a new nested space: $ORPHAN_NEW_LABEL" ;;
+  esac
+  ORPHAN_NEW_TOKEN=${ORPHAN_NEW_LABEL##*' · p:'}
+  [ "$ORPHAN_NEW_TOKEN" != "$ORPHAN_OLD_TOKEN" ] \
+    || fail "$ORPHAN_ID respawn reused the orphaned projection token"
+  [ "$(grep '^version=' "$ORPHAN_JOURNAL")" = version=2 ] \
+    || fail "$ORPHAN_ID respawn did not publish a fresh exact restart binding"
+  [ "$(grep '^projection_id=' "$ORPHAN_JOURNAL" | cut -d= -f2-)" = "$ORPHAN_NEW_TOKEN" ] \
+    || fail "$ORPHAN_ID respawn left the journal bound to the orphaned projection"
+  ORPHAN_LIST_LABELS=$(lab workspace list | jq -r '.result.workspaces[].label')
+  printf '%s\n' "$ORPHAN_LIST_LABELS" \
+    | grep -Fx "$ORPHAN_PARENT_LABEL" >/dev/null 2>&1 \
+    || fail "$ORPHAN_ID respawn lost its owning parent workspace $ORPHAN_PARENT_LABEL"
+  ORPHAN_PARENT_INDEX=$(printf '%s\n' "$ORPHAN_LIST_LABELS" | grep -nFx "$ORPHAN_PARENT_LABEL" | cut -d: -f1)
+  ORPHAN_CHILD_INDEX=$(printf '%s\n' "$ORPHAN_LIST_LABELS" | grep -nFx "$ORPHAN_NEW_LABEL" | cut -d: -f1)
+  [ -n "$ORPHAN_PARENT_INDEX" ] && [ -n "$ORPHAN_CHILD_INDEX" ] && [ "$ORPHAN_CHILD_INDEX" -gt "$ORPHAN_PARENT_INDEX" ] \
+    || fail "$ORPHAN_ID respawn was not ordered under its owning parent $ORPHAN_PARENT_LABEL"
+  assert_focus_is "$ORPHAN_FOCUS" "$ORPHAN_ID respawn over an orphaned journal"
+
+  teardown_task "$ORPHAN_ID" "$ORPHAN_HOME" > "$TMP_ROOT/$ORPHAN_ID-teardown.out" 2> "$TMP_ROOT/$ORPHAN_ID-teardown.err" \
+    || fail "$ORPHAN_ID teardown after re-projection failed: $(cat "$TMP_ROOT/$ORPHAN_ID-teardown.err")"
+  [ ! -e "$ORPHAN_JOURNAL" ] \
+    || fail "$ORPHAN_ID teardown after re-projection did not retire its journal"
+  "$REAL_TREEHOUSE" return --force "$ORPHAN_OLD_WT" >/dev/null 2>&1 || true
+  "$REAL_TREEHOUSE" return --force "$ORPHAN_NEW_WT" >/dev/null 2>&1 || true
+done
+pass "real Herdr lab: a lost projected workspace re-projects under its own parent in primary and secondmate homes"
+
 # Two homes recovering concurrently serialize on the named session lock and
 # each replace only their own exact husk.
 PRIMARY_WAVE_ID=resume-wave-primary

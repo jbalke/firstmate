@@ -408,6 +408,22 @@ The projected spawn in that run used the historical empty opt-in file, so a home
 One concurrent cross-home recovery case refused under contention on a loaded machine and passed on an immediate rerun; recovery-path presentation lock contention is a deliberate hard refusal rather than a flat fallback, which default-on now makes reachable from any Herdr home.
 That run measured the default-on projection on Herdr 0.8.0 only, while the focus-flash regression below was last run on 0.7.5 before the flip, so neither run covered a defective release under default-on projection; the version floor and the focus-flash suite's Part C close that gap.
 
+The projection suite ran again on 2026-08-23 against Herdr 0.8.2 protocol 20, for the orphaned-journal re-projection guarantee: a projected workspace lost outside exact-pane cleanup leaves its journal behind, and the next spawn of that task must project a new nested space under its own parent instead of degrading to the flat layout permanently.
+
+```sh
+HERDR_LAB_HELPER=bin/fm-herdr-lab.sh \
+  tests/fm-backend-herdr-presentation-e2e.test.sh
+```
+
+Observed guarantee, exercised in a primary home and in a secondmate home in the same run:
+
+```text
+ok - real Herdr lab: a lost projected workspace re-projects under its own parent in primary and secondmate homes
+ok - real Herdr lab validation completed on Herdr 0.8.2 with the default-session tripwire intact
+```
+
+Before that change the same fixture recorded `respawn landed in: w1 firstmate` for the primary home, proving the degradation was never secondmate-specific.
+
 The restored-shell session-start cleanup ran on 2026-07-24 against Herdr 0.7.5 protocol 17:
 
 ```sh

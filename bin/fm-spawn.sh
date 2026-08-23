@@ -77,6 +77,10 @@
 #   upgrades its attempt journal with exact home, session, workspace, tab, pane,
 #   parent, and label bindings. On a same-identity restart, that complete binding
 #   plus authoritative metadata may replace one exact agent-free husk in place.
+#   When no workspace bearing that journal's token survives at all, the orphaned
+#   journal is retired and the task projects a new nested space exactly as a
+#   first spawn does, so a projected workspace lost outside exact-pane teardown
+#   does not strand the task in the flat layout for good.
 #   The journal, visible token, and labels alone are never endpoint or ownership
 #   authority, and every ambiguous recovery stays on the flat fallback after
 #   duplicate-agent risk is independently absent. Treehouse allocation and task
@@ -1904,6 +1908,7 @@ case "$BACKEND" in
     fi
     HERDR_PRESENTATION_JOURNAL=$(fm_backend_herdr_projection_journal_path "$STATE" "$ID")
     HERDR_PROJECTED=0
+    HERDR_PROJECT_FRESH=0
     if [ "$KIND" != secondmate ] && fm_backend_herdr_presentation_enabled "$CONFIG" "$STATE"; then
       HERDR_SES=$(fm_backend_herdr_session)
       HERDR_PARENT_LABEL=$(FM_HOME="$HERDR_LABEL_HOME" fm_backend_herdr_workspace_label)
@@ -1921,7 +1926,18 @@ case "$BACKEND" in
         fi
         fm_backend_herdr_projection_recovery_allows_flat \
           "$HERDR_SES" "$HERDR_PRESENTATION_JOURNAL" "$ID" || exit 1
-        if [ "${HERDR_RECOVERY_BACKEND:-}" = herdr ]; then
+        if [ "${FM_BACKEND_HERDR_PROJECTION_RECOVERY_MATCHES:-}" = 0 ]; then
+          # Nothing bearing this journal's token survives, so there is no husk to
+          # reclaim and no ambiguity to preserve: the two guards above already
+          # proved the recorded endpoint and every token match agent-free. Retire
+          # the orphaned journal and take the ordinary fresh-projection path, or
+          # this task spends the rest of its life as a flat tab inside whichever
+          # workspace its home owns - the first spawn's nesting is unrecoverable
+          # once its projected workspace is gone.
+          rm -f "$HERDR_PRESENTATION_JOURNAL"
+          HERDR_PROJECT_FRESH=1
+          spawn_herdr_presentation_order_lock_release
+        elif [ "${HERDR_RECOVERY_BACKEND:-}" = herdr ]; then
           set +e
           FM_HOME="$HERDR_LABEL_HOME" fm_backend_herdr_projection_reclaim_task \
             "$HERDR_SES" "$HERDR_PRESENTATION_JOURNAL" "$ID" "$HERDR_LABEL_HOME" \
@@ -1950,6 +1966,9 @@ case "$BACKEND" in
           spawn_herdr_presentation_order_lock_release
         fi
       elif [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
+        HERDR_PROJECT_FRESH=1
+      fi
+      if [ "$HERDR_PROJECT_FRESH" = 1 ]; then
         # Session lock path resolution and exact parent binding both need a
         # live named-session socket before journal publication.
         if ! fm_backend_herdr_server_ensure "$HERDR_SES"; then

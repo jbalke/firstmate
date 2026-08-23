@@ -90,7 +90,8 @@ A secondmate agent itself always stays in its ordinary parent workspace; only ch
 An unconverged opt-out keeps the default projection in that home until convergence.
 
 Presentation is a best-effort visual projection, never task ownership or lifecycle authority.
-Only a fresh task with neither metadata nor an existing presentation journal is eligible for projected creation.
+A fresh task with neither metadata nor an existing presentation journal is eligible for projected creation.
+So is a task whose journal is orphaned, meaning no workspace bearing its token survives: that journal is retired and the task projects afresh, because a projected workspace lost outside exact-pane cleanup would otherwise leave the task flat for the rest of its life.
 Firstmate atomically publishes a three-field version 1 journal containing a random 128-bit base64url token before asking Herdr to create anything.
 After the new workspace converges to one exact task endpoint beneath one exact parent workspace id, the journal advances to a version 2 binding that records the physical home, named session, endpoint, parent, and immutable expected labels.
 Another parent with the same presentation label does not prevent publication or participate in restart reclaim.
@@ -129,13 +130,14 @@ Missing or malformed endpoint identity and missing confirmation machinery are am
 If lock, snapshot, pane identity, or restoration is ambiguous, cleanup warns and preserves the journal for manual inspection.
 
 Recovery is deliberately conservative and presentation-only.
-An existing journal suppresses another projected create.
+An existing journal suppresses another projected create for as long as a workspace bearing its token survives.
 Before any recovery mutation, Firstmate holds both the task spawn lock and the named-session presentation lock.
 A same-identity version 2 binding may replace one exact agent-free restart husk in place only when the physical home, session, metadata endpoint, unique token match, workspace shape and labels, parent identity and placement, and non-target focus snapshot all agree.
 The replacement tab and pane are created and verified before the old pane is rechecked and closed, then the journal advances atomically to the replacement endpoint before metadata publication.
 The reclaim path never moves, closes, deletes, or renames a workspace and never touches a parent, sibling, captain, or foreign pane.
 A failed replacement rolls back only the exact response-derived new pane when focus-safe verification permits it.
-Version 1 journals, dead or missing panes, duplicate or absent tokens, renamed or detached spaces, cross-home mismatches, inconsistent endpoint bindings, active target tabs, and ambiguous identity or focus fall back flat without mutating the old projection when duplicate-agent risk is positively absent.
+Version 1 journals, dead or missing panes, duplicate tokens, renamed or detached spaces, cross-home mismatches, inconsistent endpoint bindings, active target tabs, and ambiguous identity or focus fall back flat without mutating the old projection when duplicate-agent risk is positively absent.
+An absent token is the one recovery outcome that re-projects rather than falling back, and only after the same duplicate-agent proof: nothing bearing the token is left to preserve, adopt, or contradict.
 A live or unknown recorded or token-matched endpoint refuses duplicate launch.
 
 Locked session start has one narrower cleanup for a restored projected child that is no longer current task state.
