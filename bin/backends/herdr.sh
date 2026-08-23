@@ -2420,11 +2420,20 @@ fm_backend_herdr_projection_reclaim_task() {  # <session> <journal> <task-id> <h
 # fm_backend_herdr_projection_recovery_allows_flat: inspect an existing
 # journal's exact token matches without adopting, reusing, renaming, closing,
 # or deleting anything.
-# Missing matches safely degrade to the normal flat workspace.
+# Missing matches safely degrade: nothing survives to reclaim, so the caller may
+# retire the orphaned journal and project afresh.
 # One or more matches allow flat fallback only when every pane is positively
 # dead or agent-free; a live or unknown pane refuses a duplicate launch.
+# Sets FM_BACKEND_HERDR_PROJECTION_RECOVERY_MATCHES to the surviving count on a
+# 0 return, and to the empty string on every refusal.
 fm_backend_herdr_projection_recovery_allows_flat() {  # <session> <journal> <task-id>
   local session=$1 journal=$2 id=$3 token list wsids count wsid panes pane_ids pane state
+  # How many token-bearing workspaces survive, for a caller that must tell an
+  # orphaned journal (0 - nothing to reclaim, so a fresh projection is the only
+  # way back to a nested space) from a reclaimable husk. Left unset on every
+  # refusal so a stale count can never be read as a verdict.
+  # shellcheck disable=SC2034  # bin/fm-spawn.sh consumes this out-parameter
+  FM_BACKEND_HERDR_PROJECTION_RECOVERY_MATCHES=""
   token=$(fm_backend_herdr_projection_journal_token "$journal" "$id") || {
     echo "error: malformed herdr presentation journal for $id; refusing duplicate launch" >&2
     return 1
@@ -2445,7 +2454,9 @@ fm_backend_herdr_projection_recovery_allows_flat() {  # <session> <journal> <tas
     '.result.workspaces[]? | select((.label | type) == "string" and (.label | endswith($suffix))) | .workspace_id' 2>/dev/null)
   count=$(printf '%s\n' "$wsids" | awk 'NF { n += 1 } END { print n + 0 }')
   if [ "$count" -eq 0 ]; then
-    echo "warning: no exact herdr presentation token match for $id; leaving any stale space untouched and spawning flat" >&2
+    echo "warning: no exact herdr presentation token match for $id; its projected space is gone and the journal is orphaned" >&2
+    # shellcheck disable=SC2034  # bin/fm-spawn.sh consumes this out-parameter
+    FM_BACKEND_HERDR_PROJECTION_RECOVERY_MATCHES=0
     return 0
   fi
   if [ "$count" -gt 1 ]; then
@@ -2479,6 +2490,8 @@ EOF
 $wsids
 EOF
   echo "warning: quarantined herdr presentation for $id is dead or agent-free; exact bound reclaim may proceed, otherwise spawning flat" >&2
+  # shellcheck disable=SC2034  # bin/fm-spawn.sh consumes this out-parameter
+  FM_BACKEND_HERDR_PROJECTION_RECOVERY_MATCHES=$count
   return 0
 }
 
