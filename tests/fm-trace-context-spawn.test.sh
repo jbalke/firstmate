@@ -321,6 +321,44 @@ test_unsafe_delivery_refuses_to_append_launch() {
   pass "uncleared TRACEPARENT input stops before the launch command is appended"
 }
 
+# assert_launch_clear_is_shell_agnostic: the emitted launch command must clear an
+# inherited TRACEPARENT with a real program, never a shell builtin. The pane
+# shell is the operator's login shell, and `unset` is not a fish builtin, so a
+# builtin-based clear silently left the previous incarnation's carrier in place
+# and reported nothing (docs/verification/trace-context.md).
+assert_launch_clear_is_shell_agnostic() {  # <launch-log>
+  local log=$1 line
+  line=$(grep -m1 'TRACEPARENT.*claude' "$log") \
+    || fail "no launch command carrying a TRACEPARENT clear was emitted"
+  case "$line" in
+    "env -u TRACEPARENT "*) ;;
+    *) fail "launch clear must start with env -u TRACEPARENT, got: $line" ;;
+  esac
+  case " $line " in
+    *" unset "*|*" export "*|*" set "*|*" setenv "*)
+      fail "launch command must carry no shell-builtin-only syntax: $line" ;;
+  esac
+}
+
+# Executable proof of WHY the assertion above is a program and not a builtin:
+# under a login shell with no `unset` builtin the old form leaked the carrier,
+# while `env -u` clears it. Self-skips where fish is not installed.
+test_env_u_clears_the_carrier_where_a_builtin_cannot() {
+  local fish leaked cleared
+  fish=$(command -v fish 2>/dev/null) || {
+    echo "# skip: fish is not installed; the shell-agnostic clear stays asserted structurally"
+    return 0
+  }
+  leaked=$(TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 \
+    "$fish" -c "unset TRACEPARENT; sh -c 'printf %s \"\$TRACEPARENT\"'" 2>/dev/null)
+  [ -n "$leaked" ] \
+    || fail "expected the builtin form to leak the carrier under fish; the regression premise no longer holds"
+  cleared=$(TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 \
+    "$fish" -c "env -u TRACEPARENT sh -c 'printf %s \"\$TRACEPARENT\"'" 2>/dev/null)
+  [ -z "$cleared" ] || fail "env -u TRACEPARENT failed to clear the carrier under fish: $cleared"
+  pass "env -u clears the pane carrier under a login shell with no unset builtin"
+}
+
 test_failed_metadata_append_unsets_carrier_and_still_launches() {
   local rec out status meta
   rec=$(make_spawn_case tc-metadata-failure)
@@ -337,8 +375,9 @@ test_failed_metadata_append_unsets_carrier_and_still_launches() {
 
   ! grep -q '^traceparent=' "$meta" \
     || fail "failed metadata append must not leave a traceparent= claim in meta"
-  grep -q '^unset TRACEPARENT; .*claude' "$LAUNCH_LOG" \
-    || fail "failed metadata append must unset TRACEPARENT in the launch command"
+  grep -q '^env -u TRACEPARENT .*claude' "$LAUNCH_LOG" \
+    || fail "failed metadata append must clear TRACEPARENT in the launch command"
+  assert_launch_clear_is_shell_agnostic "$LAUNCH_LOG"
   pass "failed traceparent metadata append removes the carrier from the launched task"
 }
 
@@ -565,6 +604,7 @@ test_disabled_writes_and_injects_neither
 test_failed_delivery_omits_metadata_and_still_launches
 test_unsafe_delivery_refuses_to_append_launch
 test_failed_metadata_append_unsets_carrier_and_still_launches
+test_env_u_clears_the_carrier_where_a_builtin_cannot
 test_duplicate_secondmate_spawn_does_not_converge_trace_context
 test_relaunch_reuses_recorded_carrier
 test_session_start_freezes_env_override_and_ignores_later_edits

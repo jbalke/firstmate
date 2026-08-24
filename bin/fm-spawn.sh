@@ -2786,8 +2786,23 @@ if [ "$KIND" = secondmate ]; then
   # injected carrier and this on/off snapshot are guaranteed to agree.
   LAUNCH="FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME=$sq_primary_home FM_HOME=$sq_home FM_TRACE_CONTEXT=$SPAWN_TRACE_EFFECTIVE FM_SUPERVISION_MODEL=$supervision_model $LAUNCH"
 fi
+# spawn_clear_traceparent: prefix the launch command with a shell-AGNOSTIC clear
+# of any TRACEPARENT the reused pane shell still exports, so the replacement
+# child cannot inherit an identity its metadata does not record.
+#
+# A shell builtin cannot be used here. The pane shell is the operator's login
+# shell, and `unset` is not a fish builtin: under fish the clear printed an
+# unknown-command error into the pane (which nothing reads) and silently left
+# the previous incarnation's carrier in place. `env -u` is a real program and
+# composes with both launch prefixes that actually occur - a leading
+# `env -u ...` invocation and a run of `VAR=value` assignments, which env
+# applies itself - so it is correct under every login shell.
+spawn_clear_traceparent() {
+  LAUNCH="env -u TRACEPARENT $LAUNCH"
+}
+
 if [ -z "$SPAWN_TRACEPARENT" ] && [ "$RELAUNCH" -eq 1 ]; then
-  LAUNCH="unset TRACEPARENT; $LAUNCH"
+  spawn_clear_traceparent
 fi
 
 spawn_record_traceparent() {
@@ -2819,7 +2834,7 @@ spawn_send_text_line "$T" "export GOTMPDIR=$TASK_TMP/gotmp"
 if [ -n "$SPAWN_TRACEPARENT" ]; then
   if spawn_send_text_line "$T" "export TRACEPARENT=$SPAWN_TRACEPARENT"; then
     if ! spawn_record_traceparent; then
-      LAUNCH="unset TRACEPARENT; $LAUNCH"
+      spawn_clear_traceparent
     fi
   else
     TRACE_SEND_STATUS=$?
@@ -2827,17 +2842,28 @@ if [ -n "$SPAWN_TRACEPARENT" ]; then
       echo "error: trace-context input could not be cleared for $W; refusing to append the launch command" >&2
       exit 1
     fi
-    LAUNCH="unset TRACEPARENT; $LAUNCH"
+    spawn_clear_traceparent
   fi
 fi
 sleep 0.3
-spawn_send_literal "$T" "$LAUNCH"
+# Both halves of the launch - typing the command and submitting it - are
+# verified. An unreported delivery failure is the worst outcome available here:
+# the endpoint record is already published, so the caller (and every supervisor
+# reading it) would believe a worker is running while the pane sits at a shell
+# prompt, and the only later symptom is a task that never reports anything.
+if ! spawn_send_literal "$T" "$LAUNCH"; then
+  echo "error: the launch command could not be delivered to $W; no agent was started" >&2
+  exit 1
+fi
 sleep 0.3
 if [ "${HERDR_PROJECTED:-0}" -eq 1 ]; then
   HERDR_PROJECTION_ABORT_CLEANUP=0
   spawn_herdr_presentation_order_lock_release
 fi
-spawn_send_key "$T" Enter
+if ! spawn_send_key "$T" Enter; then
+  echo "error: the launch command was typed into $W but could not be submitted; no agent was started" >&2
+  exit 1
+fi
 if [ "$HARNESS" = kimi ]; then
   if ! kimi_wait_for_ready; then
     kimi_spawn_fail "kimi did not show a verified ready signal before brief delivery"
