@@ -10,6 +10,19 @@ set -u
 # shellcheck source=tests/secondmate-helpers.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/secondmate-helpers.sh"
 
+# bin/fm-task-data-lib.sh owns where a scaffolded brief lands; a secondmate
+# charter carries no project, so it groups under FM_TASK_DATA_NO_PROJECT. Resolve
+# the leaked-charter paths through the owner instead of restating the layout.
+# shellcheck source=bin/fm-task-data-lib.sh disable=SC1091
+. "$ROOT/bin/fm-task-data-lib.sh"
+
+# The charter brief path a --secondmate scaffold would write for <id>.
+charter_brief_path() {  # <home> <id>
+  local dir
+  dir=$(fm_task_data_dir "$1/data" "$2") || fail "could not resolve the charter data dir for $2"
+  printf '%s\n' "$dir/brief.md"
+}
+
 TMP_ROOT=$(fm_test_tmproot fm-secondmate-safety)
 export FM_BACKEND=tmux
 
@@ -391,7 +404,7 @@ test_home_seed_does_not_return_unsafe_acquired_home() {
 }
 
 test_home_seed_rolls_back_failed_clone() {
-  local home subhome err missing_remote
+  local home subhome err missing_remote charter_brief
   home="$TMP_ROOT/rollback-home"
   subhome="$TMP_ROOT/rollback-subhome"
   err="$TMP_ROOT/rollback-home.err"
@@ -416,7 +429,8 @@ EOF
   [ ! -e "$subhome" ] || fail "failed seed left the newly created secondmate home behind"
   [ ! -e "$subhome/.fm-secondmate-home" ] || fail "failed seed left a subhome marker"
   [ ! -e "$subhome/projects/alpha" ] || fail "failed seed left a previously cloned project"
-  [ ! -e "$home/data/rollback/brief.md" ] || fail "failed seed left a generated charter brief"
+  charter_brief=$(charter_brief_path "$home" rollback)
+  [ ! -e "$charter_brief" ] || fail "failed seed left a generated charter brief at $charter_brief"
   if [ -f "$home/data/secondmates.md" ] && grep -F -- '- rollback ' "$home/data/secondmates.md" >/dev/null; then
     fail "failed seed left a registry route"
   fi
@@ -424,7 +438,7 @@ EOF
 }
 
 test_home_seed_refuses_missing_filled_charter() {
-  local home subhome err
+  local home subhome err charter_brief
   home="$TMP_ROOT/missing-charter-home"
   subhome="$TMP_ROOT/missing-charter-subhome"
   err="$TMP_ROOT/missing-charter.err"
@@ -439,7 +453,8 @@ test_home_seed_refuses_missing_filled_charter() {
   grep -F 'no filled secondmate charter brief' "$err" >/dev/null \
     || fail "seed did not explain missing filled charter refusal"
   [ ! -e "$subhome" ] || fail "missing charter seed left a generated subhome"
-  [ ! -e "$home/data/design/brief.md" ] || fail "missing charter seed generated a placeholder charter"
+  charter_brief=$(charter_brief_path "$home" design)
+  [ ! -e "$charter_brief" ] || fail "missing charter seed generated a placeholder charter at $charter_brief"
   pass "home seeding refuses direct seed without filled charter text"
 }
 
@@ -1308,7 +1323,7 @@ test_home_seed_refuses_unsafe_leaf_files() {
 }
 
 test_home_seed_preserves_existing_parent_binding() {
-  local parent_a parent_b child child_abs before err out parent_a_abs parent_b_abs leaf
+  local parent_a parent_b child child_abs before err out parent_a_abs parent_b_abs leaf charter_brief
   parent_a="$TMP_ROOT/reseed-parent-a"
   parent_b="$TMP_ROOT/reseed-parent-b"
   child="$TMP_ROOT/reseed-parent-child"
@@ -1340,8 +1355,9 @@ test_home_seed_preserves_existing_parent_binding() {
     cmp -s "$before/$leaf" "$child/$leaf" \
       || fail "mismatched-parent reseed changed $leaf"
   done
-  [ ! -e "$parent_b/data/mate/brief.md" ] \
-    || fail "mismatched-parent reseed created a replacement parent brief"
+  charter_brief=$(charter_brief_path "$parent_b" mate)
+  [ ! -e "$charter_brief" ] \
+    || fail "mismatched-parent reseed created a replacement parent brief at $charter_brief"
   [ ! -e "$parent_b/data/secondmates.md" ] \
     || fail "mismatched-parent reseed registered the child to the replacement parent"
 
