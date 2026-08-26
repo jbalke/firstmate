@@ -21,6 +21,9 @@ set -u
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-tangle-lib.sh"
 
+# shellcheck source=bin/fm-task-data-lib.sh disable=SC1091
+. "$ROOT/bin/fm-task-data-lib.sh"
+
 TMP_ROOT=$(fm_test_tmproot fm-tangle-guard)
 fm_git_identity fmtest fmtest@example.invalid
 
@@ -129,7 +132,7 @@ test_brief_assertion_precedes_branch() {
   home="$TMP_ROOT/brief-home"
   mkdir -p "$home/data"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" tangle-brief-cc3 alpha --mode no-mistakes >/dev/null 2>&1
-  brief="$home/data/tasks/alpha/tangle-brief-cc3/brief.md"
+  brief="$(fm_task_data_dir "$home/data" tangle-brief-cc3 alpha)/brief.md"
   assert_present "$brief" "brief was not scaffolded"
   assert_grep "blocked: launched in primary checkout, not an isolated worktree" "$brief" \
     "brief is missing the isolation blocked-status contract"
