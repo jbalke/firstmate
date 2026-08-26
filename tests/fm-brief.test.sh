@@ -232,6 +232,13 @@ test_ship_modes_generate_clean_briefs() {
       "$id: report requirement lost the size-is-not-the-test rule"
     assert_grep "Write any screenshot or recording you take to support a claim in the PR body into \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
       "$id: definition of done lost the saved-visual-evidence requirement"
+    # Rule 2 is an exhaustive whitelist of writes outside the worktree, and
+    # acknowledging a steering-inbox message is exactly such a write, so the
+    # two must never contradict each other.
+    assert_grep "$home/state/$id.inbox" "$brief" \
+      "$id: brief lost the steering-inbox receive-and-ack section"
+    assert_grep "your instruction inbox acknowledgements below" "$brief" \
+      "$id: rule 2 forbids the inbox acknowledgement the same brief requires"
   done
   pass "fm-brief.sh: every ship mode generates cleanly and requires a durable report plus saved evidence"
 }
@@ -480,7 +487,7 @@ test_documented_global_replace_leaves_the_herdr_gate_intact() {
     else
       FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" firstmate --mode no-mistakes >/dev/null 2>&1
     fi
-    brief="$home/data/$id/brief.md"
+    brief="$(task_dir "$home" firstmate "$id")/brief.md"
     assert_present "$brief" "$kind brief was not scaffolded"
     count=$(grep -c -F '{TASK}' "$brief")
     [ "$count" = 1 ] \
@@ -763,6 +770,10 @@ test_scout_and_secondmate_scaffold() {
   assert_grep "report.md" "$brief" "scout brief must point at the report deliverable"
   assert_grep "you may host the Lavish review loop yourself" "$brief" \
     "scout brief must mention the option to host a Lavish review loop"
+  assert_grep "$BRIEF_HOME/state/brief-scout-q6.inbox" "$brief" \
+    "scout brief lost the steering-inbox receive-and-ack section"
+  assert_grep "your instruction inbox acknowledgements, all described below" "$brief" \
+    "scout rule 2 forbids the inbox acknowledgement the same brief requires"
 
   FM_SECONDMATE_CHARTER='Supervise the alpha domain.' \
     FM_HOME="$BRIEF_HOME" "$ROOT/bin/fm-brief.sh" brief-sm-q6 --secondmate alpha >/dev/null 2>&1 \

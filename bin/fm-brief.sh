@@ -358,7 +358,7 @@ The report is the only thing that survives, so anything worth keeping must be in
 
 # Rules
 1. Never push to any remote and never open a PR.
-2. Stay inside this worktree; the only files you may write outside it are the report and the status file below.
+2. Stay inside this worktree; the only files you may write outside it are the report, the status file, and your instruction inbox acknowledgements, all described below.
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
@@ -474,7 +474,7 @@ If the top-level path is the primary checkout or not the worktree you were launc
 
 # Rules
 $RULE1
-2. Stay inside this worktree; the only files you may write outside it are the status file in rule 4 and anything under your task data directory \`$TASK_DIR/\` (the report and saved evidence below).
+2. Stay inside this worktree; the only files you may write outside it are the status file in rule 4, your instruction inbox acknowledgements below, and anything under your task data directory \`$TASK_DIR/\` (the report and saved evidence below).
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
