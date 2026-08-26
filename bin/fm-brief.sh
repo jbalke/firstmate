@@ -56,6 +56,11 @@
 # Every scaffold also carries the steering-inbox receive-and-ack section:
 # process state/<id>.inbox/*.msg in order and acknowledge each by moving it to
 # handled/ (record, doorbell, and ladder owned by bin/fm-task-inbox-lib.sh).
+# That acknowledgement is a write outside the worktree, so every scaffold whose
+# rule 2 enumerates the permitted outside writes must name it too: a brief that
+# demands a write its own rule 2 forbids leaves a literal-minded worker unable to
+# acknowledge, so the watcher re-rings it and eventually reports it stuck.
+# tests/fm-brief.test.sh pins that invariant against the generated brief text.
 # Ship tasks include a project-memory section so durable project-intrinsic
 # learnings can be committed to AGENTS.md through the project's delivery path;
 # it carries the AGENTS.md authoring bar (widely useful knowledge only, pointers
