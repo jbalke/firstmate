@@ -1,0 +1,33 @@
+== 1. scaffold the brief the worker actually reads ==
+scaffolded: /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/data/tasks/firstmate/steer-ack-e2e/brief.md (ship, mode=no-mistakes; replace {TASK})
+
+== 2. rule 2 (whitelist of writes outside the worktree) as generated ==
+19:2. Run `no-mistakes doctor`; if it reports the repo is not initialized here, run `no-mistakes init`.
+23:2. Stay inside this worktree; the only files you may write outside it are the status file in rule 4, your instruction inbox acknowledgements below, and anything under your task data directory `/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/data/tasks/firstmate/steer-ack-e2e/` (the report and saved evidence below).
+
+== 3. the acknowledgement the same brief requires ==
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox'/NNN.msg '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox'/handled/`.
+The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+
+
+== 4. firstmate steers the worker (durable record + doorbell) ==
+record: state/steer-ack-e2e.inbox/001.msg
+Firstmate instruction waiting: list /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox/*.msg and, in numeric order, read and act on each, then mv each handled file to /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox/handled/.
+== 5. worker has not acknowledged yet: ladder rings, then calls it stale ==
+poll 1 -> ring state/steer-ack-e2e.inbox/001.msg
+poll 2 -> ring state/steer-ack-e2e.inbox/001.msg
+poll 3 -> escalate state/steer-ack-e2e.inbox/001.msg 2
+  (this is the stuck-crewmate escalation a never-acking worker gets)
+
+== 6. worker runs the brief's own mv command, verbatim ==
+$ mv '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox'/001.msg '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox'/handled/
+/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox:
+handled
+
+/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-ack-e2e.GglUHd/state/steer-ack-e2e.inbox/handled:
+001.msg
+
+== 7. after the acknowledgement the ladder is quiet, no escalation ==
+poll -> quiet

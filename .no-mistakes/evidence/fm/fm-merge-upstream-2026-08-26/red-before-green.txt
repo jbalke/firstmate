@@ -1,0 +1,21 @@
+Red-before-green for the two fix commits (each defect reproduced on the tree that predates its fix)
+
+1) a6d4ac1, defect 1 - merge commit 31f8df5 bin/fm-brief.sh + today's tests/fm-brief.test.sh:
+   not ok - brief-nomistakes-a1: rule 2 forbids the inbox acknowledgement the same brief requires
+
+2) a6d4ac1, defect 2 - merge commit 31f8df5 with its own upstream {TASK}-fill test at the flat data/<id>/ path:
+   not ok - ship brief was not scaffolded
+
+3) 3e6516f - pre-merge base 6b84058 with its own fixtures (both failures predate the merge):
+   tests/fm-gotmp.test.sh        not ok - teardown exited non-zero with a valid tasktmp
+   tests/fm-tangle-guard.test.sh not ok - brief was not scaffolded
+
+Same four assertions on this branch (955a8be):
+ok - fm-brief.sh: every ship mode generates cleanly and requires a durable report plus saved evidence
+ok - fm-brief.sh: the documented {TASK} fill cannot corrupt the Herdr safety gate
+ok - fm-brief: scout and secondmate code paths still scaffold well-formed briefs
+ok - fm-teardown removes the dir pointed to by tasktmp= in meta
+ok - fm-teardown skips gracefully when tasktmp= is absent (backward compat)
+ok - fm-teardown skips gracefully when tasktmp= points to a nonexistent dir
+ok - fm-brief: ship brief asserts worktree isolation before the branch step
+FM_TEST_SUMMARY total=3 failed=0 skipped_gate=0 duration_ms=31001
