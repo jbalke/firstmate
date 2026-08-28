@@ -799,6 +799,59 @@ test_parked_scout_decision_stays_pending() {
   pass "a scout still parked at a decision stays pending (terminal clear does not over-fire)"
 }
 
+# A sampled remote home that answers rc=0 with non-JSON on stdout must degrade to
+# that home's own fallback record. Before the rejected-summary reset, the rejected
+# blob reached the fallback record's jq --argjson and collapsed the entire
+# registered-secondmate aggregation, failing the whole snapshot.
+test_malformed_home_summary_degrades_only_that_home() {
+  local home fakebin out
+  home=$(make_home malformed-home-summary)
+  fakebin=$(make_fakebin "$home")
+  cat > "$fakebin/fake-ssh" <<'SH'
+#!/usr/bin/env bash
+set -u
+host=
+prev=
+for arg in "$@"; do
+  if [ "$prev" = "--" ]; then host=$arg; break; fi
+  prev=$arg
+done
+case "$host" in
+  junk-host)
+    # A remote rc file echoing to stdout prepends junk to the payload.
+    printf 'rc=0\n{"schema":"fm-secondmate-home-summary.v1"\n'
+    ;;
+  good-host)
+    printf '%s\n' '{"schema":"fm-secondmate-home-summary.v1","generated":"2026-08-28T00:00:00Z","home":"/remote/good-home","valid":true,"reason":null,"invalidity":{"kind":null,"ids":[]},"state":"no_active_work","active_children":[],"decisions_open":[],"holds":[],"queued":[],"landed":[],"endpoints":[],"counts":{"active_children":0,"decisions_open":0,"holds":0,"queued":0,"landed":0,"endpoints":0},"omitted":[]}'
+    ;;
+esac
+exit 0
+SH
+  chmod +x "$fakebin/fake-ssh"
+  cat > "$home/data/secondmates.md" <<'EOF'
+- good-mate - good remote (host: good-host; root: /remote/root; home: /remote/good-home; scope: remote testing; projects: alpha; added 2026-08-02)
+- junk-mate - junk remote (host: junk-host; root: /remote/root; home: /remote/junk-home; scope: remote testing; projects: alpha; added 2026-08-02)
+EOF
+  out=$(PATH="$fakebin:$PATH" FM_HOME="$home" FM_SSH_BIN="$fakebin/fake-ssh" "$SNAPSHOT" --json) \
+    || fail "a malformed home summary must not fail the whole snapshot: $out"
+  printf '%s' "$out" | jq -e '
+    (.secondmate_current.records | length) == 2
+  ' >/dev/null || fail "both registered secondmate records must survive: $out"
+  printf '%s' "$out" | jq -e '
+    .secondmate_current.records[] | select(.id == "junk-mate")
+    | .home == "/remote/junk-home"
+      and .current.state == "unknown"
+      and .current.reason == "structured home snapshot was malformed or stale"
+      and .reconcile_inventory == null
+  ' >/dev/null || fail "a malformed home summary must degrade to that home's fallback record: $out"
+  printf '%s' "$out" | jq -e '
+    .secondmate_current.records[] | select(.id == "good-mate")
+    | .provenance.selected == "structured-home"
+      and .current.state == "no_active_work"
+  ' >/dev/null || fail "a healthy home must keep its structured record alongside a malformed one: $out"
+  pass "a malformed home summary degrades only that home, not the whole snapshot"
+}
+
 test_empty_fleet_json
 test_fixture_snapshot_json
 test_main_inventory_orphan_and_unstructured_disclosure
@@ -814,3 +867,4 @@ test_scout_reports_include_teardown_reports
 test_backlog_tasks_axi_forms_and_overrides
 test_view_renders_snapshot
 test_view_renders_dead_secondmate_agent_status
+test_malformed_home_summary_degrades_only_that_home

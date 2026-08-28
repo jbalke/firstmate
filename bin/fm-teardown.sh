@@ -108,8 +108,8 @@
 #     crew's worktree, so they are not orphaned by removing the worktree.
 #     conclude_task_no_mistakes_run attributes the active-or-most-recent run to
 #     THIS task only when its branch AND code identity (bin/fm-nm-run-lib.sh's
-#     fm_nm_head_matches_worktree, the same rule bin/fm-crew-state.sh uses) both
-#     match this worktree, then runs `no-mistakes axi abort --run <id>` for
+#     strict fm_nm_head_matches_worktree rule) both match this worktree, then
+#     runs `no-mistakes axi abort --run <id>` for
 #     that verified run instance. A run already terminal
 #     (an outcome is set) or not parked at a gate is left untouched. Idempotent:
 #     an already-aborted run reads back terminal and is skipped on retry.
@@ -2503,7 +2503,7 @@ cleanup_firstmate_home_children() {
       "$sub_state/$child_id.meta" "$sub_state/$child_id.pi-ext.ts" \
       "$sub_state/$child_id.grok-turnend-token" "$sub_state/$child_id.kimi-turnend-token" \
       "$sub_state/$child_id.muse-session" "$sub_state/$child_id.muse-session-current" \
-      "$sub_state/$child_id.cursor-session"
+      "$sub_state/$child_id.cursor-session" "$sub_state/$child_id.reconcile-nudged"
   done
 }
 
@@ -2820,7 +2820,8 @@ rm -f "$STATE/$ID.turn-ended" "$STATE/$ID.meta" \
   "$STATE/$ID.kimi-turnend-token" "$STATE/$ID.muse-session" \
   "$STATE/$ID.muse-session-current" "$STATE/$ID.cursor-session" \
   "$STATE/$ID.control-relaunch" "$STATE/$ID.control-relaunch.meta-prior" \
-  "$STATE/$ID.control-relaunch.brief-prior" "$STATE/$ID.control-relaunch.note"
+  "$STATE/$ID.control-relaunch.brief-prior" "$STATE/$ID.control-relaunch.note" \
+  "$STATE/$ID.reconcile-nudged"
 # The steering inbox (bin/fm-task-inbox-lib.sh) is runtime state for the
 # retired endpoint; teardown only runs after landing is confirmed, so any
 # leftover unhandled steer here is moot rather than unlanded work.
