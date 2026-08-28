@@ -1,0 +1,60 @@
+# Merge additivity proof (numstat symmetry)
+merge=554c5f5  fork-parent=7e0246a (origin/main)  upstream-parent=1fd7ea2 (upstream/main)
+
+## Overlapping files (changed on BOTH sides since merge-base)
+merge-base=07bf0c8556c70b5241516efad0e51f802484c748
+overlapping file count: 12
+.agents/skills/bearings/SKILL.md
+AGENTS.md
+README.md
+bin/fm-brief.sh
+bin/fm-fleet-snapshot.sh
+bin/fm-remote-home-seed.sh
+bin/fm-spawn.sh
+bin/fm-teardown.sh
+docs/architecture.md
+docs/remote-secondmates.md
+docs/verification/runtime-backends.md
+tests/fm-brief.test.sh
+
+## Symmetry check per overlapping file
+PASS means: numstat(merge vs fork-parent) == numstat(upstream-parent vs merge-base)
+        AND numstat(merge vs upstream-parent) == numstat(fork-parent vs merge-base)
+PASS .agents/skills/bearings/SKILL.md                     upstream-delta[20 9] fork-delta[1 1]
+PASS AGENTS.md                                            upstream-delta[5 4] fork-delta[6 3]
+PASS README.md                                            upstream-delta[1 1] fork-delta[1 1]
+PASS bin/fm-brief.sh                                      upstream-delta[2 1] fork-delta[48 9]
+PASS bin/fm-fleet-snapshot.sh                             upstream-delta[35 12] fork-delta[15 3]
+PASS bin/fm-remote-home-seed.sh                           upstream-delta[1 1] fork-delta[3 1]
+PASS bin/fm-spawn.sh                                      upstream-delta[56 2] fork-delta[60 9]
+PASS bin/fm-teardown.sh                                   upstream-delta[5 4] fork-delta[5 3]
+PASS docs/architecture.md                                 upstream-delta[23 10] fork-delta[1 1]
+PASS docs/remote-secondmates.md                           upstream-delta[12 4] fork-delta[1 1]
+PASS docs/verification/runtime-backends.md                upstream-delta[7 2] fork-delta[16 0]
+PASS tests/fm-brief.test.sh                               upstream-delta[6 2] fork-delta[66 28]
+
+overall symmetry: ALL-ADDITIVE
+
+## Conflict-marker scan of merged tree (tracked files)
+conflict markers found: 0
+
+## All 18 fork commits are ancestors of merge head
+ancestor  7e0246a Merge pull request #5 from jbalke/fm/fm-merge-upstream-2026-08-26
+ancestor  ec8dc67 no-mistakes(document): record brief rule-2 inbox-ack invariant, fix stale report path
+ancestor  955a8be no-mistakes(review): route test fixtures through fm-task-data-lib instead of literals
+ancestor  3e6516f test: give two fixtures the task-data layout they were never updated for
+ancestor  a6d4ac1 fix(brief): keep the steering inbox usable under the task-data rules
+ancestor  31f8df5 Merge remote-tracking branch 'upstream/main' into fm/fm-merge-upstream-2026-08-26
+ancestor  6b84058 Merge pull request #4 from jbalke/fm/fm-relaunch-unset-traceparent-fish
+ancestor  863a8ea fix(spawn): clear the pane trace carrier with env -u, not a shell builtin
+ancestor  19ff4a1 Merge pull request #3 from jbalke/fm/fm-secondmate-herdr-projection
+ancestor  99e87eb fix(bin): re-project a task whose projected workspace was lost
+ancestor  122ac50 Merge pull request #2 from jbalke/fm/fm-data-layout-and-prune
+ancestor  d470ea6 test: point secondmate brief assertions at the project-grouped path
+ancestor  596d0d1 fix(bin): name the real project when a spawn finds no brief
+ancestor  e0d07a9 fix(bin): key the protected set on task id, not project
+ancestor  c43bec3 feat(bin): let protect and unprotect take the same filters as prune
+ancestor  317b910 feat(bin): group task data by project and add a tool to prune it
+ancestor  7793eb3 Merge pull request #1 from jbalke/fm/fm-brief-report-and-evidence
+ancestor  a20ef70 feat(bin): require durable report and saved evidence from ship briefs
+fork commits checked: 18  all-present: YES

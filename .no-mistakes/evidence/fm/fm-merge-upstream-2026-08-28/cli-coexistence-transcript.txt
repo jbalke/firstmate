@@ -1,0 +1,44 @@
+# CLI coexistence transcript on the merged tree (586db47)
+
+## Fork-only surface (exists on origin/main, NOT on upstream/main)
+bin/fm-task-data.sh        origin/main:yes  upstream/main:no  merged:yes
+bin/fm-task-data-lib.sh    origin/main:yes  upstream/main:no  merged:yes
+
+$ bin/fm-task-data.sh --help
+fm-task-data.sh - list, archive, or prune the durable task data directories
+under a firstmate home's data/ (bin/fm-task-data-lib.sh owns their layout).
+
+Nothing else in firstmate ever deletes these folders, which is deliberate: the
+brief, the report, and the saved evidence are what outlive a task. This is the
+one tool that removes them, so every destructive path prints its plan first and
+does nothing without --yes.
+
+Usage:
+  fm-task-data.sh list [filters]
+  fm-task-data.sh prune [filters] [--images-only] [--archive <dir>] [--yes]
+                        [--include-protected]
+  fm-task-data.sh protect {<task-id>...|<filters>}
+  fm-task-data.sh unprotect {<task-id>...|<filters>}
+
+Filters (repeatable, and they compose - a folder must match every filter kind
+that was given, and any one value within a kind):
+  --project <name>      registry name, or _none for the no-project literal
+
+## Upstream-only surface (exists on upstream/main, NOT on origin/main)
+bin/fm-merge-outcome-lib.sh      origin/main:no  upstream/main:yes  merged:yes
+bin/fm-secondmate-reconcile.sh   origin/main:no  upstream/main:yes  merged:yes
+bin/fm-watch-triage.sh           origin/main:no  upstream/main:no  merged:no
+
+$ bin/fm-secondmate-reconcile.sh --help
+usage: fm-secondmate-reconcile.sh notify [--snapshot <file>|-]
+       fm-secondmate-reconcile.sh nudged <mate-id>
+
+notify   ask every secondmate home whose backlog disagrees with its own task
+         metadata to reconcile it, at most once per home per cooldown window.
+         Reads an fm-fleet-snapshot.v1 or fm-bearings.v1 document from
+         --snapshot (or runs fm-fleet-snapshot.sh --json when omitted).
+nudged   print the epoch second of the last reconcile nudge sent to <mate-id>.
+
+## Both sides live in one file: bin/fm-spawn.sh accepts both parents' flags
+$ bash -n bin/fm-spawn.sh bin/fm-brief.sh bin/fm-fleet-snapshot.sh bin/fm-send.sh bin/fm-pr-merge.sh && echo 'all merged scripts parse'
+all merged scripts parse

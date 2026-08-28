@@ -1,0 +1,47 @@
+### fm-secondmate-reconcile.test.sh (new from upstream 22fa6ed; absent on origin/main)
+-- exists on origin/main (7e0246a)? --
+ABSENT on origin/main -> must baseline against upstream/main
+
+-- on merged HEAD (586db47) --
+ok - the cooldown is per home, not fleet-wide
+ok - the reconcile ask expects no reply and stays out of a ladder that still rings ordinary steers
+ok - only a backlog-vs-metadata mismatch produces an ask
+ok - the parent asks and changes nothing inside the mate's home
+ok - a failed ask starts no cooldown, so the next run retries it
+not ok - a busy meta lock blocked the reconcile path
+HEAD exit=1
+
+-- baseline: pristine upstream/main tree (1fd7ea2) extracted to a temp dir --
+ok - the cooldown is per home, not fleet-wide
+ok - the reconcile ask expects no reply and stays out of a ladder that still rings ordinary steers
+ok - only a backlog-vs-metadata mismatch produces an ask
+ok - the parent asks and changes nothing inside the mate's home
+ok - a failed ask starts no cooldown, so the next run retries it
+not ok - a busy meta lock blocked the reconcile path
+upstream-baseline exit=1
+temp baseline tree removed
+
+### Spot-check of two of the six failures baselined against origin/main (7e0246a)
+-- fm-secondmate-harness on merged HEAD --
+ok - B19 bootstrap respawns before inherited-config reread
+ok - B25 spawn quarantines stale rereads without blocking relaunch
+ok - B24 bootstrap detect-only mode remains filesystem read-only
+HEAD exit=0
+-- fm-secondmate-harness on pristine origin/main tree --
+ok - B19 bootstrap respawns before inherited-config reread
+ok - B25 spawn quarantines stale rereads without blocking relaunch
+ok - B24 bootstrap detect-only mode remains filesystem read-only
+origin/main exit=0
+
+-- fm-backlog-handoff on merged HEAD --
+ok - registry entry without (home: ...) fails cleanly with has no home
+ok - handoff reports a moved item whose public commitment still binds this home
+ok - handoff says nothing about public commitments in a relay-free home
+HEAD exit=0
+-- fm-backlog-handoff on pristine origin/main tree --
+ok - registry entry without (home: ...) fails cleanly with has no home
+ok - handoff reports a moved item whose public commitment still binds this home
+ok - handoff says nothing about public commitments in a relay-free home
+origin/main exit=0
+
+temp origin/main baseline tree removed

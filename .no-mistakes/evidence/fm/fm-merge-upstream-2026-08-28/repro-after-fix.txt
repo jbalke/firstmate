@@ -1,0 +1,25 @@
+$ bin/fm-fleet-snapshot.sh --json   # (registered secondmate records)
+exit status: 0
+{
+  "records": [
+    {
+      "id": "good-mate",
+      "home": "/remote/good-home",
+      "state": "no_active_work",
+      "reason": null,
+      "selected": "structured-home"
+    },
+    {
+      "id": "junk-mate",
+      "home": "/remote/junk-home",
+      "state": "unknown",
+      "reason": "structured home snapshot was malformed or stale",
+      "selected": "unknown"
+    }
+  ]
+}
+
+$ bin/fm-fleet-view.sh              # human renderer, secondmate section
+exit status: 0
+## Secondmates
+For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority.

@@ -1,0 +1,25 @@
+### AFTER the fix (HEAD 586db47): tests/fm-fleet-snapshot-view.test.sh
+ok - durable fold clears a decision only on a keyed resolution
+ok - a completed scout's stale decision surfaces as a report pointer, not pending
+ok - a scout still parked at a decision stays pending (terminal clear does not over-fire)
+ok - snapshot includes durable scout reports after teardown
+ok - snapshot parses tasks-axi rows and respects operational overrides
+ok - fleet view renders the snapshot without secondmate peek guidance
+ok - fleet view renders secondmate agent liveness
+ok - a malformed home summary degrades only that home, not the whole snapshot
+after-fix exit=0
+
+### BEFORE the fix: reverting the two summary='{}' resets in bin/fm-fleet-snapshot.sh
+ bin/fm-fleet-snapshot.sh | 2 --
+ 1 file changed, 2 deletions(-)
+jq: invalid JSON text passed to --argjson
+Use jq --help for help with command-line options,
+or see the jq manpage, or online docs at https://jqlang.org
+jq: invalid JSON text passed to --argjson
+Use jq --help for help with command-line options,
+or see the jq manpage, or online docs at https://jqlang.org
+fm-fleet-snapshot: registered secondmate aggregation failed
+not ok - a malformed home summary must not fail the whole snapshot: 
+before-fix exit=1
+
+### worktree restored:
