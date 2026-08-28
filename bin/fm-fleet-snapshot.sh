@@ -1260,6 +1260,7 @@ secondmate_current_json() {  # <parent-tasks-json>
       else
         summary_bytes=$(printf '%s' "$summary" | LC_ALL=C wc -c | tr -d ' ')
         if [ "$summary_bytes" -gt "$FM_SNAPSHOT_SECONDMATE_MAX_BYTES" ]; then
+          summary='{}'
           reason="structured home snapshot exceeded byte limit"
         elif ! printf '%s' "$summary" | jq -e --arg home "$home" --arg generated "$SNAPSHOT_NOW" --argjson remote "$remote" '
           .schema == "fm-secondmate-home-summary.v1" and .home == $home
@@ -1271,6 +1272,7 @@ secondmate_current_json() {  # <parent-tasks-json>
           and (.landed | type) == "array" and (.endpoints | type) == "array"
           and (.counts | type) == "object" and (.omitted | type) == "array"
         ' >/dev/null 2>&1; then
+          summary='{}'
           reason="structured home snapshot was malformed or stale"
         else
           summary_sampled=true
