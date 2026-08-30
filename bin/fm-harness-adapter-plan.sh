@@ -2,7 +2,7 @@
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SKILL_DIR="$ROOT/.agents/skills/harness-adapters"
+SKILL_DIR=${FM_HARNESS_ADAPTER_SKILL_DIR:-"$ROOT/.agents/skills/harness-adapters"}
 ROUTER="$SKILL_DIR/SKILL.md"
 
 usage() {
@@ -36,7 +36,27 @@ plan=$(
   ' <<<"$routing_json"
 ) || exit 65
 
-jq -c --arg skill_dir "$SKILL_DIR" '
+resolved_paths=$(jq -r '.common[], .harness' <<<"$plan") || exit 65
+while IFS= read -r path; do
+  case "/$path/" in
+    /*/../*|/*/./*)
+      printf 'invalid harness adapter reference: %s\n' "$path" >&2
+      exit 66
+      ;;
+  esac
+  case "$path" in
+    /*|'')
+      printf 'invalid harness adapter reference: %s\n' "$path" >&2
+      exit 66
+      ;;
+  esac
+  [ -f "$SKILL_DIR/$path" ] && [ -r "$SKILL_DIR/$path" ] || {
+    printf 'unreadable harness adapter reference: %s\n' "$path" >&2
+    exit 66
+  }
+done <<<"$resolved_paths"
+
+jq -ce --arg skill_dir "$SKILL_DIR" '
   . + {
     resolved: {
       common: [.common[] | $skill_dir + "/" + .],
