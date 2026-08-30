@@ -50,6 +50,7 @@ A new adapter's verified marker and command name must land in `../../../bin/fm-h
 ## Operation-to-reference matrix
 
 Every emitted plan appends the selected or recorded harness reference after the named common references.
+`../../../bin/fm-harness-adapter-plan.sh <operation> <scenario> <harness>` is the executable routing interface: it emits the normalized plan and resolved paths only after every selected resource is a readable file beneath this skill directory, and otherwise fails closed.
 The `harness-adapter-routing-v1` object is the machine-readable and human-visible selection contract: choose the operation, choose the scenario within it, then append the selected harness reference.
 `default` is the normal scenario when no narrower scenario applies.
 Kimi establishes its unsupported primary boundary in its selected harness reference; Muse follows Non-negotiable safety above.
