@@ -1,30 +1,38 @@
 #!/usr/bin/env bash
-# Portable structural validation for the harness-adapters routing artifact.
+# Behavioral validation for the public harness-adapter router.
 set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-ROUTER="$ROOT/.agents/skills/harness-adapters/SKILL.md"
-TMP_ROOT=$(fm_test_tmproot fm-harness-adapter-references)
-ROUTING_JSON="$TMP_ROOT/routing.json"
+PLAN="$ROOT/bin/fm-harness-adapter-plan.sh"
 
-awk '
-  /^```json harness-adapter-routing-v1$/ { capture = 1; next }
-  capture && /^```$/ { exit }
-  capture { print }
-' "$ROUTER" > "$ROUTING_JSON"
-
+replacement=$($PLAN recovery replacement-secondmate codex) \
+  || fail "router rejected the replacement-secondmate codex plan"
 jq -e '
-  (.operations | type == "object") and
-  (.harnesses | type == "object") and
-  ([.operations[][] | select(type != "array")] | length == 0) and
-  ([.operations[][][] | select(type != "string")] | length == 0) and
-  ([.harnesses[] | select(type != "string")] | length == 0)
-' "$ROUTING_JSON" >/dev/null || fail "harness adapter routing artifact is not a normalized operation and harness map"
+  .operation == "recovery" and
+  .scenario == "replacement-secondmate" and
+  .common == [
+    "references/common/control-and-recovery.md",
+    "references/common/dispatch.md",
+    "references/common/model-and-effort.md",
+    "references/common/primary-hooks.md"
+  ] and
+  .harness == "references/harness/codex.md"
+' <<<"$replacement" >/dev/null || fail "router returned a non-normalized replacement plan"
 
-jq -r '.operations[][][], .harnesses[]' "$ROUTING_JSON" | sort -u | while IFS= read -r path; do
-  [ -r "$ROOT/.agents/skills/harness-adapters/$path" ] \
-    || fail "harness adapter routing target is unreadable: $path"
+alias_plan=$($PLAN interrupt default pi-signed) \
+  || fail "router rejected the pi-signed alias"
+jq -e '
+  .common == ["references/common/control-and-recovery.md"] and
+  .harness == "references/harness/pi.md"
+' <<<"$alias_plan" >/dev/null || fail "router did not normalize the pi-signed harness reference"
+
+jq -r '.resolved.common[], .resolved.harness' <<<"$replacement" | while IFS= read -r path; do
+  [ -r "$path" ] || fail "router returned an unreadable resolved resource: $path"
 done
-pass "harness adapter routing artifact is normalized and every target is readable"
+
+if $PLAN recovery missing codex >/dev/null 2>&1; then
+  fail "router accepted an unknown recovery scenario"
+fi
+pass "harness adapter router normalizes plans and resolves selected resources"
