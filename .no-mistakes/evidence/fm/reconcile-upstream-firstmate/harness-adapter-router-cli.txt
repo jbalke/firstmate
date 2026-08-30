@@ -1,0 +1,25 @@
+$ bin/fm-harness-adapter-plan.sh recovery replacement-secondmate codex
+{
+  "operation": "recovery",
+  "scenario": "replacement-secondmate",
+  "common": [
+    "references/common/control-and-recovery.md",
+    "references/common/dispatch.md",
+    "references/common/model-and-effort.md",
+    "references/common/primary-hooks.md"
+  ],
+  "harness": "references/harness/codex.md",
+  "resolved": {
+    "common": [
+      "/home/john/.no-mistakes/worktrees/5221baa95a2d/01M1AC8EF5PK71HK1RQCWGSMRK/.agents/skills/harness-adapters/references/common/control-and-recovery.md",
+      "/home/john/.no-mistakes/worktrees/5221baa95a2d/01M1AC8EF5PK71HK1RQCWGSMRK/.agents/skills/harness-adapters/references/common/dispatch.md",
+      "/home/john/.no-mistakes/worktrees/5221baa95a2d/01M1AC8EF5PK71HK1RQCWGSMRK/.agents/skills/harness-adapters/references/common/model-and-effort.md",
+      "/home/john/.no-mistakes/worktrees/5221baa95a2d/01M1AC8EF5PK71HK1RQCWGSMRK/.agents/skills/harness-adapters/references/common/primary-hooks.md"
+    ],
+    "harness": "/home/john/.no-mistakes/worktrees/5221baa95a2d/01M1AC8EF5PK71HK1RQCWGSMRK/.agents/skills/harness-adapters/references/harness/codex.md"
+  }
+}
+
+$ bin/fm-harness-adapter-plan.sh recovery replacement-profile muse  # with muse reference removed
+unreadable harness adapter reference: references/harness/muse.md
+exit_status=66
