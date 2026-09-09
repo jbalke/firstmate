@@ -12,8 +12,8 @@
 # The block opens with the fixed machine-readable "Delivery contract: mode=<mode>"
 # line that bin/fm-spawn.sh checks a ship brief against.
 # The shared trailer carries the repo-artifact rules (no individual or role
-# named, no git-excluded agent config named) for every ship mode, plus the
-# no-open-question-queue rule for the two modes that open a PR.
+# named, no untracked agent config or skill file named) for every ship mode,
+# plus the no-open-question-queue rule for the two modes that open a PR.
 # Every heredoc here stays outside a command substitution: `VAR=$(cat <<EOF ...)`
 # breaks parsing of the whole file on Bash 3.2 (tests/fm-brief.test.sh).
 
@@ -72,7 +72,7 @@ EOF
 
 ## Repo artifacts
 Name no individual and no role in a commit message, PR body, doc or code comment. Write the decision, not the decider.
-Name no local agent config or skill file: those are git-excluded and personal to one developer, so a reviewer cannot see them and naming one exposes private tooling config.
+Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with \`git ls-files\` if unsure.
 EOF
   case "$mode" in
     no-mistakes|direct-PR)

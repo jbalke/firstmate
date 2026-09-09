@@ -70,8 +70,11 @@
 # its definition of done, and rule 2 permits writes to the task's own data
 # directory so both survive teardown of the disposable worktree.
 # Every crewmate scaffold (ship and scout) closes its numbered rules with the
-# shared context-spend rules: no CI polling, evidence to disk, delegate broad
-# reading, prove identity by hash, and report an oversized task as blocked.
+# shared context-spend rules: no hand-rolled CI-watching loop, evidence to disk,
+# delegate broad reading, prove identity by hash, and report an oversized task
+# as blocked. Rule 8 is mode-shaped: a no-mistakes worker follows CI through the
+# pipeline's own monitor phase until it can report checks green, so its rule 8
+# bans only an ad-hoc poll loop rather than every wait on checks.
 # bin/fm-dod-lib.sh owns the repo-artifact rules that keep firstmate's own
 # vocabulary and private tooling out of a PR body, commit, doc, or comment.
 # Refuses to overwrite an existing brief.
@@ -233,10 +236,15 @@ INBOX_SECTION=${INBOX_SECTION%$'\n'}
 # Context-spend rules, appended to the numbered working rules of every crewmate
 # scaffold (ship and scout alike; a secondmate runs its own home and delegates
 # instead of doing the reading). Each one closes a measured cause of a worker
-# exhausting its context; they are true regardless of delivery mode, so they are
-# stated once here rather than per mode.
+# exhausting its context; rules 9-12 are true regardless of delivery mode, so
+# they are stated once here rather than per mode.
+# Rule 8 is the exception: it is delivery-shaped. A direct-PR, local-only, or
+# scout worker is finished before CI settles, so it never watches checks at all;
+# a no-mistakes worker must stay with the pipeline's own monitor phase until it
+# can report checks green (bin/fm-dod-lib.sh owns that instruction), so its
+# rule 8 bans only a hand-rolled poll loop. Both forms ban sleep-waiting.
+CI_RULE='8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.'
 IFS= read -r -d '' CONTEXT_RULES <<'EOF' || true
-8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
 9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
 10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
 11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.
@@ -405,6 +413,7 @@ The report is the only thing that survives, so anything worth keeping must be in
 7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving
    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
    daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon.
+$CI_RULE
 $CONTEXT_RULES
 
 $INBOX_SECTION
@@ -439,6 +448,7 @@ case "$MODE" in
     SETUP2="
 2. Run \`no-mistakes doctor\`; if it reports the repo is not initialized here, run \`no-mistakes init\`."
     RULE1='1. Never push to the default branch. Never merge a PR.'
+    CI_RULE="8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green."
     ;;
 esac
 DOD=$(fm_dod_block "$MODE" "$ID" "$TASK_DIR") || exit 1
@@ -485,6 +495,7 @@ $RULE1
 7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving
    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
    daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon.
+$CI_RULE
 $CONTEXT_RULES
 
 $INBOX_SECTION

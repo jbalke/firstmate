@@ -817,7 +817,8 @@ test_context_and_repo_artifact_rules_reach_the_right_variants() {
   # shellcheck disable=SC2016  # single quotes are deliberate: backticks stay literal
   local ctx_split='12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.'
   local no_names='Name no individual and no role in a commit message, PR body, doc or code comment. Write the decision, not the decider.'
-  local no_config='Name no local agent config or skill file: those are git-excluded and personal to one developer, so a reviewer cannot see them and naming one exposes private tooling config.'
+  # shellcheck disable=SC2016  # single quotes are deliberate: backticks stay literal
+  local no_config='Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with `git ls-files` if unsure.'
   local no_queue='Put no open-question queue in a PR description. Where the repo can hold the queue as enforced data, that is its home and the PR body carries a pointer.'
 
   for variant in no-mistakes direct-PR local-only scout; do
@@ -830,9 +831,22 @@ test_context_and_repo_artifact_rules_reach_the_right_variants() {
     brief="$(task_dir "$home" some-proj "$id")/brief.md"
     assert_present "$brief" "$variant: brief was not scaffolded"
 
-    # All five context-spend rules, in every crewmate variant.
-    assert_grep "8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR." "$brief" \
-      "$variant: lost the no-CI-polling context rule"
+    # All five context-spend rules, in every crewmate variant. Rule 8 is
+    # mode-shaped: a no-mistakes worker follows CI through the pipeline's own
+    # monitor phase and must stay with it until it can report checks green
+    # (bin/fm-dod-lib.sh's definition of done keys the crew-state ready signal
+    # on that), so it is told only not to hand-roll a poll loop. Every other
+    # variant is finished before CI settles. No variant may be left free to
+    # sleep-poll checks itself, so each carries an explicit sleep-wait ban.
+    if [ "$variant" = no-mistakes ]; then
+      assert_grep "8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green." "$brief" \
+        "no-mistakes: rule 8 must ban a hand-rolled poll loop and still keep the worker until checks are green"
+    else
+      assert_grep "8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR." "$brief" \
+        "$variant: lost the no-CI-polling context rule"
+      assert_no_grep "you stay with it until you can report checks green" "$brief" \
+        "$variant: carries the no-mistakes stay-for-green rule 8 for a mode that finishes before CI settles"
+    fi
     assert_grep "9. Write evidence to a file in your task data directory as you produce it, then refer to the path." "$brief" \
       "$variant: lost the evidence-to-disk context rule"
     assert_grep "10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion." "$brief" \
@@ -843,9 +857,17 @@ test_context_and_repo_artifact_rules_reach_the_right_variants() {
       "$variant: lost the oversized-task-is-blocked context rule"
 
     # Rule 9 tells the worker to write evidence outside the worktree, so the
-    # variant's own rule 2 must permit exactly that write.
-    assert_grep "$(task_dir "$home" some-proj "$id")/" "$brief" \
-      "$variant: rule 2 forbids the evidence write rule 9 requires"
+    # variant's own rule 2 must permit exactly that write. Anchor on rule 2's
+    # own permitted-writes wording, not on the bare task data path: the
+    # definition of done prints that path in every variant, so a path-only
+    # assertion would pass with the carve-out gone.
+    if [ "$variant" = scout ]; then
+      assert_grep "the report, saved evidence beside it under \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+        "$variant: rule 2 forbids the evidence write rule 9 requires"
+    else
+      assert_grep "anything under your task data directory \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+        "$variant: rule 2 forbids the evidence write rule 9 requires"
+    fi
 
     if [ "$variant" = scout ]; then
       assert_no_grep "## Repo artifacts" "$brief" \
