@@ -11,11 +11,28 @@
 # silently rendered as the pipeline contract.
 # The block opens with the fixed machine-readable "Delivery contract: mode=<mode>"
 # line that bin/fm-spawn.sh checks a ship brief against.
-# The shared trailer carries the repo-artifact rules (no individual or role
-# named, no untracked agent config or skill file named) for every ship mode,
-# plus the no-open-question-queue rule for the two modes that open a PR.
+# The shared trailer carries the repo-artifact rules (no decision attributed to a
+# person or role, no untracked agent config or skill file named) for every ship
+# mode, plus the no-open-question-queue rule for the two modes that open a PR.
+# fm_ci_rule <no-mistakes|direct-PR|local-only|scout> owns the CI-following rule
+# that belongs with each contract, so the brief path and the promotion path state
+# it from one place and cannot drift: a worker whose numbered rules ban every wait
+# on checks while its Definition of done requires `done: PR {url} checks green`
+# stops before the pipeline's own monitor phase and the crew state diverges.
 # Every heredoc here stays outside a command substitution: `VAR=$(cat <<EOF ...)`
 # breaks parsing of the whole file on Bash 3.2 (tests/fm-brief.test.sh).
+
+fm_ci_rule() {  # <no-mistakes|direct-PR|local-only|scout>
+  case "$1" in
+    no-mistakes)
+      echo "Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green." ;;
+    direct-PR|local-only|scout)
+      echo "Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR." ;;
+    *)
+      echo "error: fm_ci_rule: unknown contract '$1'" >&2
+      return 1 ;;
+  esac
+}
 
 fm_dod_block() {  # <mode> <task-id> <task-data-dir>
   local mode=$1 id=$2 task_dir=$3
@@ -71,7 +88,7 @@ EOF
   cat <<EOF
 
 ## Repo artifacts
-Name no individual and no role in a commit message, PR body, doc or code comment. Write the decision, not the decider.
+Attribute no decision to a person or role in a commit message, PR body, doc or code comment - write the decision, not the decider. A role word naming a generic actor is fine.
 Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with \`git ls-files\` if unsure.
 EOF
   case "$mode" in

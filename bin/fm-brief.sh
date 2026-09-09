@@ -72,9 +72,10 @@
 # Every crewmate scaffold (ship and scout) closes its numbered rules with the
 # shared context-spend rules: no hand-rolled CI-watching loop, evidence to disk,
 # delegate broad reading, prove identity by hash, and report an oversized task
-# as blocked. Rule 8 is mode-shaped: a no-mistakes worker follows CI through the
-# pipeline's own monitor phase until it can report checks green, so its rule 8
-# bans only an ad-hoc poll loop rather than every wait on checks.
+# as blocked. Rule 8 is contract-shaped and comes from fm_ci_rule in
+# bin/fm-dod-lib.sh: a no-mistakes worker follows CI through the pipeline's own
+# monitor phase until it can report checks green, so its rule 8 bans only an
+# ad-hoc poll loop rather than every wait on checks.
 # bin/fm-dod-lib.sh owns the repo-artifact rules that keep firstmate's own
 # vocabulary and private tooling out of a PR body, commit, doc, or comment.
 # Refuses to overwrite an existing brief.
@@ -238,12 +239,18 @@ INBOX_SECTION=${INBOX_SECTION%$'\n'}
 # instead of doing the reading). Each one closes a measured cause of a worker
 # exhausting its context; rules 9-12 are true regardless of delivery mode, so
 # they are stated once here rather than per mode.
-# Rule 8 is the exception: it is delivery-shaped. A direct-PR, local-only, or
-# scout worker is finished before CI settles, so it never watches checks at all;
-# a no-mistakes worker must stay with the pipeline's own monitor phase until it
-# can report checks green (bin/fm-dod-lib.sh owns that instruction), so its
-# rule 8 bans only a hand-rolled poll loop. Both forms ban sleep-waiting.
-CI_RULE='8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.'
+# Rule 8 is the exception: it is delivery-shaped, so it comes from fm_ci_rule in
+# bin/fm-dod-lib.sh keyed on the contract this worker actually operates under.
+# A direct-PR, local-only, or unpromoted scout worker is finished before CI
+# settles; a no-mistakes worker must stay with the pipeline's own monitor phase
+# until it can report checks green, so its rule 8 bans only a hand-rolled poll
+# loop. Both forms ban sleep-waiting. bin/fm-promote.sh restates rule 8 from the
+# same owner when promotion changes the contract a scout is running under.
+CI_RULE=
+case "$KIND" in
+  ship) CI_RULE="8. $(fm_ci_rule "$MODE")" ;;
+  scout) CI_RULE="8. $(fm_ci_rule scout)" ;;
+esac
 IFS= read -r -d '' CONTEXT_RULES <<'EOF' || true
 9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
 10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
@@ -448,7 +455,6 @@ case "$MODE" in
     SETUP2="
 2. Run \`no-mistakes doctor\`; if it reports the repo is not initialized here, run \`no-mistakes init\`."
     RULE1='1. Never push to the default branch. Never merge a PR.'
-    CI_RULE="8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green."
     ;;
 esac
 DOD=$(fm_dod_block "$MODE" "$ID" "$TASK_DIR") || exit 1

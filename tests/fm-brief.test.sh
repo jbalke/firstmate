@@ -816,7 +816,7 @@ test_context_and_repo_artifact_rules_reach_the_right_variants() {
   local ctx_hash='11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.'
   # shellcheck disable=SC2016  # single quotes are deliberate: backticks stay literal
   local ctx_split='12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.'
-  local no_names='Name no individual and no role in a commit message, PR body, doc or code comment. Write the decision, not the decider.'
+  local no_names='Attribute no decision to a person or role in a commit message, PR body, doc or code comment - write the decision, not the decider. A role word naming a generic actor is fine.'
   # shellcheck disable=SC2016  # single quotes are deliberate: backticks stay literal
   local no_config='Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with `git ls-files` if unsure.'
   local no_queue='Put no open-question queue in a PR description. Where the repo can hold the queue as enforced data, that is its home and the PR body carries a pointer.'
@@ -894,6 +894,22 @@ test_context_and_repo_artifact_rules_reach_the_right_variants() {
         "$variant: lost the no-open-question-queue rule"
     fi
   done
+
+  # A secondmate delegates rather than doing the reading and owns no repo
+  # artifact, so its charter carries neither rule class. Both variables are in
+  # scope on the charter path, so pin the absence instead of leaving it to hold
+  # by accident.
+  local charter
+  FM_HOME="$home" FM_SECONDMATE_CHARTER='fixture charter' \
+    "$ROOT/bin/fm-brief.sh" brief-ctxrules-secondmate --secondmate --no-projects >/dev/null 2>&1
+  charter="$(task_dir "$home" _none brief-ctxrules-secondmate)/brief.md"
+  assert_present "$charter" "secondmate: charter was not scaffolded"
+  assert_no_grep "$ctx_split" "$charter" \
+    "secondmate charter carries a context-spend rule for reading it delegates"
+  assert_no_grep "sleep-wait on checks" "$charter" \
+    "secondmate charter carries the CI rule for a PR it never opens"
+  assert_no_grep "## Repo artifacts" "$charter" \
+    "secondmate charter carries repo-artifact rules for a repo artifact it never writes"
   pass "fm-brief.sh: context rules reach every crewmate variant and repo-artifact rules only where a repo artifact exists"
 }
 

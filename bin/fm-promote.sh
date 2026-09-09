@@ -10,6 +10,10 @@
 # mode-specific Definition of done, so a promoted worker receives exactly the same
 # delivery contract as a briefed one, including the no-mistakes mode's ask-user
 # escalation rule and --yes ban.
+# Promotion changes the contract the worker operates under, so the instructions
+# also restate the CI-following rule from that same owner (fm_ci_rule): a scout
+# brief carries the pre-promotion wording, which a no-mistakes Definition of done
+# contradicts by requiring the worker to stay until it can report checks green.
 # A scout records no delivery posture, so promotion is where this task's delivery
 # contract is decided: --mode and --yolo are REQUIRED and written into the meta
 # alongside the kind= flip. Firstmate resolves both at promotion time, having just
@@ -139,6 +143,7 @@ TASK_DIR=$(fm_task_data_ensure_dir "$DATA" "$ID") || {
   echo "error: could not create durable task data directory for $ID" >&2
   exit 1
 }
+CI_RULE=$(fm_ci_rule "$MODE") || exit 1
 INSTRUCTIONS="$TASK_DIR/ship-instructions.md"
 [ ! -d "$INSTRUCTIONS" ] || { echo "error: ship instructions path is a directory: $INSTRUCTIONS" >&2; exit 1; }
 TMP="$TASK_DIR/.ship-instructions.md.${BASHPID:-$$}"
@@ -153,6 +158,7 @@ Your scout task has been promoted to a ship task, mode=$MODE. Your window, workt
 4. Carry over only the intended fix changes. Leave scratch commits, debug edits, and experiment files behind.
 5. If you reproduced a bug, turn that reproduction into a regression test.
 6. These ship instructions supersede the scout delivery rules and report-based Definition of done. Everything else in your original instructions carries over unchanged: the status protocol; the instruction inbox and its acknowledgement; the escalation rules, including ask-user; and every safety rule.
+7. Your CI rule now reads, for this mode: $CI_RULE
 
 EOF
   fm_dod_block "$MODE" "$ID" "$TASK_DIR"
