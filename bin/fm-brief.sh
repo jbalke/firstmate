@@ -69,6 +69,11 @@
 # Every ship mode also carries a durable-report and saved-evidence requirement in
 # its definition of done, and rule 2 permits writes to the task's own data
 # directory so both survive teardown of the disposable worktree.
+# Every crewmate scaffold (ship and scout) closes its numbered rules with the
+# shared context-spend rules: no CI polling, evidence to disk, delegate broad
+# reading, prove identity by hash, and report an oversized task as blocked.
+# bin/fm-dod-lib.sh owns the repo-artifact rules that keep firstmate's own
+# vocabulary and private tooling out of a PR body, commit, doc, or comment.
 # Refuses to overwrite an existing brief.
 set -eu
 
@@ -225,6 +230,20 @@ The move IS the acknowledgement: without it firstmate rings again and eventually
 EOF
 INBOX_SECTION=${INBOX_SECTION%$'\n'}
 
+# Context-spend rules, appended to the numbered working rules of every crewmate
+# scaffold (ship and scout alike; a secondmate runs its own home and delegates
+# instead of doing the reading). Each one closes a measured cause of a worker
+# exhausting its context; they are true regardless of delivery mode, so they are
+# stated once here rather than per mode.
+IFS= read -r -d '' CONTEXT_RULES <<'EOF' || true
+8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
+9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
+10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
+11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.
+12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.
+EOF
+CONTEXT_RULES=${CONTEXT_RULES%$'\n'}
+
 if [ "$KIND" = secondmate ]; then
 SECONDMATE_PROJECTS=""
 idx=1
@@ -366,7 +385,7 @@ The report is the only thing that survives, so anything worth keeping must be in
 
 # Rules
 1. Never push to any remote and never open a PR.
-2. Stay inside this worktree; the only files you may write outside it are the report, the status file, and your instruction inbox acknowledgements, all described below.
+2. Stay inside this worktree; the only files you may write outside it are the report, saved evidence beside it under \`$TASK_DIR/\`, the status file, and your instruction inbox acknowledgements, all described below.
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
@@ -386,6 +405,7 @@ The report is the only thing that survives, so anything worth keeping must be in
 7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving
    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
    daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon.
+$CONTEXT_RULES
 
 $INBOX_SECTION
 
@@ -465,6 +485,7 @@ $RULE1
 7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving
    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
    daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon.
+$CONTEXT_RULES
 
 $INBOX_SECTION
 

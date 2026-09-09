@@ -11,6 +11,9 @@
 # silently rendered as the pipeline contract.
 # The block opens with the fixed machine-readable "Delivery contract: mode=<mode>"
 # line that bin/fm-spawn.sh checks a ship brief against.
+# The shared trailer carries the repo-artifact rules (no individual or role
+# named, no git-excluded agent config named) for every ship mode, plus the
+# no-open-question-queue rule for the two modes that open a PR.
 # Every heredoc here stays outside a command substitution: `VAR=$(cat <<EOF ...)`
 # breaks parsing of the whole file on Bash 3.2 (tests/fm-brief.test.sh).
 
@@ -64,6 +67,19 @@ EOF
     *)
       echo "error: fm_dod_block: unknown delivery mode '$mode'" >&2
       return 1 ;;
+  esac
+  cat <<EOF
+
+## Repo artifacts
+Name no individual and no role in a commit message, PR body, doc or code comment. Write the decision, not the decider.
+Name no local agent config or skill file: those are git-excluded and personal to one developer, so a reviewer cannot see them and naming one exposes private tooling config.
+EOF
+  case "$mode" in
+    no-mistakes|direct-PR)
+      cat <<EOF
+Put no open-question queue in a PR description. Where the repo can hold the queue as enforced data, that is its home and the PR body carries a pointer.
+EOF
+      ;;
   esac
   cat <<EOF
 
