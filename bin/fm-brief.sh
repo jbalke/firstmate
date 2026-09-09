@@ -78,6 +78,9 @@
 # ad-hoc poll loop rather than every wait on checks.
 # bin/fm-dod-lib.sh owns the repo-artifact rules that keep firstmate's own
 # vocabulary and private tooling out of a PR body, commit, doc, or comment.
+# Context rule 9's evidence write is why the scout's rule 2 permits saved
+# evidence beside its report under the task data directory, holding to the same
+# invariant as the inbox acknowledgement above.
 # Refuses to overwrite an existing brief.
 set -eu
 
