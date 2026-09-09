@@ -1,0 +1,105 @@
+Normalized diff of the GENERATED BRIEF (base 4c60e36 -> target 0655df7).
+Paths normalized to <HOME>/<ROOT>; every remaining line is a real content change.
+
+===== variant: no-mistakes =====
+@@ -43,6 +43,11 @@
+ 7. Never stop, restart, or update the shared `no-mistakes` daemon - it is one instance serving
+    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
+    daemon error, append `blocked: {the daemon error}` and stop; only firstmate manages the daemon.
++8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green.
++9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
++10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
++11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.
++12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.
+ 
+ # Firstmate instruction inbox
+ Firstmate steers you through durable message files in '<HOME>/state/brief-ev-no-mistakes.inbox'.
+@@ -75,6 +80,11 @@
+   It auto-resolves every gate including ask-user findings with no escalation, and answering your own ask-user finding is a hard rule violation.
+ 
+ After /no-mistakes reports CI green (the CI-ready return point - do not wait for it to keep monitoring in the background until merge), append `done: PR {url} checks green` and stop. You are finished.
++
++## Repo artifacts
++Attribute no decision to a person or role in a commit message, PR body, doc or code comment - write the decision, not the decider. A role word naming a generic actor is fine.
++Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with `git ls-files` if unsure.
++Put no open-question queue in a PR description. Where the repo can hold the queue as enforced data, that is its home and the PR body carries a pointer.
+ 
+ ## Durable report
+ Write `<HOME>/data/tasks/some-proj/brief-ev-no-mistakes/report.md` if this task uncovered a **transferable cause** - something that would bite a future task on this repo or another.
+
+===== variant: direct-PR =====
+@@ -42,6 +42,11 @@
+ 7. Never stop, restart, or update the shared `no-mistakes` daemon - it is one instance serving
+    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
+    daemon error, append `blocked: {the daemon error}` and stop; only firstmate manages the daemon.
++8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
++9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
++10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
++11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.
++12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.
+ 
+ # Firstmate instruction inbox
+ Firstmate steers you through durable message files in '<HOME>/state/brief-ev-direct-PR.inbox'.
+@@ -61,6 +66,11 @@
+ The task is complete only when committed on your branch.
+ When it is implemented and committed, push your branch and open a PR with `gh-axi`, then append `done: PR {url}` to the status file and stop.
+ Do NOT run /no-mistakes. The configured merge authority decides whether to merge the PR; firstmate relays the outcome.
++
++## Repo artifacts
++Attribute no decision to a person or role in a commit message, PR body, doc or code comment - write the decision, not the decider. A role word naming a generic actor is fine.
++Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with `git ls-files` if unsure.
++Put no open-question queue in a PR description. Where the repo can hold the queue as enforced data, that is its home and the PR body carries a pointer.
+ 
+ ## Durable report
+ Write `<HOME>/data/tasks/some-proj/brief-ev-direct-PR/report.md` if this task uncovered a **transferable cause** - something that would bite a future task on this repo or another.
+
+===== variant: local-only =====
+@@ -42,6 +42,11 @@
+ 7. Never stop, restart, or update the shared `no-mistakes` daemon - it is one instance serving
+    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
+    daemon error, append `blocked: {the daemon error}` and stop; only firstmate manages the daemon.
++8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
++9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
++10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
++11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.
++12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.
+ 
+ # Firstmate instruction inbox
+ Firstmate steers you through durable message files in '<HOME>/state/brief-ev-local-only.inbox'.
+@@ -62,6 +67,10 @@
+ Keep your branch a clean fast-forward onto the current default branch - if `main` has advanced, rebase onto it so the eventual merge stays a fast-forward.
+ When it is implemented and committed, append `done: ready in branch fm/brief-ev-local-only` to the status file and stop.
+ The configured merge authority approves the ready branch, then firstmate merges it into local `main` through the guarded fast-forward path.
++
++## Repo artifacts
++Attribute no decision to a person or role in a commit message, PR body, doc or code comment - write the decision, not the decider. A role word naming a generic actor is fine.
++Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with `git ls-files` if unsure.
+ 
+ ## Durable report
+ Write `<HOME>/data/tasks/some-proj/brief-ev-local-only/report.md` if this task uncovered a **transferable cause** - something that would bite a future task on this repo or another.
+
+===== variant: scout =====
+@@ -16,7 +16,7 @@
+ 
+ # Rules
+ 1. Never push to any remote and never open a PR.
+-2. Stay inside this worktree; the only files you may write outside it are the report, the status file, and your instruction inbox acknowledgements, all described below.
++2. Stay inside this worktree; the only files you may write outside it are the report, saved evidence beside it under `<HOME>/data/tasks/some-proj/brief-ev-scout/`, the status file, and your instruction inbox acknowledgements, all described below.
+ 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
+ 4. Report status by appending one line:
+    `echo "{state}: {one short line}" >> '<HOME>/state/brief-ev-scout.status'`
+@@ -36,6 +36,11 @@
+ 7. Never stop, restart, or update the shared `no-mistakes` daemon - it is one instance serving
+    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
+    daemon error, append `blocked: {the daemon error}` and stop; only firstmate manages the daemon.
++8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
++9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
++10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
++11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.
++12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.
+ 
+ # Firstmate instruction inbox
+ Firstmate steers you through durable message files in '<HOME>/state/brief-ev-scout.inbox'.
+
+===== variant: secondmate =====
+

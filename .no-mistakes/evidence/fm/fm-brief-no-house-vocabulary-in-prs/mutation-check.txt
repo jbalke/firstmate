@@ -1,0 +1,24 @@
+### mutation: delete context rule 11 (fm-brief.sh)
+exit=1
+not ok - no-mistakes: lost the prove-identity-by-hash context rule
+
+### mutation: delete no-open-question-queue rule (fm-dod-lib.sh)
+exit=1
+not ok - no-mistakes: lost the no-open-question-queue rule
+
+### mutation: revert scout rule 2 evidence carve-out
+exit=1
+not ok - scout: rule 2 forbids the evidence write rule 9 requires
+
+### mutation: no-mistakes gets the generic CI rule (fm-dod-lib.sh)
+exit=1
+not ok - no-mistakes: rule 8 must ban a hand-rolled poll loop and still keep the worker until checks are green
+
+### mutation:   ^ same mutation, promote path
+exit=1
+not ok - no-mistakes: promoted worker kept a CI rule that releases it before checks are green
+
+### mutation: delete promoted-scout CI rule restatement (fm-promote.sh)
+exit=1
+not ok - no-mistakes: promoted worker kept a CI rule that releases it before checks are green
+

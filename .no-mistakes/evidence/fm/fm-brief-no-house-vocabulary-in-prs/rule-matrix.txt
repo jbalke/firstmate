@@ -1,0 +1,13 @@
+variant     | rule8 | rule9 | rule10 | rule11 | rule12 | ## Repo artifacts | no-names | no-config | no-question-queue
+no-mistakes |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  
+direct-PR   |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  
+local-only  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  yes  |  -    
+scout       |  yes  |  yes  |  yes  |  yes  |  yes  |  -    |  -    |  -    |  -    
+secondmate  |  -    |  -    |  -    |  -    |  -    |  -    |  -    |  -    |  -    
+
+rule 8 wording per variant:
+no-mistakes : 8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green.
+direct-PR   : 8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
+local-only  : 8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
+scout       : 8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR.
+secondmate  : (none)
