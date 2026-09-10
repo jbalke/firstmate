@@ -337,6 +337,22 @@ STUB
     assert_grep "git checkout -b fm/$id" "$payload" \
       "$mode: promoted worker was not told to leave the scratch base for its ship branch"
 
+    # Promotion changes the contract, so it must also replace the CI rule the
+    # scout brief carries. A no-mistakes worker left with the pre-promotion
+    # wording stops at PR open, so the `checks green` token bin/fm-classify-lib.sh
+    # keys on never lands and crew state diverges from the pipeline.
+    if [ "$mode" = no-mistakes ]; then
+      assert_grep "you stay with it until you can report checks green" "$payload" \
+        "$mode: promoted worker kept a CI rule that releases it before checks are green"
+      assert_grep "Never build your own CI-watching loop" "$payload" \
+        "$mode: promoted worker was not told to skip a hand-rolled poll loop"
+    else
+      assert_grep "Never poll CI, sleep-wait on checks, or re-read a settled check set" "$payload" \
+        "$mode: promoted worker lost the no-CI-polling rule"
+      assert_no_grep "you stay with it until you can report checks green" "$payload" \
+        "$mode: promoted worker received the pipeline's stay-for-green CI rule"
+    fi
+
     # Compare the public outputs of both real generation paths. The promoted
     # payload ends at its Definition of done, as does an ordinary generated
     # brief, so identical suffixes prove both workers receive the same contract.

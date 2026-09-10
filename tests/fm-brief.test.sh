@@ -800,6 +800,119 @@ test_scout_and_secondmate_scaffold() {
   pass "fm-brief: scout and secondmate code paths still scaffold well-formed briefs"
 }
 
+# The context-spend rules close measured causes of a worker exhausting its
+# context, so every crewmate variant (all three ship modes and scout) must carry
+# all five. The repo-artifact rules govern what reaches a repo artifact, so all
+# three ship modes carry the naming rules while a scout - which opens no PR and
+# makes no commit - carries none, and the no-open-question-queue rule reaches
+# only the two modes that actually open a PR. A dropped rule in any variant is a
+# silent regression in always-loaded worker context, so pin each pairing.
+test_context_and_repo_artifact_rules_reach_the_right_variants() {
+  local home id brief
+  home="$TMP_ROOT/context-rules-home"
+  mkdir -p "$home/data"
+
+  # shellcheck disable=SC2016  # single quotes are deliberate: backticks stay literal
+  local ctx_hash='11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.'
+  # shellcheck disable=SC2016  # single quotes are deliberate: backticks stay literal
+  local ctx_split='12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.'
+  local no_names='Attribute no decision to a person or role in a commit message, PR body, doc or code comment - write the decision, not the decider. A role word naming a generic actor is fine.'
+  # shellcheck disable=SC2016  # single quotes are deliberate: backticks stay literal
+  local no_config='Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with `git ls-files` if unsure.'
+  local no_queue='Put no open-question queue in a PR description. Where the repo can hold the queue as enforced data, that is its home and the PR body carries a pointer.'
+
+  for variant in no-mistakes direct-PR local-only scout; do
+    id="brief-ctxrules-${variant}"
+    if [ "$variant" = scout ]; then
+      FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --scout >/dev/null 2>&1
+    else
+      FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode "$variant" >/dev/null 2>&1
+    fi
+    brief="$(task_dir "$home" some-proj "$id")/brief.md"
+    assert_present "$brief" "$variant: brief was not scaffolded"
+
+    # All five context-spend rules, in every crewmate variant. Rule 8 is
+    # mode-shaped: a no-mistakes worker follows CI through the pipeline's own
+    # monitor phase and must stay with it until it can report checks green
+    # (bin/fm-dod-lib.sh's definition of done keys the crew-state ready signal
+    # on that), so it is told only not to hand-roll a poll loop. Every other
+    # variant is finished before CI settles. No variant may be left free to
+    # sleep-poll checks itself, so each carries an explicit sleep-wait ban.
+    if [ "$variant" = no-mistakes ]; then
+      assert_grep "8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green." "$brief" \
+        "no-mistakes: rule 8 must ban a hand-rolled poll loop and still keep the worker until checks are green"
+    else
+      assert_grep "8. Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR." "$brief" \
+        "$variant: lost the no-CI-polling context rule"
+      assert_no_grep "you stay with it until you can report checks green" "$brief" \
+        "$variant: carries the no-mistakes stay-for-green rule 8 for a mode that finishes before CI settles"
+    fi
+    assert_grep "9. Write evidence to a file in your task data directory as you produce it, then refer to the path." "$brief" \
+      "$variant: lost the evidence-to-disk context rule"
+    assert_grep "10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion." "$brief" \
+      "$variant: lost the delegate-broad-reading context rule"
+    assert_grep "$ctx_hash" "$brief" \
+      "$variant: lost the prove-identity-by-hash context rule"
+    assert_grep "$ctx_split" "$brief" \
+      "$variant: lost the oversized-task-is-blocked context rule"
+
+    # Rule 9 tells the worker to write evidence outside the worktree, so the
+    # variant's own rule 2 must permit exactly that write. Anchor on rule 2's
+    # own permitted-writes wording, not on the bare task data path: the
+    # definition of done prints that path in every variant, so a path-only
+    # assertion would pass with the carve-out gone.
+    if [ "$variant" = scout ]; then
+      assert_grep "the report, saved evidence beside it under \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+        "$variant: rule 2 forbids the evidence write rule 9 requires"
+    else
+      assert_grep "anything under your task data directory \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+        "$variant: rule 2 forbids the evidence write rule 9 requires"
+    fi
+
+    if [ "$variant" = scout ]; then
+      assert_no_grep "## Repo artifacts" "$brief" \
+        "scout brief carries PR-artifact rules for a deliverable that is never a PR"
+      assert_no_grep "$no_names" "$brief" \
+        "scout brief carries the no-names repo-artifact rule"
+      assert_no_grep "$no_queue" "$brief" \
+        "scout brief carries the no-open-question-queue rule for a task with no PR"
+      continue
+    fi
+
+    assert_grep "## Repo artifacts" "$brief" \
+      "$variant: lost the repo-artifact section"
+    assert_grep "$no_names" "$brief" \
+      "$variant: lost the name-no-individual-or-role rule"
+    assert_grep "$no_config" "$brief" \
+      "$variant: lost the name-no-local-agent-config rule"
+
+    if [ "$variant" = local-only ]; then
+      assert_no_grep "$no_queue" "$brief" \
+        "local-only brief carries the no-open-question-queue rule for a mode that opens no PR"
+    else
+      assert_grep "$no_queue" "$brief" \
+        "$variant: lost the no-open-question-queue rule"
+    fi
+  done
+
+  # A secondmate delegates rather than doing the reading and owns no repo
+  # artifact, so its charter carries neither rule class. Both variables are in
+  # scope on the charter path, so pin the absence instead of leaving it to hold
+  # by accident.
+  local charter
+  FM_HOME="$home" FM_SECONDMATE_CHARTER='fixture charter' \
+    "$ROOT/bin/fm-brief.sh" brief-ctxrules-secondmate --secondmate --no-projects >/dev/null 2>&1
+  charter="$(task_dir "$home" _none brief-ctxrules-secondmate)/brief.md"
+  assert_present "$charter" "secondmate: charter was not scaffolded"
+  assert_no_grep "$ctx_split" "$charter" \
+    "secondmate charter carries a context-spend rule for reading it delegates"
+  assert_no_grep "sleep-wait on checks" "$charter" \
+    "secondmate charter carries the CI rule for a PR it never opens"
+  assert_no_grep "## Repo artifacts" "$charter" \
+    "secondmate charter carries repo-artifact rules for a repo artifact it never writes"
+  pass "fm-brief.sh: context rules reach every crewmate variant and repo-artifact rules only where a repo artifact exists"
+}
+
 test_script_parses
 test_no_heredoc_in_command_substitution
 test_help_includes_entire_header
@@ -810,6 +923,7 @@ test_delivery_flags_are_refused_where_they_do_not_apply
 test_faster_paths_use_configured_authority_without_stacked_review
 test_no_mistakes_dod_wording
 test_ship_project_memory_wording
+test_context_and_repo_artifact_rules_reach_the_right_variants
 test_herdr_lab_contract_is_explicit_and_complete
 test_herdr_lab_contract_quotes_foreign_firstmate_path
 test_herdr_lab_omission_is_loud_for_ship_and_scout

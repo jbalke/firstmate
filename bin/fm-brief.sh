@@ -69,6 +69,18 @@
 # Every ship mode also carries a durable-report and saved-evidence requirement in
 # its definition of done, and rule 2 permits writes to the task's own data
 # directory so both survive teardown of the disposable worktree.
+# Every crewmate scaffold (ship and scout) closes its numbered rules with the
+# shared context-spend rules: no hand-rolled CI-watching loop, evidence to disk,
+# delegate broad reading, prove identity by hash, and report an oversized task
+# as blocked. Rule 8 is contract-shaped and comes from fm_ci_rule in
+# bin/fm-dod-lib.sh: a no-mistakes worker follows CI through the pipeline's own
+# monitor phase until it can report checks green, so its rule 8 bans only an
+# ad-hoc poll loop rather than every wait on checks.
+# bin/fm-dod-lib.sh owns the repo-artifact rules that keep firstmate's own
+# vocabulary and private tooling out of a PR body, commit, doc, or comment.
+# Context rule 9's evidence write is why the scout's rule 2 permits saved
+# evidence beside its report under the task data directory, holding to the same
+# invariant as the inbox acknowledgement above.
 # Refuses to overwrite an existing brief.
 set -eu
 
@@ -225,6 +237,31 @@ The move IS the acknowledgement: without it firstmate rings again and eventually
 EOF
 INBOX_SECTION=${INBOX_SECTION%$'\n'}
 
+# Context-spend rules, appended to the numbered working rules of every crewmate
+# scaffold (ship and scout alike; a secondmate runs its own home and delegates
+# instead of doing the reading). Each one closes a measured cause of a worker
+# exhausting its context; rules 9-12 are true regardless of delivery mode, so
+# they are stated once here rather than per mode.
+# Rule 8 is the exception: it is delivery-shaped, so it comes from fm_ci_rule in
+# bin/fm-dod-lib.sh keyed on the contract this worker actually operates under.
+# A direct-PR, local-only, or unpromoted scout worker is finished before CI
+# settles; a no-mistakes worker must stay with the pipeline's own monitor phase
+# until it can report checks green, so its rule 8 bans only a hand-rolled poll
+# loop. Both forms ban sleep-waiting. bin/fm-promote.sh restates rule 8 from the
+# same owner when promotion changes the contract a scout is running under.
+CI_RULE=
+case "$KIND" in
+  ship) CI_RULE="8. $(fm_ci_rule "$MODE")" ;;
+  scout) CI_RULE="8. $(fm_ci_rule scout)" ;;
+esac
+IFS= read -r -d '' CONTEXT_RULES <<'EOF' || true
+9. Write evidence to a file in your task data directory as you produce it, then refer to the path. Never keep a large body of evidence alive in conversation as its only copy.
+10. Send any sweep, audit, review, or broad search to a helper agent and keep only its conclusion.
+11. To prove two file sets are identical, compare hashes (`git rev-parse <rev>:<path>`, or a sorted `git ls-tree -r` diff). Never prove it by reading, and never accept a green build as proof of verbatim-ness.
+12. If you can see you cannot finish inside one context, append one `blocked:` line naming what would need to split out, and stop. That is a correct outcome, not a failure.
+EOF
+CONTEXT_RULES=${CONTEXT_RULES%$'\n'}
+
 if [ "$KIND" = secondmate ]; then
 SECONDMATE_PROJECTS=""
 idx=1
@@ -366,7 +403,7 @@ The report is the only thing that survives, so anything worth keeping must be in
 
 # Rules
 1. Never push to any remote and never open a PR.
-2. Stay inside this worktree; the only files you may write outside it are the report, the status file, and your instruction inbox acknowledgements, all described below.
+2. Stay inside this worktree; the only files you may write outside it are the report, saved evidence beside it under \`$TASK_DIR/\`, the status file, and your instruction inbox acknowledgements, all described below.
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
@@ -386,6 +423,8 @@ The report is the only thing that survives, so anything worth keeping must be in
 7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving
    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
    daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon.
+$CI_RULE
+$CONTEXT_RULES
 
 $INBOX_SECTION
 
@@ -465,6 +504,8 @@ $RULE1
 7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving
    every lane/home, so restarting it kills other lanes' in-flight pipeline runs. On ANY no-mistakes
    daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon.
+$CI_RULE
+$CONTEXT_RULES
 
 $INBOX_SECTION
 
