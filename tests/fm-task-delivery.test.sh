@@ -636,7 +636,9 @@ EOF
   [ "$status" -ne 0 ] || fail "promotion without a scout brief should exit non-zero"
   assert_contains "$out" "must contain nonempty" \
     "promotion without a scout brief did not reject missing task content"
-  assert_absent "$(dirname "$(fm_test_task_brief "$home" "$id")")/ship-instructions.md" \
+  task_dir=$(fm_test_task_dir "$home" "$id") \
+    || fail "could not resolve the task directory the promotion was refused for"
+  assert_absent "$task_dir/ship-instructions.md" \
     "promotion without a scout brief fabricated ship instructions"
   assert_grep 'kind=scout' "$meta" "missing-brief promotion changed the task record"
 
@@ -660,7 +662,9 @@ EOF
   [ "$status" -ne 0 ] || fail "promotion without provenance-marked captain intent should fail"
   assert_contains "$out" "has no provenance-marked Captain's intent" \
     "unmarked legacy promotion did not explain the missing intent provenance"
-  assert_absent "$(dirname "$(fm_test_task_brief "$home" "$id")")/ship-instructions.md" \
+  task_dir=$(fm_test_task_dir "$home" "$id") \
+    || fail "could not resolve the task directory the promotion was refused for"
+  assert_absent "$task_dir/ship-instructions.md" \
     "unmarked legacy promotion published empty captain intent"
   assert_grep 'kind=scout' "$meta" "unmarked legacy promotion changed the task record"
 

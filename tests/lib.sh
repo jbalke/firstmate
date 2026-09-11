@@ -559,7 +559,16 @@ assert_no_grep() {
 }
 
 # assert_absent <path> <msg>: path must not exist.
+# A resolution failure upstream collapses a "$(resolver ...)/name" expression to
+# "/name" or "", and absence is vacuously true for both - so the assertion would
+# pass while testing nothing. Refuse a path that is empty or sits directly under
+# the filesystem root: no fixture in this suite legitimately addresses one.
 assert_absent() {
+  case "${1-}" in
+    ''|/*/*) ;;
+    /*) fail "assert_absent got a root-level path '$1'; its resolver failed"; return ;;
+  esac
+  [ -n "${1-}" ] || { fail "assert_absent got an empty path; its resolver failed"; return; }
   [ ! -e "$1" ] || fail "$2"
 }
 

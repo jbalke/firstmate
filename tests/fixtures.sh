@@ -269,7 +269,9 @@ fm_test_task_dir() {
 # that fills placeholders writes to a different file than the one
 # bin/fm-spawn.sh reads.
 fm_test_task_brief() {
-  printf '%s\n' "$(fm_test_task_dir "$@")/brief.md"
+  local dir
+  dir=$(fm_test_task_dir "$@") || return 1
+  printf '%s\n' "$dir/brief.md"
 }
 
 # fm_test_make_spawn_fakebin <dir> [extra-exit0-tool...]

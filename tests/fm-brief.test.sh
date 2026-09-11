@@ -259,8 +259,9 @@ test_ship_mode_is_required_and_closed_set() {
     status=$?
     [ "$status" -ne 0 ] || fail "$label: expected a non-zero exit"
     assert_contains "$out" "$expect" "$label: refusal did not explain the contract"
-    assert_absent "$(fm_test_task_dir "$home" "brief-required-$id" some-proj)/brief.md" \
-      "$label: refused scaffold still wrote a brief"
+    refused_brief=$(fm_test_task_brief "$home" "brief-required-$id" some-proj) \
+      || fail "$label: could not resolve the brief path the scaffold was refused for"
+    assert_absent "$refused_brief" "$label: refused scaffold still wrote a brief"
   done <<'ROWS'
 missing --mode||ship briefs require --mode
 empty --mode value|--mode|requires a value
@@ -615,8 +616,9 @@ test_secondmate_no_projects_charter() {
   # Accidental omission (no projects, no signal) still fails loudly, writing nothing.
   FM_HOME="$home" FM_SECONDMATE_CHARTER='x' "$ROOT/bin/fm-brief.sh" oops --secondmate >/dev/null 2>&1; status=$?
   expect_code 1 "$status" "secondmate brief with no projects and no --no-projects must fail"
-  assert_absent "$(fm_test_task_dir "$home" oops _none)/brief.md" \
-    "loud-failure secondmate brief still wrote a file"
+  refused_brief=$(fm_test_task_brief "$home" oops _none) \
+    || fail "could not resolve the brief path the secondmate scaffold was refused for"
+  assert_absent "$refused_brief" "loud-failure secondmate brief still wrote a file"
 
   # --no-projects is mutually exclusive with a project list.
   FM_HOME="$home" FM_SECONDMATE_CHARTER='x' "$ROOT/bin/fm-brief.sh" oops2 --secondmate --no-projects alpha >/dev/null 2>&1; status=$?
@@ -780,8 +782,9 @@ test_herdr_lab_contract_applies_to_scouts_but_not_secondmates() {
 
   FM_HOME="$home" FM_SECONDMATE_CHARTER=ops "$ROOT/bin/fm-brief.sh" herdr-secondmate --secondmate firstmate --herdr-lab >/dev/null 2>&1 || status=$?
   expect_code 1 "$status" "secondmate --herdr-lab must be rejected"
-  assert_absent "$(fm_test_task_dir "$home" herdr-secondmate _none)/brief.md" \
-    "rejected secondmate --herdr-lab still wrote a brief"
+  refused_brief=$(fm_test_task_brief "$home" herdr-secondmate _none) \
+    || fail "could not resolve the brief path the --herdr-lab scaffold was refused for"
+  assert_absent "$refused_brief" "rejected secondmate --herdr-lab still wrote a brief"
   pass "fm-brief.sh: Herdr lab contract covers scouts and rejects secondmate misuse"
 }
 
