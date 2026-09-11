@@ -1978,7 +1978,7 @@ json_escape() {
 # discards the first, confirmed live), so this is the ONE place that must
 # also fold in agent.efficiencyLevel when a supported effort was requested.
 # Granted paths are real (symlink-resolved) directories/files under this
-# task's home: the brief's own directory, taken from BRIEF_REAL rather than
+# task's home: the brief's own directory, taken from BRIEF_DIR_REAL rather than
 # rebuilt from a layout literal so the grant can never address a folder the
 # worker was not pointed at (covers brief.md/launch-brief.md/report.md), the
 # steering inbox directory (covers every steer and its handled/

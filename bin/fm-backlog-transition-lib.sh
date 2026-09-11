@@ -525,14 +525,12 @@ fm_backlog_done() {  # <data-dir> <id> [flag...]
 # prefix - is still recorded in the task body rather than as a row artifact.
 # The validator's middle segment is `\S+?`, so a value carrying whitespace is
 # rejected there; a shell `case` glob does not stop at whitespace, so this
-# predicate has to refuse it explicitly. It does so with an allowlist under a
-# pinned LC_ALL=C rather than a `[[:space:]]` blocklist, because that class
-# resolves against the ambient locale and under C/POSIX does not match U+00A0,
-# which the validator does reject. The allowlist also refuses characters the
-# validator would accept; erring that way is safe here because a refusal only
-# degrades the deliverable to the task body, while accepting what the validator
-# rejects fails the whole transition. The rule is that this predicate must
-# never admit what the validator rejects: admitting one would send the row a
+# predicate has to refuse it explicitly. It names those characters rather than
+# using `[[:space:]]`, which resolves against the ambient locale and under
+# C/POSIX does not match U+00A0 - a character the validator does reject. The
+# list is the same one bin/fm-task-data-lib.sh's project slug refuses, so the
+# two boundaries agree on what whitespace means. The rule is that this predicate
+# must never admit what the validator rejects: admitting one would send the row a
 # value `tasks-axi update` refuses, and the caller would fail the whole
 # transition instead of skipping one unsupported artifact. A `--report` value
 # reaches here from a relocated report and from a replayed pending-close record
@@ -546,7 +544,7 @@ fm_backlog_row_artifact_supported() {
     --pr) return 0 ;;
     --report)
       case "$value" in
-        *[!A-Za-z0-9._/-]*) return 1 ;;
+        *[$' \t\n\v\f\r']*|*$'\302\240'*) return 1 ;;
       esac
       case "$value" in
         data/*/report.md) ;;

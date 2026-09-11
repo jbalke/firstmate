@@ -108,14 +108,34 @@ test_whitespace_guards_hold_under_a_c_locale() {
   ' _ "$ROOT" "$nbsp")
   [ -z "$accepted" ] \
     || fail "under LC_ALL=C these guards accepted a U+00A0 value tasks-axi rejects: $accepted"
-  # The same guards still accept what the validator accepts.
+  # The same guards still accept what the validator accepts. tasks-axi's middle
+  # segment is `\S+?`, so punctuation and non-ASCII letters close fine; refusing
+  # them here would abort a scaffold and drop a deliverable link for values the
+  # validator takes.
   LC_ALL=C bash -c '
     . "$1/bin/fm-task-data-lib.sh"
     . "$1/bin/fm-backlog-transition-lib.sh"
     fm_task_data_project_slug front-client >/dev/null || exit 1
+    fm_task_data_project_slug "c++-tools" >/dev/null || exit 1
+    fm_task_data_project_slug "café" >/dev/null || exit 1
     fm_backlog_row_artifact_supported id --report data/tasks/front-client/s1/report.md || exit 1
-  ' _ "$ROOT" || fail "the locale-pinned guards refused a legitimate project and report path"
+    fm_backlog_row_artifact_supported id --report "data/archive/v1.0+beta/report.md" || exit 1
+  ' _ "$ROOT" || fail "the locale-pinned guards refused a project name or report path tasks-axi accepts"
   pass "fm-task-data-lib: the whitespace refusals hold under a C/POSIX locale"
+}
+
+# The whitespace refusal is the only narrowing this boundary applies. A project
+# name the validator accepts must still reach a directory: unlike the artifact
+# predicate, where an over-refusal costs only the row's deliverable link, a
+# refusal here aborts the scaffold and the task never gets written at all.
+test_a_non_whitespace_project_name_still_scaffolds() {
+  local home out
+  home=$(new_home punctuation)
+  out=$(scaffold_ship "$home" plus-task 'c++-tools' "Bump the toolchain" 2>&1) \
+    || fail "scaffold refused a project name tasks-axi accepts: $out"
+  assert_present "$home/data/tasks/c++-tools/plus-task/brief.md" \
+    "a project name carrying punctuation must still scaffold"
+  pass "fm-brief.sh: a non-whitespace project name the validator accepts still scaffolds"
 }
 
 test_marker_records_project_title_and_date() {
@@ -483,6 +503,7 @@ test_scaffold_writes_project_grouped_path
 test_whitespace_project_is_refused_before_its_directory_exists
 test_whitespace_task_id_is_refused_before_its_directory_exists
 test_whitespace_guards_hold_under_a_c_locale
+test_a_non_whitespace_project_name_still_scaffolds
 test_marker_records_project_title_and_date
 test_title_never_enters_the_path
 test_project_less_task_uses_the_documented_literal
