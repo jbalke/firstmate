@@ -1097,6 +1097,80 @@ EOF
   pass "home-summary excludes kind=secondmate from unowned_current and terminal_in_flight"
 }
 
+# The same containment over the REMOTE transport that produced the original
+# defect: a sampled remote home whose `fm-on.sh ... fm-remote-file.sh get
+# state/home-summary.json` answers rc=0 with non-JSON on stdout (a remote rc file
+# echoing to stdout prepends junk to the payload) must degrade to that home's own
+# fallback record. The local variant above pins the same invariant on the reader;
+# this one drives the real ssh-backed fetch, validation, and fallback path.
+test_malformed_remote_home_summary_degrades_only_that_home() {
+  local home fakebin good junk out
+  home=$(make_home malformed-remote-home-summary)
+  fakebin=$(make_fakebin "$home")
+  good="$TMP_ROOT/malformed-remote-good"
+  junk="$TMP_ROOT/malformed-remote-junk"
+  mkdir -p "$good/data" "$good/state" "$good/config" "$good/projects" \
+    "$junk/data" "$junk/state" "$junk/config" "$junk/projects"
+  good=$(cd "$good" && pwd -P)
+  junk=$(cd "$junk" && pwd -P)
+  printf '## In flight\n\n## Queued\n\n## Done\n' > "$good/data/backlog.md"
+  # The healthy remote ledger comes from the real generator, so the payload this
+  # transport carries cannot drift from the schema the collector validates.
+  PATH="$fakebin:$PATH" FM_HOME="$good" "$SNAPSHOT" --secondmate-home-summary \
+    > "$good/state/home-summary.json" \
+    || fail "could not generate the healthy remote home ledger"
+  cat > "$fakebin/fake-ssh" <<'SH'
+#!/usr/bin/env bash
+set -u
+while [ "$#" -gt 0 ]; do
+  case "$1" in -o) shift 2 ;; --) shift; break ;; *) exit 90 ;; esac
+done
+host=${1:-}
+shift 2
+remote_home=$(perl -MMIME::Base64=decode_base64 -e 'print decode_base64($ARGV[0])' "$3")
+args=()
+while IFS= read -r -d '' arg; do args+=("$arg"); done \
+  < <(perl -MMIME::Base64=decode_base64 -e 'print decode_base64($ARGV[0])' "$4")
+case "${args[0]:-}" in
+  fm-remote-file.sh) ;;
+  *) exit 91 ;;
+esac
+case "$host" in
+  junk-host)
+    # A remote rc file echoing to stdout prepends junk to the payload.
+    printf 'rc=0\n{"schema":"fm-secondmate-home-summary.v1"\n'
+    ;;
+  *)
+    [ -f "$remote_home/state/home-summary.json" ] || exit 1
+    cat "$remote_home/state/home-summary.json"
+    ;;
+esac
+exit 0
+SH
+  chmod +x "$fakebin/fake-ssh"
+  printf -- '- good-mate - good remote (host: good-host; root: /remote/root; home: %s; scope: remote testing; projects: alpha; added 2026-08-02)\n- junk-mate - junk remote (host: junk-host; root: /remote/root; home: %s; scope: remote testing; projects: alpha; added 2026-08-02)\n' \
+    "$good" "$junk" > "$home/data/secondmates.md"
+  out=$(PATH="$fakebin:$PATH" FM_HOME="$home" FM_SSH_BIN="$fakebin/fake-ssh" \
+    FM_SNAPSHOT_CACHE_DIR="$home/state/summary-cache" "$SNAPSHOT" --json) \
+    || fail "a malformed remote home summary must not fail the whole snapshot: $out"
+  printf '%s' "$out" | jq -e '
+    (.secondmate_current.records | length) == 2
+  ' >/dev/null || fail "both registered remote secondmate records must survive: $out"
+  printf '%s' "$out" | jq -e --arg junk "$junk" '
+    .secondmate_current.records[] | select(.id == "junk-mate")
+    | .home == $junk
+      and .current.state == "unknown"
+      and (.current.reason | test("structured home ledger"))
+      and .reconcile_inventory == null
+  ' >/dev/null || fail "a malformed remote home summary must degrade to that home's fallback record: $out"
+  printf '%s' "$out" | jq -e '
+    .secondmate_current.records[] | select(.id == "good-mate")
+    | .provenance.selected == "structured-home"
+      and .current.state == "no_active_work"
+  ' >/dev/null || fail "a healthy remote home must keep its structured record alongside a malformed one: $out"
+  pass "a malformed remote home summary degrades only that home, not the whole snapshot"
+}
+
 test_empty_fleet_json
 test_fixture_snapshot_json
 test_home_summary_excludes_secondmate_from_child_inventory
@@ -1116,3 +1190,4 @@ test_backlog_tasks_axi_forms_and_overrides
 test_view_renders_snapshot
 test_view_renders_dead_secondmate_agent_status
 test_malformed_home_summary_degrades_only_that_home
+test_malformed_remote_home_summary_degrades_only_that_home

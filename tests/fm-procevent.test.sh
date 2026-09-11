@@ -77,6 +77,30 @@ wait_for() {  # <file> [tries]
   return 1
 }
 
+# <claim-file> [tries]: echo the claimed runner pid once that pid is its own
+# process-group leader. bin/fm-procevent.sh refuses to signal a runner whose
+# group is not yet established (runner_group_signal requires pgid == pid), so a
+# fixed settle window races the detached setsid on a loaded machine and turns a
+# stop into an `uncertain` rather than a `stopped`.
+wait_for_runner_group() {
+  local claim=$1 n=${2:-100} pid pgid
+  for _ in $(seq 1 "$n"); do
+    pid=$(sed -n '2p' "$claim" 2>/dev/null || true)
+    case "$pid" in
+      ''|*[!0-9]*) ;;
+      *)
+        pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d '[:space:]')
+        if [ -n "$pgid" ] && [ "$pgid" = "$pid" ]; then
+          printf '%s\n' "$pid"
+          return 0
+        fi
+        ;;
+    esac
+    sleep 0.1
+  done
+  return 1
+}
+
 # <file> <count> [tries]: wait until <file> holds at least <count> lines. A
 # detached runner appends its execution marker after the command that started it
 # has already returned, so a caller that needs that append must wait for it
@@ -997,7 +1021,8 @@ TRIG2="$TMP_ROOT/trigger-two"
 pe_register "$HA" lavish shared-src -- "$BLOCKER" "$TRIG2" "shared" >/dev/null
 pe_register "$HB" lavish shared-src -- "$BLOCKER" "$TRIG2" "shared" >/dev/null
 pe "$HA" reconcile >/dev/null
-sleep 0.5
+runner_pid=$(wait_for_runner_group "$FM_PROCEVENT_CLAIM_ROOT/shared-src.claim") \
+  || fail "the owning home's runner never became a signalable process-group leader"
 out=$(pe "$HB" start shared-src)
 assert_contains "$out" "already owned" "a second home cannot own a source another home already owns"
 [ -z "$(wake_payloads "$HB")" ] || fail "the losing home published an event"
@@ -1006,8 +1031,6 @@ pass "one owner per canonical source across homes"
 # A source whose child never completes must not survive retirement. This is the
 # leak that reparented four orphaned runners: the fixture directory was removed
 # while the detached child kept blocking, with nothing left to reap it.
-runner_pid=$(sed -n '2p' "$FM_PROCEVENT_CLAIM_ROOT/shared-src.claim" 2>/dev/null)
-[ -n "$runner_pid" ] || fail "no runner pid recorded for the blocked source"
 kill -0 "$runner_pid" 2>/dev/null || fail "the blocked runner is not live before retirement"
 pe "$HA" retire shared-src >/dev/null
 for _ in $(seq 1 40); do kill -0 "$runner_pid" 2>/dev/null || break; sleep 0.1; done
@@ -1020,11 +1043,9 @@ TRIG4="$TMP_ROOT/trigger-four"
 HZ="$TMP_ROOT/hz"; new_home "$HZ"
 pe_register "$HZ" lavish orphan-src -- "$BLOCKER" "$TRIG4" "orphan" >/dev/null
 pe "$HZ" reconcile >/dev/null
-sleep 0.5
-orphan_pid=$(sed -n '2p' "$FM_PROCEVENT_CLAIM_ROOT/orphan-src.claim" 2>/dev/null)
-if [ -z "$orphan_pid" ] || ! kill -0 "$orphan_pid" 2>/dev/null; then
-  fail "orphan fixture runner did not start"
-fi
+orphan_pid=$(wait_for_runner_group "$FM_PROCEVENT_CLAIM_ROOT/orphan-src.claim") \
+  || fail "orphan fixture runner did not start as a signalable process-group leader"
+kill -0 "$orphan_pid" 2>/dev/null || fail "orphan fixture runner did not stay live"
 rm -f "$HZ/state/procevent/orphan-src.source"
 out=$(pe "$HZ" reconcile)
 assert_contains "$out" "stopped=1" "reconcile stops a runner whose registration was removed"

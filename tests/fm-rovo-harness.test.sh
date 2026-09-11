@@ -2,8 +2,8 @@
 # Behavior tests for the verified Rovo CLI crewmate/scout adapter.
 set -u
 
-# shellcheck source=tests/lib.sh
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=tests/fixtures.sh
+. "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 
 # bin/fm-harness.sh checks verified ENV markers before ancestry. A suite run
 # from inside Cursor, Claude, Pi, or Grok inherits those markers, which outrank
@@ -126,15 +126,21 @@ SH
   printf '%s\n' "$fakebin"
 }
 
+# The brief lands in the project-grouped task data directory bin/fm-spawn.sh
+# actually resolves (bin/fm-task-data-lib.sh, through tests/fixtures.sh), not the
+# legacy flat folder, so the rovo grant is exercised against the layout every
+# scaffolded task uses today.
 make_spawn_case() {
-  local name=$1 id=$2 case_dir home proj wt fakebin
+  local name=$1 id=$2 case_dir home proj wt fakebin brief
   case_dir="$TMP_ROOT/$name"
   home="$case_dir/home"
   proj="$case_dir/project"
   wt="$case_dir/wt"
   fakebin=$(make_rovo_fakebin "$case_dir/fake")
-  mkdir -p "$home/data/$id" "$home/projects" "$home/state" "$home/config"
-  cat > "$home/data/$id/brief.md" <<'EOF'
+  mkdir -p "$home/data" "$home/projects" "$home/state" "$home/config"
+  brief=$(fm_test_task_brief "$home" "$id" "$(basename -- "$proj")")
+  mkdir -p "$(dirname -- "$brief")"
+  cat > "$brief" <<'EOF'
 # Task
 ## Captain's intent
 Exercise Rovo dispatch.
@@ -171,7 +177,7 @@ run_spawn() {
     FM_FAKE_POINTER_LOG="$case_dir/pointer.log" \
     FM_FAKE_ROVO_STATE="$case_dir/rovo.state" \
     FM_FAKE_TMUX_CALL_LOG="$case_dir/tmux-calls.log" \
-    FM_FAKE_BRIEF_REAL="$(cd "$home/data/$id" && pwd -P)/launch-brief.md" \
+    FM_FAKE_BRIEF_REAL="$(cd "$(dirname -- "$(fm_test_task_brief "$home" "$id")")" && pwd -P)/launch-brief.md" \
     FM_FAKE_ROVO_READY="${FM_FAKE_ROVO_READY:-yes}" \
     FM_FAKE_ROVO_DELIVERY="${FM_FAKE_ROVO_DELIVERY:-yes}" \
     FM_ROVO_READY_POLLS=3 FM_ROVO_DELIVERY_POLLS=3 FM_ROVO_POLL_INTERVAL=0 \
@@ -180,7 +186,7 @@ run_spawn() {
 }
 
 test_rovo_launch_then_send_is_verified() {
-  local id rec out rc launch pointer brief_real meta data_real state_real
+  local id rec out rc launch pointer brief_real meta brief_dir_real state_real
   id="rovo-success-z1-$$"
   rec=$(make_spawn_case success "$id")
   read_spawn_record "$rec"
@@ -204,7 +210,7 @@ test_rovo_launch_then_send_is_verified() {
     "rovo launch did not clear cursor's markers via the shared outer wrap"
   assert_not_contains "$launch" "turn-ended" "rovo launch embedded a turn-end path it does not own"
 
-  brief_real="$(cd "$HOME_DIR/data/$id" && pwd -P)/launch-brief.md"
+  brief_real="$(cd "$(dirname -- "$(fm_test_task_brief "$HOME_DIR" "$id")")" && pwd -P)/launch-brief.md"
   pointer=$(cat "$CASE_DIR/pointer.log")
   [ "$pointer" = "Read the brief at $brief_real and follow it exactly." ] \
     || fail "rovo pointer was not the exact absolute-path-only instruction: $pointer"
@@ -219,12 +225,12 @@ test_rovo_launch_then_send_is_verified() {
   # (confirmed live), so the launch must grant allowedExternalPaths covering
   # this task's brief directory, steering inbox, and status file - otherwise
   # the standard instructions/steering/status/report loop cannot work.
-  data_real=$(cd "$HOME_DIR/data/$id" && pwd -P)
+  brief_dir_real=$(cd "$(dirname -- "$(fm_test_task_brief "$HOME_DIR" "$id")")" && pwd -P)
   state_real=$(cd "$HOME_DIR/state" && pwd -P)
   assert_contains "$launch" "allowedExternalPaths" \
     "rovo launch did not grant allowedExternalPaths for this task's home paths"
-  assert_contains "$launch" "$data_real" \
-    "rovo launch's allowedExternalPaths grant omitted the brief directory"
+  assert_contains "$launch" "\"$brief_dir_real\"" \
+    "rovo launch's allowedExternalPaths grant omitted the brief directory bin/fm-spawn.sh pointed the worker at"
   assert_contains "$launch" "$state_real/$id.inbox" \
     "rovo launch's allowedExternalPaths grant omitted the steering inbox directory"
   assert_contains "$launch" "$state_real/$id.status" \

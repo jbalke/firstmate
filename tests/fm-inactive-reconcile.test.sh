@@ -223,25 +223,35 @@ test_busy_child_does_not_starve_later_ledger_outcomes() {
   pass "busy child locks do not starve later ledger outcomes"
 }
 
-# A scout's done line carries its report pointer, a failed line is delivered
-# under the failed verb, and a later terminal line after recovery is a new
-# delivery rather than a suppressed duplicate.
+# A scout's done line carries its report pointer - from either task data layout
+# (bin/fm-task-data-lib.sh), since a scout scaffolded today writes into the
+# project-grouped directory - a failed line is delivered under the failed verb,
+# and a later terminal line after recovery is a new delivery rather than a
+# suppressed duplicate.
 test_secondmate_ledger_delivery_carries_report_and_failure() {
-  local scout_key boom_key replaced_key
+  local scout_key grouped_key boom_key replaced_key
   make_world ledger-shapes; bind_secondmate local
   write_child "$MATE" scout 'done: report written'
   mkdir -p "$MATE/data/scout"
   printf '# findings\n' > "$MATE/data/scout/report.md"
+  write_child "$MATE" grouped-scout 'done: grouped report written'
+  mkdir -p "$MATE/data/tasks/alpha/grouped-scout"
+  printf '# grouped findings\n' > "$MATE/data/tasks/alpha/grouped-scout/report.md"
   write_child "$MATE" boom 'failed: build broke'
   write_child "$MATE" replaced-pr $'working: old PR https://example.test/owner/repo/pull/11\ndone: replacement PR https://example.test/owner/repo/pull/22'
   awk '$0 !~ /^pr=/' "$MATE/state/replaced-pr.meta" > "$MATE/state/replaced-pr.meta.tmp"
   mv "$MATE/state/replaced-pr.meta.tmp" "$MATE/state/replaced-pr.meta"
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
   scout_key=$(reported_outcome_key "$MATE" scout 'done') || fail "scout receipt key missing"
+  grouped_key=$(reported_outcome_key "$MATE" grouped-scout 'done') \
+    || fail "grouped scout receipt key missing"
   boom_key=$(reported_outcome_key "$MATE" boom failed) || fail "failed receipt key missing"
   replaced_key=$(reported_outcome_key "$MATE" replaced-pr 'done') || fail "replacement PR receipt key missing"
   grep -Fxq "done [key=$scout_key]: child scout done: report written pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off report=data/scout/report.md" \
     "$MAIN/state/mate.status" || fail "scout delivery lost its report pointer: $(cat "$MAIN/state/mate.status")"
+  grep -Fxq "done [key=$grouped_key]: child grouped-scout done: grouped report written pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off report=data/tasks/alpha/grouped-scout/report.md" \
+    "$MAIN/state/mate.status" \
+    || fail "a project-grouped scout report was not pointed at: $(cat "$MAIN/state/mate.status")"
   grep -Fxq "failed [key=$boom_key]: child boom failed: build broke pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
     "$MAIN/state/mate.status" || fail "failed line was not delivered under the failed verb: $(cat "$MAIN/state/mate.status")"
   grep -Fxq "done [key=$replaced_key]: child replaced-pr done: replacement PR https://example.test/owner/repo/pull/22 pr=https://example.test/owner/repo/pull/22 mode=no-mistakes yolo=off" \

@@ -26,13 +26,17 @@ if [ -n "${FM_TEST_LIB_SOURCED:-}" ]; then
 fi
 FM_TEST_LIB_SOURCED=1
 
-# Pin the fixture umask. Firstmate's state-root and process-event contracts
-# refuse group- or world-writable state directories, and a permissive ambient
-# umask (e.g. 0002) makes every `mkdir state` fixture fail that contract before
-# the behavior under test can even run. 022 is the conventional default this
-# suite's fixtures were written against. Tests that need a narrower or wider
-# mode set their own umask in a subshell.
-umask 022
+# Pin the fixture umask. Firstmate's state and task transports are private, so
+# every fixture created after this library is sourced is held to that production
+# invariant. 077 also satisfies the stricter half of the requirement that
+# replaced it upstream: the state-root and process-event contracts
+# (bin/fm-procevent-lib.sh) refuse group- or world-WRITABLE state directories, and
+# a permissive ambient umask (e.g. 0002) makes every `mkdir state` fixture fail
+# that contract before the behavior under test can even run. 077 clears those
+# bits strictly more than 022 does, so the two requirements were never in
+# tension. Tests that need a specific wider mode chmod it explicitly or set their
+# own umask in a subshell.
+umask 077
 
 # Exempt firstmate's own test suite from the gate-lifecycle refusal
 # (bin/fm-gate-refuse-lib.sh). The no-mistakes gate runs this suite FROM a gate

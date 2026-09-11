@@ -2517,6 +2517,49 @@ test_teardown_never_closes_a_captain_held_task() {
   pass "cleanup leaves a captain-held work item open with its deliverable, and only an answer closes it"
 }
 
+# A retained row keeps the report as a row ARTIFACT, not just as body prose, and
+# this home scaffolds task data project-grouped (bin/fm-task-data-lib.sh). The
+# `update --report` validator accepts any `data/.../report.md` path, so the
+# grouped shape a real scout produces must survive the retain transition exactly
+# as the legacy flat one does - otherwise every retained report on this layout
+# arrives inert.
+test_retained_report_survives_a_grouped_task_data_path() {
+  local home id report_dir show
+  home=$(make_home retained-grouped-report)
+  id=sample-grouped-retained-report
+  report_dir="$home/data/tasks/sample/$id"
+  mkdir -p "$report_dir"
+  tasks_in "$home" add "$id" "Investigate grouped retained report evidence" --kind scout \
+    --repo sample --start >/dev/null || fail "could not create the grouped report fixture"
+  write_origin_meta "$home" "$id"
+  printf 'done: report complete\n' > "$home/state/$id.status"
+  printf '# Grouped retained report\n\nThe captain must choose the follow-up.\n' \
+    > "$report_dir/report.md"
+  run_captain "$home" hold "$id" --reason "captain must choose the grouped report follow-up" \
+    >/dev/null || fail "could not hold the grouped report fixture"
+  run_captain "$home" complete "$id" "$id" >/dev/null \
+    || fail "completion gate failed for the grouped report fixture"
+
+  run_teardown "$home" "$id" > "$home/grouped-teardown.out" 2> "$home/grouped-teardown.err" \
+    || fail "cleanup of the grouped captain-held report failed: $(cat "$home/grouped-teardown.err")"
+  show=$(tasks_in "$home" show "$id" --full) || fail "the grouped captain-held row disappeared"
+  assert_contains "$show" "state: queued" "cleanup closed the grouped captain call"
+  assert_contains "$show" "hold_kind: captain" "cleanup dropped the grouped captain hold"
+  assert_contains "$show" "Deliverable of the finished work: report data/tasks/sample/$id/report.md" \
+    "the grouped deliverable was not recorded on the still-open row"
+  assert_contains "$show" "report:data/tasks/sample/$id/report.md" \
+    "the grouped report did not survive the retain transition as a row artifact"
+
+  printf 'Proceed with the grouped report follow-up.\n' > "$home/grouped-answer.txt"
+  run_captain "$home" answer "$id" --decision-file "$home/grouped-answer.txt" >/dev/null \
+    || fail "could not answer the grouped retained report call"
+  show=$(tasks_in "$home" show "$id" --full) || fail "the answered grouped row is gone"
+  assert_contains "$show" "state: done" "the recorded answer did not close the grouped captain call"
+  assert_contains "$show" "report:data/tasks/sample/$id/report.md" \
+    "the answer lost the grouped report artifact"
+  pass "a retained captain call keeps a project-grouped report as a row artifact"
+}
+
 test_retained_row_artifacts_survive_captain_answers() {
   local home retained_id precedence_id rejected_id rejected_local_id report_question_id
   local approved_id released_id local_id answered_id reportless_scout_id legacy_id
@@ -3800,6 +3843,7 @@ test_origin_slug_validation_precedes_path_construction
 test_status_resolution_over_an_open_hold_is_signalled
 test_legitimate_holds_produce_no_divergence_signal
 test_teardown_never_closes_a_captain_held_task
+test_retained_report_survives_a_grouped_task_data_path
 test_retained_row_artifacts_survive_captain_answers
 test_interrupted_cleanup_keeps_the_captain_call_recoverable
 test_answer_before_cleanup_replay_preserves_the_retained_report

@@ -56,6 +56,10 @@
 # first applies any supported retained artifact from the validated record, then
 # replay simply retires the record.
 
+_FM_BACKLOG_TRANSITION_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=bin/fm-task-data-lib.sh
+. "$_FM_BACKLOG_TRANSITION_LIB_DIR/fm-task-data-lib.sh"
+
 # Set by fm_backlog_transition_applies for a return-1 exemption.
 # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
 FM_BACKLOG_TRANSITION_SKIP=
@@ -291,6 +295,7 @@ fm_backlog_transition_applies() {  # <config-dir> <data-dir> <kind>
   if [ "$backend" = markdown ]; then
     file=$(fm_backlog_file "$data") || return 2
     if [ ! -e "$file" ] && [ ! -L "$file" ]; then
+      # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
       FM_BACKLOG_TRANSITION_SKIP="this home keeps no markdown backlog at $file"
       return 1
     fi
@@ -514,11 +519,28 @@ fm_backlog_done() {  # <data-dir> <id> [flag...]
   fm_backlog_mutate "$data" "done" "$id" "$@"
 }
 
+# A tasks-axi row accepts a `data/.../report.md` link, so both task data layouts
+# (bin/fm-task-data-lib.sh) qualify: the legacy flat folder and the
+# project-grouped one this home scaffolds into. A report that lives anywhere else
+# is still recorded in the task body rather than as a row artifact.
 fm_backlog_row_artifact_supported() {
-  local id=$1 flag=${2:-} value=${3:-}
+  local id=$1 flag=${2:-} value=${3:-} project
   case "$flag" in
     --pr) return 0 ;;
-    --report) [ "$value" = "data/$id/report.md" ] ;;
+    --report)
+      case "$value" in
+        "data/$id/report.md") return 0 ;;
+        "data/$FM_TASK_DATA_SUBDIR/"*"/$id/report.md")
+          project=${value#"data/$FM_TASK_DATA_SUBDIR/"}
+          project=${project%"/$id/report.md"}
+          case "$project" in
+            ''|.|..|*/*) return 1 ;;
+            *) return 0 ;;
+          esac
+          ;;
+      esac
+      return 1
+      ;;
     *) return 1 ;;
   esac
 }
@@ -1183,6 +1205,7 @@ fm_backlog_close_marker_replay() {  # <state-dir> <marker-path> <authorized-data
     elif [ "$cleanup_incomplete" = 1 ]; then
       FM_BACKLOG_CLOSE_REPLAY_RESULT=closed_incomplete
     else
+      # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
       FM_BACKLOG_CLOSE_REPLAY_RESULT=closed
     fi
     return 0
