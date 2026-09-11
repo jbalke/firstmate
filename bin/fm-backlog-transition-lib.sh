@@ -525,11 +525,13 @@ fm_backlog_done() {  # <data-dir> <id> [flag...]
 # prefix - is still recorded in the task body rather than as a row artifact.
 # The validator's middle segment is `\S+?`, so a value carrying whitespace is
 # rejected there; a shell `case` glob does not stop at whitespace, so this
-# predicate has to refuse it explicitly. A project registry name may legally
-# contain a space (bin/fm-task-data-lib.sh's fm_task_data_project_slug refuses
-# only `.`, `..`, a slash, a newline and a leading `-`), so accepting one here
-# would send the row a value `tasks-axi update` rejects, and the caller would
-# fail the whole transition instead of skipping one unsupported artifact.
+# predicate has to refuse it explicitly. The rule is that this predicate must
+# never admit what the validator rejects: admitting one would send the row a
+# value `tasks-axi update` refuses, and the caller would fail the whole
+# transition instead of skipping one unsupported artifact. A `--report` value
+# reaches here from a relocated report and from a replayed pending-close record
+# as well as from a scaffolded path, so it cannot rely on whatever the task data
+# layout happens to refuse upstream.
 # Argument 1 is the task id, kept for the call shape the callers already use.
 fm_backlog_row_artifact_supported() {
   local flag=${2:-} value=${3:-} folder

@@ -70,6 +70,24 @@ test_whitespace_project_is_refused_before_its_directory_exists() {
   pass "fm-brief.sh: a whitespace project name is refused before its directory exists"
 }
 
+# The id component has the same exposure the project component had, through a
+# different door: every downstream consumer refuses a whitespace id
+# (bin/fm-spawn.sh and bin/fm-teardown.sh both apply fm_task_id_creation_valid /
+# fm_task_id_path_safe), so a scaffold that accepts one leaves a directory and a
+# success message for a task that can never be spawned or torn down. The scaffold
+# applies the same predicate its consumers do, so the dead directory never exists.
+test_whitespace_task_id_is_refused_before_its_directory_exists() {
+  local home out rc=0 spaced
+  home=$(new_home whitespace-task-id)
+  out=$(scaffold_ship "$home" 'my id' front-client "Spaced id" 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "the scaffold accepted a task id containing whitespace: $out"
+  assert_contains "$out" "invalid task id" \
+    "the refusal did not name the task id as the constraint a caller has to satisfy"
+  spaced=$(find "$home/data" -type d -name '* *' 2>/dev/null | head -1)
+  [ -z "$spaced" ] || fail "a whitespace task directory was created anyway: $spaced"
+  pass "fm-brief.sh: a whitespace task id is refused before its directory exists"
+}
+
 test_marker_records_project_title_and_date() {
   local home marker
   home=$(new_home marker)
@@ -433,6 +451,7 @@ test_scripts_parse() {
 test_scripts_parse
 test_scaffold_writes_project_grouped_path
 test_whitespace_project_is_refused_before_its_directory_exists
+test_whitespace_task_id_is_refused_before_its_directory_exists
 test_marker_records_project_title_and_date
 test_title_never_enters_the_path
 test_project_less_task_uses_the_documented_literal

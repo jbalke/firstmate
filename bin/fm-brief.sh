@@ -114,6 +114,8 @@ esac
 . "$SCRIPT_DIR/fm-classify-lib.sh"
 # shellcheck source=bin/fm-task-data-lib.sh
 . "$SCRIPT_DIR/fm-task-data-lib.sh"
+# shellcheck source=bin/fm-pr-lib.sh
+. "$SCRIPT_DIR/fm-pr-lib.sh"
 # shellcheck source=bin/fm-dod-lib.sh
 . "$SCRIPT_DIR/fm-dod-lib.sh"
 PAUSED_VERB=${FM_CLASSIFY_PAUSED_VERB:-$FM_CLASSIFY_PAUSED_VERB_DEFAULT}
@@ -200,6 +202,13 @@ elif [ "$MODE_SET" -eq 1 ]; then
   exit 1
 fi
 ID=${POS[0]}
+# The same predicate bin/fm-spawn.sh and bin/fm-teardown.sh apply. Without it a
+# scaffold succeeds for an id neither of them will ever accept, leaving a task
+# data directory and a success message for work that cannot be dispatched.
+fm_task_id_creation_valid "$ID" || {
+  echo "error: invalid task id '$ID'; a task id may use only letters, digits, dot, underscore and dash, may not begin with a dot, and may be at most 64 characters" >&2
+  exit 2
+}
 
 if [ "$KIND" = secondmate ] && [ "$HERDR_LAB" -eq 1 ]; then
   echo "error: --herdr-lab applies only to crewmate ship or scout briefs" >&2

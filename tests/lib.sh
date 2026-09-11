@@ -442,22 +442,27 @@ fm_git_identity() {
 # called. The initial branch is pinned rather than inherited from
 # init.defaultBranch, so a fixture that names main resolves the same on a
 # developer machine and on a runner that still defaults to master.
+# Every git invocation here sends its stdout to stderr. `git commit` reports
+# "nothing to commit" on stdout rather than stderr, and these helpers run inside
+# `case_dir=$(make_home ...)`, so a repo that already carries the initial commit
+# would otherwise put that report INTO the captured path and the caller would
+# mkdir a directory named after it. Diagnostics stay visible on stderr.
 fm_git_init_commit() {
   local dir=$1
   mkdir -p "$dir"
-  git -C "$dir" init -q -b main
+  git -C "$dir" init -q -b main >&2
   printf '# %s\n' "$(basename "$dir")" > "$dir/README.md"
-  git -C "$dir" add README.md
-  git -C "$dir" -c user.name='Firstmate Tests' -c user.email='tests@example.invalid' commit -qm initial
+  git -C "$dir" add README.md >&2
+  git -C "$dir" -c user.name='Firstmate Tests' -c user.email='tests@example.invalid' commit -qm initial >&2
 }
 
 # fm_git_add_origin <repo> <bare>: clone <repo> bare into <bare> and register it
 # as <repo>'s origin via a file:// URL (so later clones resolve an absolute path).
 fm_git_add_origin() {
   local repo=$1 remote=$2 remote_abs
-  git clone --quiet --bare "$repo" "$remote"
+  git clone --quiet --bare "$repo" "$remote" >&2
   remote_abs=$(cd "$remote" && pwd)
-  git -C "$repo" remote add origin "file://$remote_abs"
+  git -C "$repo" remote add origin "file://$remote_abs" >&2
 }
 
 # fm_git_worktree <repo> <worktree> <branch>: initialize <repo> with one commit
@@ -466,7 +471,7 @@ fm_git_worktree() {
   local repo=$1 worktree=$2 branch=$3
   fm_git_init_commit "$repo"
   fm_git_add_origin "$repo" "$repo.origin.git"
-  git -C "$repo" worktree add --quiet -b "$branch" "$worktree"
+  git -C "$repo" worktree add --quiet -b "$branch" "$worktree" >&2
 }
 
 # --- state/<id>.meta writers ------------------------------------------------

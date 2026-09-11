@@ -1608,29 +1608,66 @@ test_completion_closes_a_scout_with_its_report() {
 # close fails, and the pending-close record is left for retry. The only boundary
 # that protects this path is the project slug, so the scaffold must refuse the
 # name outright rather than leave a directory whose close can never land.
-test_completion_is_never_handed_a_whitespace_report_path() {
-  local case_dir home id out rc=0 spaced probe
-  id=atomic-close-whitespace-project
+# The close path is unguarded by design: `fm_backlog_done` hands --report
+# straight to `fm_backlog_mutate ... done` with no artifact predicate in front of
+# it, unlike the retain path. tasks-axi validates the link against a middle
+# segment of `\S+?`, so the only thing keeping a close from being handed a value
+# it will reject is the task data layout refusing to produce one. This drives the
+# real close three ways: a legitimately resolved report lands, a whitespace one
+# is genuinely rejected at the tasks-axi call (which is what "no predicate"
+# means), and the scaffold that would have produced such a value is refused.
+test_completion_is_never_handed_a_whitespace_report_path() (
   case_dir=$(make_home close-whitespace-project)
   home=$(home_of "$case_dir")
+  . "$ROOT/bin/fm-tasks-axi-lib.sh"
+  . "$ROOT/bin/fm-backlog-transition-lib.sh"
+  . "$ROOT/bin/fm-task-data-lib.sh"
 
-  # The close this would produce is genuinely rejected, so the scaffold refusal
-  # is what keeps the done path reachable at all.
-  probe=$(cd "$home" && tasks-axi add "$id-probe" "probe" --file "$(backlog_of "$case_dir")" >/dev/null 2>&1
-    tasks-axi done "$id-probe" --report "data/tasks/my proj/$id-probe/report.md" \
-      --file "$(backlog_of "$case_dir")" 2>&1 | head -1)
-  assert_contains "$probe" "must be a data" \
-    "setup check: tasks-axi no longer rejects a whitespace report path, so this guard is moot"
+  # A report resolved the way bin/fm-teardown.sh's backlog_done_args resolves it
+  # closes its row and lands as the row's artifact.
+  good=good-close
+  tasks-axi add "$good" "item for $good" --kind scout --file "$(backlog_of "$case_dir")" >/dev/null \
+    || fail "could not create the row for $good"
+  tasks-axi start "$good" --file "$(backlog_of "$case_dir")" >/dev/null \
+    || fail "could not start the row for $good"
+  good_dir=$(fm_task_data_dir "$home/data" "$good" front-client) \
+    || fail "could not resolve the task data directory for $good"
+  mkdir -p "$good_dir"
+  printf 'findings\n' > "$good_dir/report.md"
+  FM_HOME="$home" fm_backlog_done "$home/data" "$good" \
+    --report "data/${good_dir#"$home/data/"}/report.md" \
+    || fail "a resolved grouped report did not close its row: $FM_BACKLOG_TRANSITION_ERROR"
+  show=$(tasks-axi show "$good" --full --file "$(backlog_of "$case_dir")")
+  assert_contains "$show" "state: done" "the resolved report did not close the row"
+  assert_contains "$show" "report:data/tasks/front-client/$good/report.md" \
+    "the resolved report did not land as the row's artifact"
 
+  # The same call with a whitespace value fails, because nothing filters it.
+  bad=bad-close
+  tasks-axi add "$bad" "item for $bad" --kind scout --file "$(backlog_of "$case_dir")" >/dev/null \
+    || fail "could not create the row for $bad"
+  tasks-axi start "$bad" --file "$(backlog_of "$case_dir")" >/dev/null \
+    || fail "could not start the row for $bad"
+  if FM_HOME="$home" fm_backlog_done "$home/data" "$bad" \
+      --report "data/tasks/my proj/$bad/report.md" 2>/dev/null; then
+    fail "the close accepted a whitespace report path, so this guard is moot"
+  fi
+  show=$(tasks-axi show "$bad" --full --file "$(backlog_of "$case_dir")")
+  assert_not_contains "$show" "state: done" \
+    "a close that failed its validator still moved the row to done"
+
+  # So the scaffold must never produce one. This is the half that goes red if the
+  # slug boundary stops refusing whitespace.
+  rc=0
   out=$(FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" FM_DATA_OVERRIDE="$home/data" \
-    FM_STATE_OVERRIDE="$home/state" "$ROOT/bin/fm-brief.sh" "$id" 'my proj' \
+    FM_STATE_OVERRIDE="$home/state" "$ROOT/bin/fm-brief.sh" spaced-close 'my proj' \
     --mode direct-PR --title "Spaced project" 2>&1) || rc=$?
   [ "$rc" -ne 0 ] \
-    || fail "the scaffold accepted a whitespace project, so its close is handed a report path tasks-axi rejects: $out"
+    || fail "the scaffold accepted a whitespace project, so a close will be handed a path tasks-axi rejects: $out"
   spaced=$(find "$home/data" -type d -name '* *' 2>/dev/null | head -1)
   [ -z "$spaced" ] || fail "a whitespace task data directory was created anyway: $spaced"
   pass "completion is never handed a report path the validator rejects"
-}
+)
 
 test_completion_refuses_a_legacy_record_without_an_incarnation() {
   local case_dir id meta out rc=0
@@ -3074,9 +3111,11 @@ test_retained_report_artifacts_follow_the_validator_without_traversal() (
     "a relocated data/-relative report was dropped from the retained row"
 
   # Whitespace: the validator's middle segment is `\S+?`, so `tasks-axi update`
-  # refuses this outright. A project registry name may legally contain a space,
-  # so the predicate has to refuse it too - admitting it would fail the whole
-  # retain transition instead of skipping one unsupported artifact.
+  # refuses this outright, and the predicate must never admit what the validator
+  # rejects - admitting it would fail the whole retain transition instead of
+  # skipping one unsupported artifact. A retained value also arrives from a
+  # relocated report and from a replayed pending-close record, so it does not
+  # depend on what the task data layout refuses upstream.
   show=$(retain_report space-shape "data/a b/space-shape/report.md")
   assert_not_contains "$show" "report:data/a b/space-shape/report.md" \
     "a whitespace report path the validator rejects was recorded as a row artifact"
@@ -3135,7 +3174,7 @@ test_dispatch_does_not_resurrect_a_row_closed_after_preflight
 test_dispatch_fails_when_its_row_vanishes_after_preflight
 test_completion_closes_a_local_only_ship_before_reporting_success
 test_completion_closes_a_scout_with_its_report
-test_completion_is_never_handed_a_whitespace_report_path
+test_completion_is_never_handed_a_whitespace_report_path || exit 1
 test_completion_refuses_a_legacy_record_without_an_incarnation
 test_completion_refuses_ambiguous_incarnation_metadata
 test_completion_records_a_relative_report_for_relocated_data
