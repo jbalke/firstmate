@@ -49,6 +49,27 @@ test_scaffold_writes_project_grouped_path() {
   pass "fm-brief.sh: a fresh scaffold writes the project-grouped path"
 }
 
+# A project name carrying whitespace cannot become a path component. tasks-axi
+# validates a row's report link against a middle segment of `\S+?`, so a report
+# under `data/tasks/my proj/<id>/` is refused at close time - on the `done` path
+# (bin/fm-backlog-transition-lib.sh's fm_backlog_done, which passes --report
+# straight through with no artifact predicate) as well as on `retain`. The
+# refusal therefore belongs at the slug boundary, before the directory exists at
+# all, rather than at either close site.
+test_whitespace_project_is_refused_before_its_directory_exists() {
+  local home out rc=0 spaced
+  home=$(new_home whitespace-project)
+  out=$(scaffold_ship "$home" ws-task 'my proj' "Spaced project" 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "the scaffold accepted a project name containing whitespace: $out"
+  assert_contains "$out" "whitespace" \
+    "the refusal did not name whitespace as the constraint a caller has to satisfy"
+  spaced=$(find "$home/data" -type d -name '* *' 2>/dev/null | head -1)
+  [ -z "$spaced" ] || fail "a whitespace task data directory was created anyway: $spaced"
+  assert_absent "$home/data/tasks/my proj/ws-task/brief.md" \
+    "the refused scaffold still wrote a brief under a whitespace project"
+  pass "fm-brief.sh: a whitespace project name is refused before its directory exists"
+}
+
 test_marker_records_project_title_and_date() {
   local home marker
   home=$(new_home marker)
@@ -411,6 +432,7 @@ test_scripts_parse() {
 
 test_scripts_parse
 test_scaffold_writes_project_grouped_path
+test_whitespace_project_is_refused_before_its_directory_exists
 test_marker_records_project_title_and_date
 test_title_never_enters_the_path
 test_project_less_task_uses_the_documented_literal

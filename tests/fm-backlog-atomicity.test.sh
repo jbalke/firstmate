@@ -1601,6 +1601,37 @@ test_completion_closes_a_scout_with_its_report() {
   pass "completion closes a scout item against its report"
 }
 
+# `fm_backlog_done` hands --report straight to tasks-axi with no artifact
+# predicate, so nothing between the task data layout and the close rejects a
+# report path the validator will not take. tasks-axi's middle segment is `\S+?`:
+# a whitespace project name produces `data/tasks/my proj/<id>/report.md`, the
+# close fails, and the pending-close record is left for retry. The only boundary
+# that protects this path is the project slug, so the scaffold must refuse the
+# name outright rather than leave a directory whose close can never land.
+test_completion_is_never_handed_a_whitespace_report_path() {
+  local case_dir home id out rc=0 spaced probe
+  id=atomic-close-whitespace-project
+  case_dir=$(make_home close-whitespace-project)
+  home=$(home_of "$case_dir")
+
+  # The close this would produce is genuinely rejected, so the scaffold refusal
+  # is what keeps the done path reachable at all.
+  probe=$(cd "$home" && tasks-axi add "$id-probe" "probe" --file "$(backlog_of "$case_dir")" >/dev/null 2>&1
+    tasks-axi done "$id-probe" --report "data/tasks/my proj/$id-probe/report.md" \
+      --file "$(backlog_of "$case_dir")" 2>&1 | head -1)
+  assert_contains "$probe" "must be a data" \
+    "setup check: tasks-axi no longer rejects a whitespace report path, so this guard is moot"
+
+  out=$(FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" FM_DATA_OVERRIDE="$home/data" \
+    FM_STATE_OVERRIDE="$home/state" "$ROOT/bin/fm-brief.sh" "$id" 'my proj' \
+    --mode direct-PR --title "Spaced project" 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] \
+    || fail "the scaffold accepted a whitespace project, so its close is handed a report path tasks-axi rejects: $out"
+  spaced=$(find "$home/data" -type d -name '* *' 2>/dev/null | head -1)
+  [ -z "$spaced" ] || fail "a whitespace task data directory was created anyway: $spaced"
+  pass "completion is never handed a report path the validator rejects"
+}
+
 test_completion_refuses_a_legacy_record_without_an_incarnation() {
   local case_dir id meta out rc=0
   id=atomic-close-legacy-no-incarnation-b7
@@ -3064,7 +3095,7 @@ test_retained_report_artifacts_follow_the_validator_without_traversal() (
 
 test_backend_resolution_preserves_config_errors
 test_backend_resolution_preserves_precedence_and_defaults
-test_backlog_callers_refuse_unreadable_backend_config
+test_backlog_callers_refuse_unreadable_backend_config || exit 1
 test_captain_hold_preserves_relocated_backlog_on_backend_error
 test_dispatch_moves_the_item_in_flight_in_the_same_run
 test_dispatch_omits_the_file_for_a_beads_show
@@ -3104,6 +3135,7 @@ test_dispatch_does_not_resurrect_a_row_closed_after_preflight
 test_dispatch_fails_when_its_row_vanishes_after_preflight
 test_completion_closes_a_local_only_ship_before_reporting_success
 test_completion_closes_a_scout_with_its_report
+test_completion_is_never_handed_a_whitespace_report_path
 test_completion_refuses_a_legacy_record_without_an_incarnation
 test_completion_refuses_ambiguous_incarnation_metadata
 test_completion_records_a_relative_report_for_relocated_data
@@ -3161,4 +3193,4 @@ test_environment_selected_adapter_is_not_forced_to_markdown
 test_manual_backend_home_dispatches_and_completes_without_touching_the_backlog
 test_a_secondmate_home_keeps_its_own_books
 test_a_persistent_secondmate_is_never_a_backlog_item
-test_retained_report_artifacts_follow_the_validator_without_traversal
+test_retained_report_artifacts_follow_the_validator_without_traversal || exit 1

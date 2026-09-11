@@ -50,6 +50,13 @@ fm_task_data_valid_id() {  # <task-id>
 # the documented no-project literal. Anything that is not a single safe path
 # component is refused rather than silently rewritten, so a malformed registry
 # name cannot quietly scatter task data.
+#
+# Whitespace is refused here rather than at either close site. A backlog row's
+# report link is validated against a middle segment of `\S+?`, so a report under
+# `data/tasks/<name with a space>/<id>/` is rejected by both `tasks-axi done` and
+# `tasks-axi update` - and the `done` path reaches that call with no artifact
+# predicate in front of it. Refusing the name at scaffold time keeps a directory
+# whose close could never land from existing in the first place.
 fm_task_data_project_slug() {  # <project>
   local project=${1:-}
   if [ -z "$project" ]; then
@@ -57,8 +64,14 @@ fm_task_data_project_slug() {  # <project>
     return 0
   fi
   case "$project" in
+    *[[:space:]]*)
+      echo "error: project name '$project' contains whitespace; a task data directory name must contain none, because a backlog row's report link is only valid as data/<no-whitespace>/report.md" >&2
+      return 1
+      ;;
+  esac
+  case "$project" in
     .|..) ;;
-    */*|*$'\n'*|-*) ;;
+    */*|-*) ;;
     *) printf '%s\n' "$project"; return 0 ;;
   esac
   echo "error: '$project' is not a usable project name for a task data directory" >&2
