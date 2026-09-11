@@ -56,10 +56,6 @@
 # first applies any supported retained artifact from the validated record, then
 # replay simply retires the record.
 
-_FM_BACKLOG_TRANSITION_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=bin/fm-task-data-lib.sh
-. "$_FM_BACKLOG_TRANSITION_LIB_DIR/fm-task-data-lib.sh"
-
 # Set by fm_backlog_transition_applies for a return-1 exemption.
 # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
 FM_BACKLOG_TRANSITION_SKIP=
@@ -295,7 +291,6 @@ fm_backlog_transition_applies() {  # <config-dir> <data-dir> <kind>
   if [ "$backend" = markdown ]; then
     file=$(fm_backlog_file "$data") || return 2
     if [ ! -e "$file" ] && [ ! -L "$file" ]; then
-      # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
       FM_BACKLOG_TRANSITION_SKIP="this home keeps no markdown backlog at $file"
       return 1
     fi
@@ -353,12 +348,20 @@ fm_tasks_axi() {
     # one further bound of grace, then KILL, and exits 124 so the callers'
     # timeout plumbing reports it. Polling rather than alarm+die keeps the
     # bound off perl's platform-dependent syscall-restart signal semantics.
+    # The child gets its own process group and the signals go to that GROUP,
+    # the same rule bin/fm-timeout-lib.sh states for every mechanism it
+    # selects: GNU/BSD `timeout` above already signals the group, so without
+    # setpgrp here the two paths would not share a contract. A grandchild that
+    # outlives its parent keeps the caller's captured stdout open, and every
+    # caller reads this through a command substitution while holding the
+    # per-task meta lock - so a surviving grandchild would hold that lock for
+    # its own lifetime, which is the exact hazard this bound exists to prevent.
     exec perl -MPOSIX=WNOHANG -e '
       my $bound = shift;
       exit 127 unless defined $bound && $bound =~ /\A[0-9]+\z/;
       my $pid = fork;
       exit 127 unless defined $pid;
-      if ($pid == 0) { exec @ARGV; exit 127 }
+      if ($pid == 0) { setpgrp(0, 0); exec @ARGV; exit 127 }
       my $step = 0.05;
       my $elapsed = 0;
       while (1) {
@@ -366,7 +369,7 @@ fm_tasks_axi() {
         exit(($? & 127) ? 128 + ($? & 127) : $? >> 8) if $done == $pid;
         exit 127 if $done == -1;
         if ($elapsed >= $bound) {
-          kill "TERM", $pid;
+          kill "TERM", -$pid;
           my $grace = 0;
           my $gone = waitpid $pid, WNOHANG;
           while ($gone == 0 && $grace < $bound) {
@@ -374,7 +377,7 @@ fm_tasks_axi() {
             $grace += $step;
             $gone = waitpid $pid, WNOHANG;
           }
-          kill "KILL", $pid if $gone == 0;
+          kill "KILL", -$pid if $gone == 0;
           waitpid $pid, 0;
           exit 124;
         }
@@ -519,27 +522,32 @@ fm_backlog_done() {  # <data-dir> <id> [flag...]
   fm_backlog_mutate "$data" "done" "$id" "$@"
 }
 
-# A tasks-axi row accepts a `data/.../report.md` link, so both task data layouts
-# (bin/fm-task-data-lib.sh) qualify: the legacy flat folder and the
-# project-grouped one this home scaffolds into. A report that lives anywhere else
-# is still recorded in the task body rather than as a row artifact.
+# tasks-axi validates a row's report link against /\bdata\/\S+?\/report\.md\b/,
+# so every depth under `data/` reaches the row: the legacy flat folder, the
+# project-grouped layout (bin/fm-task-data-lib.sh), and a report relocated to
+# any other `data/`-relative folder. That validator also admits a traversal
+# (`data/../etc/report.md` is accepted and recorded verbatim), so this predicate
+# is deliberately stricter than the thing it guards: a path carrying a `.` or
+# `..` component never becomes a durable row artifact. A report the validator
+# rejects outright - one under a renamed data directory, with no literal `data/`
+# prefix - is still recorded in the task body rather than as a row artifact.
+# Argument 1 is the task id, kept for the call shape the callers already use.
 fm_backlog_row_artifact_supported() {
-  local id=$1 flag=${2:-} value=${3:-} project
+  local flag=${2:-} value=${3:-} folder
   case "$flag" in
     --pr) return 0 ;;
     --report)
       case "$value" in
-        "data/$id/report.md") return 0 ;;
-        "data/$FM_TASK_DATA_SUBDIR/"*"/$id/report.md")
-          project=${value#"data/$FM_TASK_DATA_SUBDIR/"}
-          project=${project%"/$id/report.md"}
-          case "$project" in
-            ''|.|..|*/*) return 1 ;;
-            *) return 0 ;;
-          esac
-          ;;
+        data/*/report.md) ;;
+        *) return 1 ;;
       esac
-      return 1
+      folder=${value#data/}
+      folder=${folder%/report.md}
+      [ -n "$folder" ] || return 1
+      case "/$folder/" in
+        */./*|*/../*) return 1 ;;
+      esac
+      return 0
       ;;
     *) return 1 ;;
   esac
@@ -1205,7 +1213,6 @@ fm_backlog_close_marker_replay() {  # <state-dir> <marker-path> <authorized-data
     elif [ "$cleanup_incomplete" = 1 ]; then
       FM_BACKLOG_CLOSE_REPLAY_RESULT=closed_incomplete
     else
-      # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
       FM_BACKLOG_CLOSE_REPLAY_RESULT=closed
     fi
     return 0

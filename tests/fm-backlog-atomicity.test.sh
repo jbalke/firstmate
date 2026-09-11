@@ -25,6 +25,8 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=bin/fm-timeout-lib.sh
+. "$ROOT/bin/fm-timeout-lib.sh"
 
 # An exported TASKS_AXI_BACKEND would outrank each case's .tasks.toml fixture
 # in fm_tasks_axi_backend, so the backend cases must start from a clean slate.
@@ -1475,14 +1477,18 @@ test_deferred_signal_verification_outlives_an_unresponsive_tasks_axi() {
 
   # The read-back's own `start` never answers, so the spawn must bound it
   # (FM_TASKS_AXI_TIMEOUT=3), print the attempted wording naming the timeout,
-  # and exit - the outer `timeout -k 5 30` only turns a regression back into
-  # the lock-held-forever hang it exists to catch.
+  # and exit - the outer bound only turns a regression back into the
+  # lock-held-forever hang it exists to catch. It goes through fm_run_timed
+  # rather than `timeout` directly: a host without GNU coreutils has no
+  # `timeout` on PATH, and the bare call would fail 127 before the spawn ran,
+  # failing this case for a reason that has nothing to do with the bound.
+  # fm_run_timed reports a hit bound as 124 on every mechanism it selects.
   mkdir -p "$case_dir/user-home"
   out=$(FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$(home_of "$case_dir")" \
     HOME="$case_dir/user-home" FM_SPAWN_NO_GUARD=1 \
     FM_FAKE_PANE_PATH="$case_dir/wt" TMUX="fake,1,0" CLAUDE_CONFIG_DIR='' \
     FM_TASKS_AXI_TIMEOUT=3 PATH="$case_dir/fakebin:$PATH" \
-    timeout -k 5 30 "$SPAWN" "$id" "$case_dir/project" \
+    fm_run_timed 30 "$SPAWN" "$id" "$case_dir/project" \
     --mode no-mistakes --yolo off 2>&1) || rc=$?
   [ "$rc" -ne 0 ] || fail "an interrupted spawn reported success"
   case "$rc" in
@@ -2781,7 +2787,7 @@ test_spawn_refuses_a_special_file_tasks_config() {
     FM_SPAWN_NO_GUARD=1 FM_FAKE_PANE_PATH="$case_dir/wt" TMUX="fake,1,0" \
     CLAUDE_CONFIG_DIR='' \
     PATH="$case_dir/fakebin:$PATH" \
-    timeout 60 "$SPAWN" "$id" "$case_dir/project" --mode no-mistakes --yolo off 2>&1) || rc=$?
+    fm_run_timed 60 "$SPAWN" "$id" "$case_dir/project" --mode no-mistakes --yolo off 2>&1) || rc=$?
   [ "$rc" -ne 124 ] || fail "spawn hung reading a special-file tasks-axi config"
   [ "$rc" -ne 0 ] || fail "spawn accepted a special-file tasks-axi config"
   assert_contains "$out" "tasks-axi config is not a regular file" \
@@ -2995,6 +3001,57 @@ test_a_persistent_secondmate_is_never_a_backlog_item() {
   pass "dispatching a persistent secondmate needs no backlog item"
 }
 
+# Which report paths a retained captain-held row accepts as a structured
+# artifact, driven through the real fm_backlog_retain against the real
+# tasks-axi. The row's `links:` field is tasks-axi's own serialized rendering of
+# those artifact fields, so it is the observable this asserts.
+#
+# tasks-axi 0.2.5 validates --report against /\bdata\/\S+?\/report\.md\b/, which
+# admits any depth under data/ INCLUDING a traversal: `update --report
+# data/../etc/report.md` is accepted and recorded verbatim (probed directly).
+# So the predicate must be broader than the two layouts this fork writes, and
+# must still refuse to put a traversal on a durable row.
+test_retained_report_artifacts_follow_the_validator_without_traversal() (
+  case_dir=$(make_home retain-report-shapes)
+  home=$(home_of "$case_dir")
+  . "$ROOT/bin/fm-tasks-axi-lib.sh"
+  . "$ROOT/bin/fm-backlog-transition-lib.sh"
+
+  retain_report() {  # <id> <report-path>
+    local id=$1 report=$2
+    tasks-axi add "$id" "item for $id" --kind scout --file "$(backlog_of "$case_dir")" >/dev/null \
+      || fail "could not create the row for $id"
+    tasks-axi start "$id" --file "$(backlog_of "$case_dir")" >/dev/null \
+      || fail "could not start the row for $id"
+    FM_HOME="$home" fm_backlog_retain "$home/data" "$id" --report "$report" \
+      || fail "retain failed for $id: $FM_BACKLOG_TRANSITION_ERROR"
+    tasks-axi show "$id" --full --file "$(backlog_of "$case_dir")"
+  }
+
+  # The two layouts bin/fm-task-data-lib.sh owns.
+  show=$(retain_report flat-shape "data/flat-shape/report.md")
+  assert_contains "$show" "report:data/flat-shape/report.md" \
+    "the legacy flat report did not reach the retained row"
+  show=$(retain_report grouped-shape "data/tasks/alpha/grouped-shape/report.md")
+  assert_contains "$show" "report:data/tasks/alpha/grouped-shape/report.md" \
+    "the project-grouped report did not reach the retained row"
+
+  # A report relocated to some other data/-relative folder. The validator takes
+  # it, so the row must too rather than silently dropping the artifact.
+  show=$(retain_report moved-shape "data/archive/2026/moved-shape/report.md")
+  assert_contains "$show" "report:data/archive/2026/moved-shape/report.md" \
+    "a relocated data/-relative report was dropped from the retained row"
+
+  # Traversal: accepted by tasks-axi, never written to a durable row. The
+  # deliverable still reaches the task body, so nothing is lost silently.
+  show=$(retain_report walk-shape "data/../etc/report.md")
+  assert_not_contains "$show" "report:data/../etc/report.md" \
+    "a traversing report path was recorded as a row artifact"
+  assert_contains "$show" "Deliverable of the finished work: report data/../etc/report.md" \
+    "a refused row artifact was not preserved in the task body"
+  pass "retained report artifacts follow the tasks-axi validator but never carry a traversal"
+)
+
 test_backend_resolution_preserves_config_errors
 test_backend_resolution_preserves_precedence_and_defaults
 test_backlog_callers_refuse_unreadable_backend_config
@@ -3094,3 +3151,4 @@ test_environment_selected_adapter_is_not_forced_to_markdown
 test_manual_backend_home_dispatches_and_completes_without_touching_the_backlog
 test_a_secondmate_home_keeps_its_own_books
 test_a_persistent_secondmate_is_never_a_backlog_item
+test_retained_report_artifacts_follow_the_validator_without_traversal
