@@ -3042,6 +3042,16 @@ test_retained_report_artifacts_follow_the_validator_without_traversal() (
   assert_contains "$show" "report:data/archive/2026/moved-shape/report.md" \
     "a relocated data/-relative report was dropped from the retained row"
 
+  # Whitespace: the validator's middle segment is `\S+?`, so `tasks-axi update`
+  # refuses this outright. A project registry name may legally contain a space,
+  # so the predicate has to refuse it too - admitting it would fail the whole
+  # retain transition instead of skipping one unsupported artifact.
+  show=$(retain_report space-shape "data/a b/space-shape/report.md")
+  assert_not_contains "$show" "report:data/a b/space-shape/report.md" \
+    "a whitespace report path the validator rejects was recorded as a row artifact"
+  assert_contains "$show" "Deliverable of the finished work: report data/a b/space-shape/report.md" \
+    "a refused whitespace artifact was not preserved in the task body"
+
   # Traversal: accepted by tasks-axi, never written to a durable row. The
   # deliverable still reaches the task body, so nothing is lost silently.
   show=$(retain_report walk-shape "data/../etc/report.md")
