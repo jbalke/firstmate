@@ -1268,7 +1268,7 @@ summary_file_read() {  # <file> <expected-home> <output-file>
   rc=$?
   rm -f -- "$captured"
   if [ "$rc" -ne 0 ]; then
-    rm -f -- "$output"
+    printf '{}\n' > "$output"
     return "$rc"
   fi
   return 0
