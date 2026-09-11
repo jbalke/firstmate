@@ -97,7 +97,7 @@ test_whitespace_task_id_is_refused_before_its_directory_exists() {
 # runtime, not a hypothetical one.
 test_whitespace_guards_hold_under_a_c_locale() {
   local nbsp accepted
-  nbsp=$(printf ' ')
+  nbsp=$(printf '\302\240')
   accepted=$(LC_ALL=C bash -c '
     . "$1/bin/fm-task-data-lib.sh"
     . "$1/bin/fm-backlog-transition-lib.sh"
