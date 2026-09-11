@@ -1306,8 +1306,7 @@ for ORPHAN_PAIR in "orphan-primary|$HOME_DIR|firstmate" "orphan-second|$SECOND_H
   ORPHAN_REST=${ORPHAN_PAIR#*|}
   ORPHAN_HOME=${ORPHAN_REST%%|*}
   ORPHAN_PARENT_LABEL=${ORPHAN_REST#*|}
-  mkdir -p "$ORPHAN_HOME/data/$ORPHAN_ID"
-  printf 'Orphaned projection fixture.\n' > "$ORPHAN_HOME/data/$ORPHAN_ID/brief.md"
+  write_ship_brief "$ORPHAN_HOME" "$ORPHAN_ID" "Orphaned projection fixture."
   spawn_task "$ORPHAN_ID" "$ORPHAN_HOME" "$PROJECT_DIR" > "$TMP_ROOT/$ORPHAN_ID-first.out" 2> "$TMP_ROOT/$ORPHAN_ID-first.err" \
     || fail "$ORPHAN_ID projected spawn failed: $(cat "$TMP_ROOT/$ORPHAN_ID-first.err")"
   ORPHAN_META="$ORPHAN_HOME/state/$ORPHAN_ID.meta"
