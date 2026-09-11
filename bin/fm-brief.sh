@@ -202,9 +202,13 @@ elif [ "$MODE_SET" -eq 1 ]; then
   exit 1
 fi
 ID=${POS[0]}
-# The same predicate bin/fm-spawn.sh and bin/fm-teardown.sh apply. Without it a
-# scaffold succeeds for an id neither of them will ever accept, leaving a task
-# data directory and a success message for work that cannot be dispatched.
+# bin/fm-spawn.sh applies this same predicate to every kind it dispatches,
+# --secondmate charters included, so an id it would refuse must not scaffold
+# here either: without this check the scaffold succeeds and leaves a directory
+# and a success message for work that can never be dispatched. A charter's other
+# consumers - the secondmate registry and the home seeds - accept a looser id
+# ([A-Za-z0-9._-]+, no length cap, no leading-dot rule), so this is the stricter
+# of the rules a charter already has to satisfy rather than a second definition.
 fm_task_id_creation_valid "$ID" || {
   echo "error: invalid task id '$ID'; a task id may use only letters, digits, dot, underscore and dash, may not begin with a dot, and may be at most 64 characters" >&2
   exit 2

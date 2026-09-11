@@ -442,11 +442,16 @@ fm_git_identity() {
 # called. The initial branch is pinned rather than inherited from
 # init.defaultBranch, so a fixture that names main resolves the same on a
 # developer machine and on a runner that still defaults to master.
-# Every git invocation here sends its stdout to stderr. `git commit` reports
-# "nothing to commit" on stdout rather than stderr, and these helpers run inside
-# `case_dir=$(make_home ...)`, so a repo that already carries the initial commit
-# would otherwise put that report INTO the captured path and the caller would
-# mkdir a directory named after it. Diagnostics stay visible on stderr.
+# Every git invocation here sends its stdout to stderr. These helpers run inside
+# path-capturing command substitutions (`case_dir=$(make_home ...)`,
+# `rec=$(make_spawn_case ...)`), and git reports some conditions on stdout rather
+# than stderr - `git commit` with nothing staged is the clearest - so such a
+# report would land in the captured path and the caller would address a directory
+# named after it. No committed caller reaches that today: every fixture name that
+# reaches these helpers is unique within its file and TMP_ROOT is a fresh
+# mktemp -d per run, so no fixture repo is ever re-initialized. This is defensive
+# hardening of the capture boundary, not a fix for an observed leak. Diagnostics
+# stay visible on stderr.
 fm_git_init_commit() {
   local dir=$1
   mkdir -p "$dir"

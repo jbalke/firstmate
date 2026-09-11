@@ -1601,13 +1601,6 @@ test_completion_closes_a_scout_with_its_report() {
   pass "completion closes a scout item against its report"
 }
 
-# `fm_backlog_done` hands --report straight to tasks-axi with no artifact
-# predicate, so nothing between the task data layout and the close rejects a
-# report path the validator will not take. tasks-axi's middle segment is `\S+?`:
-# a whitespace project name produces `data/tasks/my proj/<id>/report.md`, the
-# close fails, and the pending-close record is left for retry. The only boundary
-# that protects this path is the project slug, so the scaffold must refuse the
-# name outright rather than leave a directory whose close can never land.
 # The close path is unguarded by design: `fm_backlog_done` hands --report
 # straight to `fm_backlog_mutate ... done` with no artifact predicate in front of
 # it, unlike the retain path. tasks-axi validates the link against a middle
