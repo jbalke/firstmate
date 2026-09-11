@@ -88,6 +88,36 @@ test_whitespace_task_id_is_refused_before_its_directory_exists() {
   pass "fm-brief.sh: a whitespace task id is refused before its directory exists"
 }
 
+# The whitespace refusals must not depend on the caller's locale. A
+# `[[:space:]]` glob resolves against LC_CTYPE, and under C/POSIX it does not
+# match U+00A0 - which tasks-axi's `\S+?` validator does reject - so a
+# locale-dependent guard would accept a value the close then refuses, turning a
+# graceful degrade into a failed transition. LANG is unset in this repo's own
+# environment and the stock-macOS CI job sets no locale, so C/POSIX is a real
+# runtime, not a hypothetical one.
+test_whitespace_guards_hold_under_a_c_locale() {
+  local nbsp accepted
+  nbsp=$(printf ' ')
+  accepted=$(LC_ALL=C bash -c '
+    . "$1/bin/fm-task-data-lib.sh"
+    . "$1/bin/fm-backlog-transition-lib.sh"
+    fm_task_data_project_slug "a$2b" >/dev/null 2>&1 && printf "project-slug "
+    fm_backlog_row_artifact_supported id --report "data/a$2b/report.md" \
+      && printf "report-artifact "
+    exit 0
+  ' _ "$ROOT" "$nbsp")
+  [ -z "$accepted" ] \
+    || fail "under LC_ALL=C these guards accepted a U+00A0 value tasks-axi rejects: $accepted"
+  # The same guards still accept what the validator accepts.
+  LC_ALL=C bash -c '
+    . "$1/bin/fm-task-data-lib.sh"
+    . "$1/bin/fm-backlog-transition-lib.sh"
+    fm_task_data_project_slug front-client >/dev/null || exit 1
+    fm_backlog_row_artifact_supported id --report data/tasks/front-client/s1/report.md || exit 1
+  ' _ "$ROOT" || fail "the locale-pinned guards refused a legitimate project and report path"
+  pass "fm-task-data-lib: the whitespace refusals hold under a C/POSIX locale"
+}
+
 test_marker_records_project_title_and_date() {
   local home marker
   home=$(new_home marker)
@@ -452,6 +482,7 @@ test_scripts_parse
 test_scaffold_writes_project_grouped_path
 test_whitespace_project_is_refused_before_its_directory_exists
 test_whitespace_task_id_is_refused_before_its_directory_exists
+test_whitespace_guards_hold_under_a_c_locale
 test_marker_records_project_title_and_date
 test_title_never_enters_the_path
 test_project_less_task_uses_the_documented_literal
