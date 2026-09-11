@@ -17,6 +17,8 @@
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=bin/fm-task-data-lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/../bin/fm-task-data-lib.sh"
 
 if [ -n "${FM_TEST_FIXTURES_SOURCED:-}" ]; then
   return 0
@@ -248,6 +250,17 @@ $intent
 ## Firstmate spec
 Exercise the spawn behavior under test.
 EOF
+}
+
+# fm_test_task_brief <home> <id> [project]
+# Echo a task's brief path wherever the task data layout puts it
+# (bin/fm-task-data-lib.sh): the project-grouped directory a scaffolded brief
+# lands in, or the legacy flat folder when a fixture wrote one there. Use this
+# instead of a literal, or a fixture that fills placeholders writes to a
+# different file than the one bin/fm-spawn.sh reads.
+fm_test_task_brief() {
+  local home=$1 id=$2 project=${3:-}
+  printf '%s\n' "$(fm_task_data_dir "$home/data" "$id" "$project")/brief.md"
 }
 
 # fm_test_make_spawn_fakebin <dir> [extra-exit0-tool...]

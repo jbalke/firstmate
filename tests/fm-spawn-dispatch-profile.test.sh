@@ -1151,8 +1151,9 @@ test_worker_launch_delivers_role_scope() {
     read_case_record "$rec"
     if [ "$brief_kind" != scaffold ]; then
       fm_test_spawn_brief "$HOME_DIR" "$id"
+      brief=$(fm_test_task_brief "$HOME_DIR" "$id")
       if [ "$brief_kind" = heading ]; then
-        printf '\n# Worker role\nFollow the project instructions.\n' >> "$HOME_DIR/data/$id/brief.md"
+        printf '\n# Worker role\nFollow the project instructions.\n' >> "$brief"
       fi
     else
       if [ "$kind" = scout ]; then
@@ -1160,13 +1161,13 @@ test_worker_launch_delivers_role_scope() {
       else
         FM_HOME="$HOME_DIR" "$ROOT/bin/fm-brief.sh" "$id" arbitrary-project-name --mode "$kind" >/dev/null || fail "$kind scaffold failed"
       fi
-      brief="$HOME_DIR/data/$id/brief.md"
+      brief=$(fm_test_task_brief "$HOME_DIR" "$id" arbitrary-project-name)
       content=$(cat "$brief")
       content=${content//'{TASK}'/brief for $id}
       content=${content//'{FIRSTMATE_SPEC}'/Exercise the spawn behavior under test.}
       printf '%s\n' "$content" > "$brief"
     fi
-    cp "$HOME_DIR/data/$id/brief.md" "$CASE_DIR/brief-before"
+    cp "$brief" "$CASE_DIR/brief-before"
     cat > "$FAKEBIN_DIR/codex" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$@" > "$FM_ROLE_PROMPT"
@@ -1191,7 +1192,7 @@ SH
     if [ "$brief_kind" = heading ]; then
       assert_grep 'Follow the project instructions' "$prompt" "$kind command dropped the authored role section"
     fi
-    cmp -s "$CASE_DIR/brief-before" "$HOME_DIR/data/$id/brief.md" || fail "spawn rewrote the authored brief"
+    cmp -s "$CASE_DIR/brief-before" "$brief" || fail "spawn rewrote the authored brief"
     if [ "${FM_TEST_EVIDENCE:-0}" = 1 ]; then
       printf '# evidence begin: %s %s worker\n%s\n' "$brief_kind" "$kind" "$out"
       printf 'launch command executed with an argv-capture harness:\n%s\nreceived arguments and final prompt:\n' "$launch"
