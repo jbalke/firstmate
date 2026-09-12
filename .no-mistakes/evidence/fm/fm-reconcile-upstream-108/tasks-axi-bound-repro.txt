@@ -1,0 +1,15 @@
+# Does FM_TASKS_AXI_TIMEOUT actually bound fm_tasks_axi on a host with no GNU timeout?
+# The stub tasks-axi stops answering and leaves a 40s child behind. Callers read
+# fm_tasks_axi through a command substitution while holding the per-task meta lock,
+# so the caller stays blocked until every descendant closes the captured stdout.
+# Host: Darwin; timeout on PATH: none; gtimeout: none
+# => the perl watchdog fallback in bin/fm-backlog-transition-lib.sh is the mechanism in use here;
+#    a Linux CI runner takes the GNU timeout branch instead, which signals the whole group.
+
+HEAD 37bfb08 (no setpgrp)    bound=3s  exit=124  caller released after 40.4s  grandchild still running: no
+b4b5bee (group-kill)         bound=3s  exit=124  caller released after 10.1s  grandchild still running: no
+upstream parent 869ae90      bound=3s  exit=124  caller released after 40.3s  grandchild still running: no
+
+# exit=124 is reported at the 3s bound in every case, but only the group-killing variant
+# releases the caller near the bound. The other two hold it for the surviving grandchild is
+# whole lifetime - the lock-held-forever hazard the bound exists to prevent.

@@ -1,0 +1,13 @@
+# .claude/settings.json at merged HEAD 37bfb08, parsed the way the harness reads it:
+# one line per registered hook - event, matcher, command, options.
+
+SessionStart *      [ -z "${GROK_AGENT:-}${GROK_HOOK_EVENT:-}" ] || exit 0; exec "$CLAUDE_PROJECT_DIR"/bin/fm-sessionstart-run.sh   [timeout=180]
+PreToolUse   Bash   [ -z "${GROK_AGENT:-}${GROK_HOOK_EVENT:-}" ] || exit 0; exec "$CLAUDE_PROJECT_DIR"/bin/fm-arm-pretool-check.sh --claude
+PreToolUse   Bash   [ -z "${GROK_AGENT:-}${GROK_HOOK_EVENT:-}" ] || exit 0; exec "$CLAUDE_PROJECT_DIR"/bin/fm-cd-pretool-check.sh --claude
+PreToolUse   .*     "$CLAUDE_PROJECT_DIR"/bin/fm-subagent-pretool-check.sh --claude
+Stop         *      [ -z "${GROK_AGENT:-}${GROK_HOOK_EVENT:-}" ] || exit 0; exec "$CLAUDE_PROJECT_DIR"/bin/fm-turnend-guard.sh --claude
+Stop         *      [ -z "${GROK_AGENT:-}${GROK_HOOK_EVENT:-}" ] || exit 0; exec "$CLAUDE_PROJECT_DIR"/bin/fm-claude-stop-autoarm.sh   [asyncRewake=True timeout=28800]
+
+# The Stop-owned watcher auto-arm (bin/fm-claude-stop-autoarm.sh, asyncRewake) is the fork
+# registration the reconciliation had to keep. git diff 8dcddfa8..HEAD -- .claude/settings.json:
+#   (empty = byte-identical to the pre-merge fork copy)

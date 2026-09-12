@@ -1,0 +1,43 @@
+# Targeted suites run at merged HEAD 37bfb08 with bin/fm-test-run.sh on macOS 25.6 (arm64).
+# Chosen to cover the local behaviour the reconciliation had to keep and the upstream
+# commits the task asked to confirm landed. This is not the full suite - CI owns that.
+
+SCRIPT                                              EXIT         MS
+tests/fm-task-data.test.sh                             0      10936
+tests/fm-brief.test.sh                                 0       7485
+tests/fm-task-delivery.test.sh                         0      38000
+tests/fm-fleet-snapshot-view.test.sh                   0      27288
+tests/fm-captain-hold-lifecycle.test.sh                0     414111
+tests/fm-inactive-reconcile.test.sh                    0      76971
+tests/fm-rovo-harness.test.sh                          0      31996
+tests/fm-procevent.test.sh                             0     401694
+tests/fm-spawn-dispatch-profile.test.sh                0     268791
+tests/fm-trace-context-lib.test.sh                     0        697
+tests/fm-trace-context-spawn.test.sh                   0     103844
+tests/fm-claude-stop-autoarm.test.sh                   0      64785
+tests/fm-turnend-guard.test.sh                         0      84610
+tests/fm-guard-stale-banner.test.sh                    0      20738
+tests/fm-watch-triage.test.sh                          0    1177512
+tests/fm-daemon.test.sh                                0      69623
+tests/fm-mail.test.sh                                  0      28812
+tests/fm-afk-contract.test.sh                          0      28379
+tests/fm-backend-herdr-presentation-e2e.test.sh        0     912499
+tests/fm-backlog-atomicity.test.sh                     1     178569
+tests/fm-wake-queue.test.sh                            1      21779
+
+# What the green ones stand for:
+#   fm-task-data, fm-brief, fm-task-delivery, fm-fleet-snapshot-view - grouped per-task data
+#     records (data/tasks/<project>/<id>/) with report and evidence retention, and the fork
+#     house-vocabulary PR-body rules in the scaffolded brief
+#   fm-trace-context-lib, fm-trace-context-spawn - trace-context propagation
+#   fm-backend-herdr-presentation-e2e - Herdr re-projection, against REAL Herdr, 912s, no gate skip
+#   fm-claude-stop-autoarm, fm-turnend-guard, fm-guard-stale-banner - Stop-owned watcher auto-arm,
+#     upstream 891dc517 beacon staleness grace, upstream b6b51b9c long-turn alarm suppression
+#   fm-watch-triage, fm-daemon - upstream d4eb2280 captain-hold stale-alarm bounds and 5300a4f5
+#     decision-owned wake escalation, plus the AFK posture lifecycle
+#   fm-captain-hold-lifecycle - upstream 1c7a713f landed deliveries vs resolved captain calls
+#   fm-mail, fm-afk-contract - the two capabilities arriving whole (9ba29db2, 40c50ea8)
+#   fm-procevent, fm-inactive-reconcile, fm-rovo-harness, fm-spawn-dispatch-profile - the rest of
+#     the files the post-merge fixup commits touched
+
+# The two failures are accounted for in failure-causality.txt; neither is caused by the merge.

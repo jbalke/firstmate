@@ -1,0 +1,20 @@
+# Did the 33 fork commits lines survive the merge?
+#   fork-authored = a line ADDED by the 33 local commits (d71f4b9cf1e6a8c647867d9a92c67ab0a6bb460f..8dcddfa8), the true fork-only material
+#   missing       = that exact line no longer appears anywhere in the same file at merged HEAD (37bfb08)
+# Line-level and order-insensitive: a line deliberately reworded, reindented, or moved to another
+# file counts as missing here, so a nonzero count is a prompt to check, not a defect by itself.
+
+FILE                                                  ADDED  MISSING
+.github/workflows/ci.yml                                  2        2
+.no-mistakes-tools/bin/actionlint                         1        1
+bin/fm-fleet-snapshot.sh                                 15        3
+docs/scripts.md                                           1        1
+docs/verification/trace-context.md                       17        1
+tests/fm-backend-herdr-presentation-e2e.test.sh          66        2
+tests/fm-brief.test.sh                                  154       41
+tests/fm-fleet-snapshot-view.test.sh                     36       14
+tests/fm-task-delivery.test.sh                           21        2
+tests/lib.sh                                              5        4
+
+# files carrying fork-authored lines: 47 (lines: 1691)
+# files where some fork-authored line is not verbatim at HEAD: 10 (lines: 71)

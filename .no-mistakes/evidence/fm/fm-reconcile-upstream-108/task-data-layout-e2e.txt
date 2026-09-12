@@ -1,0 +1,87 @@
+# Grouped per-task data records, report + evidence retention (local behaviour, post-merge HEAD 37bfb08)
+# FM_HOME is a throwaway temp home; paths below are rewritten to $FM_HOME.
+
+$ bin/fm-brief.sh demo-001 acme-web --mode no-mistakes --title "Reconcile check"
+scaffolded: $FM_HOME/data/tasks/acme-web/demo-001/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+
+$ bin/fm-brief.sh scout-002 acme-web --scout
+scaffolded: $FM_HOME/data/tasks/acme-web/scout-002/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+
+$ bin/fm-brief.sh noproj-003 tools --mode local-only   # project-less grouping literal
+scaffolded: $FM_HOME/data/tasks/tools/noproj-003/brief.md (ship, mode=local-only; replace {TASK} and {FIRSTMATE_SPEC})
+
+$ find $FM_HOME/data -type f | sort
+data/tasks/acme-web/demo-001/brief.md
+data/tasks/acme-web/demo-001/task.meta
+data/tasks/acme-web/scout-002/brief.md
+data/tasks/acme-web/scout-002/task.meta
+data/tasks/tools/noproj-003/brief.md
+data/tasks/tools/noproj-003/task.meta
+
+$ cat $FM_HOME/data/tasks/acme-web/demo-001/task.meta
+project=acme-web
+title=Reconcile check
+kind=ship
+created=2026-09-11
+
+# --- local house-vocabulary PR-body rules survived the merge (fork PR #8) ---
+$ sed -n "/## Repo artifacts/,/^$/p" $FM_HOME/data/tasks/acme-web/demo-001/brief.md
+## Repo artifacts
+Attribute no decision to a person or role in a commit message, PR body, doc or code comment - write the decision, not the decider. A role word naming a generic actor is fine.
+Name no untracked agent config or skill file in a PR body - a reviewer cannot see it. Check with `git ls-files` if unsure.
+Put no open-question queue in a PR description. Where the repo can hold the queue as enforced data, that is its home and the PR body carries a pointer.
+
+# --- report + saved-evidence retention point at the grouped task dir ---
+120:Write `$FM_HOME/data/tasks/acme-web/demo-001/report.md` if this task uncovered a **transferable cause** - something that would bite a future task on this repo or another.
+126:## Saved evidence
+
+# --- retention: a finished task keeps report.md and evidence unless pruned ---
+$ bin/fm-task-data.sh list
+Task data under $FM_HOME/data (folder size):
+  acme-web
+    demo-001                                      28 KB  
+    scout-002                                     12 KB  
+  tools
+    noproj-003                                    16 KB  
+  3 folder(s), 56 KB
+
+
+$ bin/fm-task-data.sh protect --project acme-web
+protected: $FM_HOME/data/tasks/acme-web/demo-001
+protected: $FM_HOME/data/tasks/acme-web/scout-002
+2 folder(s) protected.
+$ bin/fm-task-data.sh prune --project acme-web --yes    # protected: refuses
+Skipped:
+  acme-web
+    demo-001                                      28 KB  protected: marked with .protected (pass --include-protected to override)
+    scout-002                                     12 KB  protected: marked with .protected (pass --include-protected to override)
+  2 folder(s), 40 KB
+
+fm-task-data: nothing selected.
+$ find $FM_HOME/data/tasks/acme-web -type f | sort
+data/tasks/acme-web/demo-001/.protected
+data/tasks/acme-web/demo-001/brief.md
+data/tasks/acme-web/demo-001/report.md
+data/tasks/acme-web/demo-001/screenshot.png
+data/tasks/acme-web/demo-001/task.meta
+data/tasks/acme-web/scout-002/.protected
+data/tasks/acme-web/scout-002/brief.md
+data/tasks/acme-web/scout-002/task.meta
+
+$ bin/fm-task-data.sh prune --project acme-web --images-only --include-protected --yes   # words survive, bulk goes
+About to remove (images only; every other file stays):
+  acme-web
+    demo-001                                       4 KB  
+    scout-002                                      0 KB  
+  2 folder(s), 4 KB
+
+pruned images: $FM_HOME/data/tasks/acme-web/demo-001
+pruned images: $FM_HOME/data/tasks/acme-web/scout-002
+$ find $FM_HOME/data/tasks/acme-web -type f | sort
+data/tasks/acme-web/demo-001/.protected
+data/tasks/acme-web/demo-001/brief.md
+data/tasks/acme-web/demo-001/report.md
+data/tasks/acme-web/demo-001/task.meta
+data/tasks/acme-web/scout-002/.protected
+data/tasks/acme-web/scout-002/brief.md
+data/tasks/acme-web/scout-002/task.meta

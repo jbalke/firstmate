@@ -1,0 +1,94 @@
+# Per-line detail behind fork-only-lines-summary.txt: fork-authored lines (added by the 33 local
+# commits) that are not verbatim in the same file at merged HEAD 37bfb08.
+
+=== .github/workflows/ci.yml  (fork-authored=2, missing-at-HEAD=2)
+  -           [ "$snapshot_count" -eq 16 ] || {
+  -             echo "::error::expected 16 snapshot/fleet-view tests, got $snapshot_count"
+
+=== .no-mistakes-tools/bin/actionlint  (fork-authored=1, missing-at-HEAD=1)
+  - Binary file /tmp/fm-forkonly2.fdKGn6/base matches
+
+=== bin/fm-fleet-snapshot.sh  (fork-authored=15, missing-at-HEAD=3)
+  -     report_path="$(fm_task_data_dir "$DATA" "$id")/report.md"
+  -           summary='{}'
+  -           summary='{}'
+
+=== docs/scripts.md  (fork-authored=1, missing-at-HEAD=1)
+  - | `fm-dod-lib.sh`          | One owner of the ship task's mode-specific definition of done, its shared repo-artifact rules, and each contract's CI-following rule, rendered by both the brief scaffold and a scout promotion |
+
+=== docs/verification/trace-context.md  (fork-authored=17, missing-at-HEAD=1)
+  - The spawn-path integration suite `tests/fm-trace-context-spawn.test.sh` (13 assertions), hermetic against an ambient `FM_TRACE_CONTEXT`, drives `bin/fm-spawn.sh` end to end with a fake tmux pane and a real isolated git worktree: enabled, one resolved carrier is recorded as `traceparent=` in the meta only after the identical `TRACEPARENT` export is sent before the launch literal; disabled, neither is written nor sent (only `GOTMPDIR` is); a failed carrier delivery leaves no `traceparent=` claim while the source task still launches; an unsafe delivery whose partial input cannot be cleared stops before appending the launch command; a failed metadata append removes the carrier from the launched task without aborting it; duplicate Secondmate preflight leaves inherited trace configuration unchanged; a relaunch reuses the recorded carrier verbatim; and spawns ignore later config and environment edits in favor of the frozen home-session decision.
+
+=== tests/fm-backend-herdr-presentation-e2e.test.sh  (fork-authored=66, missing-at-HEAD=2)
+  -   mkdir -p "$ORPHAN_HOME/data/$ORPHAN_ID"
+  -   printf 'Orphaned projection fixture.\n' > "$ORPHAN_HOME/data/$ORPHAN_ID/brief.md"
+
+=== tests/fm-brief.test.sh  (fork-authored=154, missing-at-HEAD=41)
+  - # A scaffolded task's durable data directory. bin/fm-task-data-lib.sh groups it
+  - # by the project the brief names; a task with no project uses the _none literal.
+  - task_dir() {  # <home> <project> <task-id>
+  -   printf '%s\n' "$1/data/tasks/$2/$3"
+  -     brief="$(task_dir "$home" some-proj "$id")/brief.md"
+  -     assert_grep "anything under your task data directory \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+  -     assert_grep "Write \`$(task_dir "$home" some-proj "$id")/report.md\` if this task uncovered a **transferable cause**" "$brief" \
+  -     assert_grep "Write any screenshot or recording you take to support a claim in the PR body into \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+  -     assert_absent "$(task_dir "$home" some-proj "brief-required-$id")/brief.md" \
+  -       "$label: refused scaffold still wrote a brief"
+  -   brief="$(task_dir "$home" direct-proj brief-explicit-a5)/brief.md"
+  -     "$(task_dir "$home" never-registered brief-explicit-a6)/brief.md" \
+  -   brief="$(task_dir "$home" direct-proj "$id")/brief.md"
+  -   brief="$(task_dir "$home" local-proj "$id")/brief.md"
+  -   assert_no_grep "make \`--intent\` preserve all relevant content from this brief" "$brief" \
+  -   assert_no_grep "make \`--intent\` preserve all relevant content from this brief" \
+  -     "$(task_dir "$home" direct-proj "$id")/brief.md" \
+  -   brief="$(task_dir "$home" some-proj "$id")/brief.md"
+  -   brief="$(task_dir "$home" some-proj "$id")/brief.md"
+  -   brief="$(task_dir "$home" firstmate "$id")/brief.md"
+  -   brief="$(task_dir "$home" foreign "$id")/brief.md"
+  -     brief="$(task_dir "$home" firstmate "$id")/brief.md"
+  -     brief="$(task_dir "$home" firstmate "$id")/brief.md"
+  -   brief="$(task_dir "$home" _none fdev)/brief.md"
+  -   assert_absent "$(task_dir "$home" _none oops)/brief.md" \
+  -     "loud-failure secondmate brief still wrote a file"
+  -   brief="$(task_dir "$home" _none marked-request-reporting)/brief.md"
+  -   brief="$(task_dir "$home" _none relative-home)/brief.md"
+  -   brief="$(task_dir "$home" _none relative-state)/brief.md"
+  -   brief="$(task_dir "$home" firstmate herdr-scout)/brief.md"
+  -   assert_absent "$(task_dir "$home" _none herdr-secondmate)/brief.md" \
+  -       brief="$(task_dir "$home" _none "$id")/brief.md"
+  -       brief="$(task_dir "$home" firstmate "$id")/brief.md"
+  -   scout="$(task_dir "$home" sample sample-investigation)/brief.md"
+  -   charter="$(task_dir "$home" _none sample-mate)/brief.md"
+  -   brief="$(task_dir "$BRIEF_HOME" alpha brief-scout-q6)/brief.md"
+  -   brief="$(task_dir "$BRIEF_HOME" _none brief-sm-q6)/brief.md"
+  -     brief="$(task_dir "$home" some-proj "$id")/brief.md"
+  -       assert_grep "the report, saved evidence beside it under \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+  -       assert_grep "anything under your task data directory \`$(task_dir "$home" some-proj "$id")/\`" "$brief" \
+  -   charter="$(task_dir "$home" _none brief-ctxrules-secondmate)/brief.md"
+
+=== tests/fm-fleet-snapshot-view.test.sh  (fork-authored=36, missing-at-HEAD=14)
+  - # A sampled remote home that answers rc=0 with non-JSON on stdout must degrade to
+  - # that home's own fallback record. Before the rejected-summary reset, the rejected
+  - # registered-secondmate aggregation, failing the whole snapshot.
+  - host=
+  - prev=
+  -   if [ "$prev" = "--" ]; then host=$arg; break; fi
+  -   good-host)
+  -     printf '%s\n' '{"schema":"fm-secondmate-home-summary.v1","generated":"2026-08-28T00:00:00Z","home":"/remote/good-home","valid":true,"reason":null,"invalidity":{"kind":null,"ids":[]},"state":"no_active_work","active_children":[],"decisions_open":[],"holds":[],"queued":[],"landed":[],"endpoints":[],"counts":{"active_children":0,"decisions_open":0,"holds":0,"queued":0,"landed":0,"endpoints":0},"omitted":[]}'
+  -   cat > "$home/data/secondmates.md" <<'EOF'
+  - - good-mate - good remote (host: good-host; root: /remote/root; home: /remote/good-home; scope: remote testing; projects: alpha; added 2026-08-02)
+  - - junk-mate - junk remote (host: junk-host; root: /remote/root; home: /remote/junk-home; scope: remote testing; projects: alpha; added 2026-08-02)
+  -   out=$(PATH="$fakebin:$PATH" FM_HOME="$home" FM_SSH_BIN="$fakebin/fake-ssh" "$SNAPSHOT" --json) \
+  -     | .home == "/remote/junk-home"
+  -       and .current.reason == "structured home snapshot was malformed or stale"
+
+=== tests/fm-task-delivery.test.sh  (fork-authored=21, missing-at-HEAD=2)
+  -       "$home/data/tasks/_none/$id/brief.md" > "$brief_dod"
+  -     assert_grep "$home/data/tasks/_none/$id/report.md" "$payload" \
+
+=== tests/lib.sh  (fork-authored=5, missing-at-HEAD=4)
+  - # Firstmate's state and task transports are private. Keep every fixture created
+  - # after this library is sourced under that production invariant, independent of
+  - # the developer shell's ambient umask. Tests that exercise permissive modes set
+  - # their own narrower subshell umask explicitly.
+

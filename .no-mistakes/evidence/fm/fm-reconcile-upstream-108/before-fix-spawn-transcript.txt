@@ -1,0 +1,7 @@
+
+--- fm-spawn.sh transcript (FM_TASKS_AXI_TIMEOUT=3, outer bound 30s) ---
+error: spawn of atomic-dispatch-signal-hang-b5 was interrupted after launch delivery began; preservation could not be verified: its backlog item reads queued no no, and moving it to In flight failed (tasks-axi start atomic-dispatch-signal-hang-b5 did not finish within 3s); close out its paired task record and backlog item by hand
+--- exit=124 wall=31s ---
+
+not ok - the verification hung on the unresponsive start instead of timing out: error: spawn of atomic-dispatch-signal-hang-b5 was interrupted after launch delivery began; preservation could not be verified: its backlog item reads queued no no, and moving it to In flight failed (tasks-axi start atomic-dispatch-signal-hang-b5 did not finish within 3s); close out its paired task record and backlog item by hand
+runner exit=1

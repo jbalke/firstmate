@@ -1,0 +1,33 @@
+# Two suites fail on this macOS host at merged HEAD 37bfb08. Same test, same host,
+# same command, run against each pre-merge side to establish what caused them.
+# Host fact behind both: no GNU coreutils on PATH.
+#   command -v timeout  -> (none)
+#   command -v gtimeout -> (none)
+# Every bounded call in firstmate therefore takes its perl fallback branch here;
+# CI runs ubuntu-latest and takes the GNU timeout branch instead. Both scripts
+# are in the portable-serial lane, so CI does execute them.
+
+tests/fm-backlog-atomicity.test.sh
+  case: "a signal-deferred spawn bounds its verification so an unresponsive tasks-axi
+         cannot hold the meta lock forever" (arrived from upstream 85ad5e7 / #3852)
+  HEAD 37bfb08 ................................. FAIL (twice: in a mixed run and alone)
+  upstream merge parent 869ae90 ................ FAIL  -> not caused by the merge resolution
+  local pre-merge main 8dcddfa8 ................ case does not exist there (test came with the merge)
+  branch commit b4b5bee ........................ PASS  -> it was green earlier on this very branch
+  branch commit f4002db ("revert watchdog group-kill") removed setpgrp + group-kill from the
+  perl watchdog in bin/fm-backlog-transition-lib.sh, which is what made b4b5bee pass.
+  See tasks-axi-bound-repro.txt for the behaviour behind it.
+
+tests/fm-wake-queue.test.sh
+  case: "a foreign queue with no progress did not alert" (secondmate wake-loop stall alert,
+         arrived from upstream ffd2c89 / #3943)
+  HEAD 37bfb08 ................................. FAIL (twice: in a mixed run and alone)
+  upstream merge parent 869ae90 ................ FAIL  -> not caused by the merge resolution
+  local pre-merge main 8dcddfa8 ................ PASS, but only because that older copy of the
+                                                 test file predates the case
+  HEAD with a GNU-semantics timeout shim on PATH  this case passes; a different case then fails,
+                                                 which the shim itself can explain, so this is
+                                                 support for the fallback branch being the cause,
+                                                 not a clean pass.
+  Reported symptom is "checkpoint: no actionable wake within 1s" - bin/fm-watch-checkpoint.sh
+  returning 124 from its perl alarm fallback before fm-watch.sh emits the stall line.

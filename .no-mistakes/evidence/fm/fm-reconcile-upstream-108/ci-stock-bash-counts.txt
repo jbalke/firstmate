@@ -1,0 +1,6 @@
+# Replicating the CI stock-macOS-Bash-3.2 job step from .github/workflows/ci.yml at HEAD,
+# which pins exact ok-counts for the two snapshot suites. /bin/bash version: GNU bash, version 3.2.57(1)-release (arm64-apple-darwin25)
+
+fm-fleet-snapshot-view.test.sh  ok-count=21  (ci.yml expects 21)  MATCH
+fm-bearings-snapshot.test.sh    ok-count=56  (ci.yml expects 56)  MATCH
+fm-public-followup (bash32 case) ok-count=1 (ci.yml expects 1)  MATCH
