@@ -50,12 +50,34 @@ fm_task_data_valid_id() {  # <task-id>
 # the documented no-project literal. Anything that is not a single safe path
 # component is refused rather than silently rewritten, so a malformed registry
 # name cannot quietly scatter task data.
+#
+# Whitespace is refused here rather than at either close site. A backlog row's
+# report link is validated against a middle segment of `\S+?`, so a report under
+# `data/tasks/<name with a space>/<id>/` is rejected by both `tasks-axi done` and
+# `tasks-axi update` - and the `done` path reaches that call with no artifact
+# predicate in front of it. Refusing the name at scaffold time keeps a directory
+# whose close could never land from existing in the first place.
+#
+# The refusal names its characters instead of using `[[:space:]]`, which resolves
+# against the ambient locale and under C/POSIX does not match U+00A0 - a
+# character the validator's `\S+?` does reject. An allowlist would be
+# locale-proof too, but it would also refuse names the validator accepts
+# (`c++-tools`, `web@2`, `café`) and a refusal here aborts the scaffold rather
+# than degrading anything, so the explicit list keeps the refusal to exactly
+# what the validator refuses.
 fm_task_data_project_slug() {  # <project>
   local project=${1:-}
+  local LC_ALL=C
   if [ -z "$project" ]; then
     printf '%s\n' "$FM_TASK_DATA_NO_PROJECT"
     return 0
   fi
+  case "$project" in
+    *[$' \t\n\v\f\r']*|*$'\302\240'*)
+      echo "error: project name '$project' may not contain whitespace, because a backlog row's report link is only valid as data/<no-whitespace>/report.md" >&2
+      return 1
+      ;;
+  esac
   case "$project" in
     .|..) ;;
     */*|*$'\n'*|-*) ;;

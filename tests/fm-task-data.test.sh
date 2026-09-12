@@ -49,6 +49,95 @@ test_scaffold_writes_project_grouped_path() {
   pass "fm-brief.sh: a fresh scaffold writes the project-grouped path"
 }
 
+# A project name carrying whitespace cannot become a path component. tasks-axi
+# validates a row's report link against a middle segment of `\S+?`, so a report
+# under `data/tasks/my proj/<id>/` is refused at close time - on the `done` path
+# (bin/fm-backlog-transition-lib.sh's fm_backlog_done, which passes --report
+# straight through with no artifact predicate) as well as on `retain`. The
+# refusal therefore belongs at the slug boundary, before the directory exists at
+# all, rather than at either close site.
+test_whitespace_project_is_refused_before_its_directory_exists() {
+  local home out rc=0 spaced
+  home=$(new_home whitespace-project)
+  out=$(scaffold_ship "$home" ws-task 'my proj' "Spaced project" 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "the scaffold accepted a project name containing whitespace: $out"
+  assert_contains "$out" "whitespace" \
+    "the refusal did not name whitespace as the constraint a caller has to satisfy"
+  spaced=$(find "$home/data" -type d -name '* *' 2>/dev/null | head -1)
+  [ -z "$spaced" ] || fail "a whitespace task data directory was created anyway: $spaced"
+  assert_absent "$home/data/tasks/my proj/ws-task/brief.md" \
+    "the refused scaffold still wrote a brief under a whitespace project"
+  pass "fm-brief.sh: a whitespace project name is refused before its directory exists"
+}
+
+# The id component has the same exposure the project component had, through a
+# different door: every downstream consumer refuses a whitespace id
+# (bin/fm-spawn.sh and bin/fm-teardown.sh both apply fm_task_id_creation_valid /
+# fm_task_id_path_safe), so a scaffold that accepts one leaves a directory and a
+# success message for a task that can never be spawned or torn down. The scaffold
+# applies the same predicate its consumers do, so the dead directory never exists.
+test_whitespace_task_id_is_refused_before_its_directory_exists() {
+  local home out rc=0 spaced
+  home=$(new_home whitespace-task-id)
+  out=$(scaffold_ship "$home" 'my id' front-client "Spaced id" 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "the scaffold accepted a task id containing whitespace: $out"
+  assert_contains "$out" "invalid task id" \
+    "the refusal did not name the task id as the constraint a caller has to satisfy"
+  spaced=$(find "$home/data" -type d -name '* *' 2>/dev/null | head -1)
+  [ -z "$spaced" ] || fail "a whitespace task directory was created anyway: $spaced"
+  pass "fm-brief.sh: a whitespace task id is refused before its directory exists"
+}
+
+# The whitespace refusals must not depend on the caller's locale. A
+# `[[:space:]]` glob resolves against LC_CTYPE, and under C/POSIX it does not
+# match U+00A0 - which tasks-axi's `\S+?` validator does reject - so a
+# locale-dependent guard would accept a value the close then refuses, turning a
+# graceful degrade into a failed transition. LANG is unset in this repo's own
+# environment and the stock-macOS CI job sets no locale, so C/POSIX is a real
+# runtime, not a hypothetical one.
+test_whitespace_guards_hold_under_a_c_locale() {
+  local nbsp accepted
+  nbsp=$(printf '\302\240')
+  accepted=$(LC_ALL=C bash -c '
+    . "$1/bin/fm-task-data-lib.sh"
+    . "$1/bin/fm-backlog-transition-lib.sh"
+    fm_task_data_project_slug "a$2b" >/dev/null 2>&1 && printf "project-slug "
+    fm_backlog_row_artifact_supported id --report "data/a$2b/report.md" \
+      && printf "report-artifact "
+    exit 0
+  ' _ "$ROOT" "$nbsp")
+  [ -z "$accepted" ] \
+    || fail "under LC_ALL=C these guards accepted a U+00A0 value tasks-axi rejects: $accepted"
+  # The same guards still accept what the validator accepts. tasks-axi's middle
+  # segment is `\S+?`, so punctuation and non-ASCII letters close fine; refusing
+  # them here would abort a scaffold and drop a deliverable link for values the
+  # validator takes.
+  LC_ALL=C bash -c '
+    . "$1/bin/fm-task-data-lib.sh"
+    . "$1/bin/fm-backlog-transition-lib.sh"
+    fm_task_data_project_slug front-client >/dev/null || exit 1
+    fm_task_data_project_slug "c++-tools" >/dev/null || exit 1
+    fm_task_data_project_slug "café" >/dev/null || exit 1
+    fm_backlog_row_artifact_supported id --report data/tasks/front-client/s1/report.md || exit 1
+    fm_backlog_row_artifact_supported id --report "data/archive/v1.0+beta/report.md" || exit 1
+  ' _ "$ROOT" || fail "the locale-pinned guards refused a project name or report path tasks-axi accepts"
+  pass "fm-task-data-lib: the whitespace refusals hold under a C/POSIX locale"
+}
+
+# The whitespace refusal is the only narrowing this boundary applies. A project
+# name the validator accepts must still reach a directory: unlike the artifact
+# predicate, where an over-refusal costs only the row's deliverable link, a
+# refusal here aborts the scaffold and the task never gets written at all.
+test_a_non_whitespace_project_name_still_scaffolds() {
+  local home out
+  home=$(new_home punctuation)
+  out=$(scaffold_ship "$home" plus-task 'c++-tools' "Bump the toolchain" 2>&1) \
+    || fail "scaffold refused a project name tasks-axi accepts: $out"
+  assert_present "$home/data/tasks/c++-tools/plus-task/brief.md" \
+    "a project name carrying punctuation must still scaffold"
+  pass "fm-brief.sh: a non-whitespace project name the validator accepts still scaffolds"
+}
+
 test_marker_records_project_title_and_date() {
   local home marker
   home=$(new_home marker)
@@ -411,6 +500,10 @@ test_scripts_parse() {
 
 test_scripts_parse
 test_scaffold_writes_project_grouped_path
+test_whitespace_project_is_refused_before_its_directory_exists
+test_whitespace_task_id_is_refused_before_its_directory_exists
+test_whitespace_guards_hold_under_a_c_locale
+test_a_non_whitespace_project_name_still_scaffolds
 test_marker_records_project_title_and_date
 test_title_never_enters_the_path
 test_project_less_task_uses_the_documented_literal

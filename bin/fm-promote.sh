@@ -9,7 +9,12 @@
 # bin/fm-dod-lib.sh, the single owner an ordinary ship brief also uses - the
 # mode-specific Definition of done, so a promoted worker receives exactly the same
 # delivery contract as a briefed one, including the no-mistakes mode's ask-user
-# escalation rule and --yes ban.
+# escalation rule and --yes ban. The instructions also carry `# Task` with
+# `## Captain's intent` preserved from the scout brief and promotion's ship-time
+# instructions under `## Firstmate spec`; the scout-time spec remains context but
+# is not relabeled as the ship spec. Promotion refuses leftover `{TASK}` /
+# `{FIRSTMATE_SPEC}` placeholders (bin/fm-dod-lib.sh). A pre-subsection scout
+# brief contributes only Task lines explicitly marked as captain words to intent.
 # Promotion changes the contract the worker operates under, so the instructions
 # also restate the CI-following rule from that same owner (fm_ci_rule): a scout
 # brief carries the pre-promotion wording, which a no-mistakes Definition of done
@@ -134,6 +139,26 @@ if ! fm_backlog_record_present "$META" "task record" "$STATE"; then
 fi
 grep -qx 'kind=scout' "$META" || { echo "error: task $ID is not a scout task (kind=scout not in meta)" >&2; exit 1; }
 
+SCOUT_BRIEF="$(fm_task_data_dir "$DATA" "$ID")/brief.md"
+if fm_brief_task_placeholders_present "$SCOUT_BRIEF"; then
+  echo "error: $SCOUT_BRIEF still contains {TASK} or {FIRSTMATE_SPEC}; preserve the original ask in ## Captain's intent and fill the scout-time ## Firstmate spec; promotion generates a separate ship-time spec" >&2
+  exit 1
+fi
+if ! fm_brief_task_content_valid "$SCOUT_BRIEF"; then
+  echo "error: $SCOUT_BRIEF must contain nonempty ## Captain's intent and ## Firstmate spec subsections (or a nonempty legacy # Task body) before promotion" >&2
+  exit 1
+fi
+if fm_brief_task_heading_present "$SCOUT_BRIEF" "## Captain's intent"; then
+  INTENT_BODY=$(fm_brief_task_heading_body "$SCOUT_BRIEF" "## Captain's intent")
+else
+  TASK_BODY=$(fm_brief_heading_body "$SCOUT_BRIEF" "# Task")
+  INTENT_BODY=$(fm_brief_marked_captain_words "$TASK_BODY")
+fi
+if [ -z "$(printf '%s' "$INTENT_BODY" | tr -d '[:space:]')" ]; then
+  echo "error: $SCOUT_BRIEF has no provenance-marked Captain's intent; add the captain's actual words before promotion" >&2
+  exit 1
+fi
+
 # The promoted worker must receive the same delivery contract an ordinary ship
 # brief carries, so the mode-specific Definition of done is rendered from its
 # single owner (bin/fm-dod-lib.sh) rather than summarised into a hint line. A
@@ -145,22 +170,34 @@ TASK_DIR=$(fm_task_data_ensure_dir "$DATA" "$ID") || {
 }
 CI_RULE=$(fm_ci_rule "$MODE") || exit 1
 INSTRUCTIONS="$TASK_DIR/ship-instructions.md"
+PROMOTION_ASK_USER_BLOCK=
+if [ "$MODE" = no-mistakes ]; then
+  PROMOTION_ASK_USER_BLOCK=$(fm_ask_user_escalation_block "$TASK_DIR")
+fi
 [ ! -d "$INSTRUCTIONS" ] || { echo "error: ship instructions path is a directory: $INSTRUCTIONS" >&2; exit 1; }
 TMP="$TASK_DIR/.ship-instructions.md.${BASHPID:-$$}"
 {
   cat <<EOF
 Your scout task has been promoted to a ship task, mode=$MODE. Your window, worktree, and context stay as they are; only the contract below changes.
 
-# Ship instructions
+# Task
+## Captain's intent
+EOF
+  printf '%s\n' "$INTENT_BODY"
+  cat <<EOF
+
+## Firstmate spec
 1. **Verify isolation before anything else.** Run \`pwd -P\` and \`git rev-parse --show-toplevel\`; both must resolve to the disposable task worktree you were launched in, such as a treehouse pool path or an Orca-managed worktree, not the primary checkout firstmate operates from. If either does not resolve to the worktree you were launched in, stop and escalate to firstmate.
 2. Inventory this worktree's scratch state with \`git status\` and \`git log\` before changing anything.
 3. Return to a clean default-branch base, then create your branch: \`git checkout -b fm/$ID\`.
 4. Carry over only the intended fix changes. Leave scratch commits, debug edits, and experiment files behind.
 5. If you reproduced a bug, turn that reproduction into a regression test.
 6. These ship instructions supersede the scout delivery rules and report-based Definition of done. Everything else in your original instructions carries over unchanged: the status protocol; the instruction inbox and its acknowledgement; the escalation rules, including ask-user; and every safety rule.
+$PROMOTION_ASK_USER_BLOCK
 7. Your CI rule now reads, for this mode: $CI_RULE
-
+8. Treat the scout-time Firstmate spec and any unmarked legacy \`# Task\` text as investigation context, not captain intent or ship-time instructions.
 EOF
+  printf '\n'
   fm_dod_block "$MODE" "$ID" "$TASK_DIR"
 } > "$TMP" || { echo "error: could not render ship instructions for mode=$MODE" >&2; exit 1; }
 mv "$TMP" "$INSTRUCTIONS"
