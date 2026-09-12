@@ -1268,6 +1268,13 @@ summary_file_read() {  # <file> <expected-home> <output-file>
   rc=$?
   rm -f -- "$captured"
   if [ "$rc" -ne 0 ]; then
+    # A failure here happens AFTER validation accepted the payload, so the
+    # caller has already committed to this home's own fallback record and reads
+    # this file back with `jq --slurpfile`. Reset it to an empty object rather
+    # than removing it: an absent file makes that read-back fail and collapses
+    # the whole registered-secondmate aggregation instead of the one home this
+    # per-home file exists to bound
+    # (tests/fm-fleet-snapshot-view.test.sh pins that blast radius).
     printf '{}\n' > "$output"
     return "$rc"
   fi
