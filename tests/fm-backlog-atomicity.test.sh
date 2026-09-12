@@ -1618,7 +1618,7 @@ test_completion_is_never_handed_a_whitespace_report_path() (
 
   # A report resolved the way bin/fm-teardown.sh's backlog_done_args resolves it
   # closes its row and lands as the row's artifact.
-  good=good-close
+  good='good-close'
   tasks-axi add "$good" "item for $good" --kind scout --file "$(backlog_of "$case_dir")" >/dev/null \
     || fail "could not create the row for $good"
   tasks-axi start "$good" --file "$(backlog_of "$case_dir")" >/dev/null \
@@ -1636,7 +1636,7 @@ test_completion_is_never_handed_a_whitespace_report_path() (
     "the resolved report did not land as the row's artifact"
 
   # The same call with a whitespace value fails, because nothing filters it.
-  bad=bad-close
+  bad='bad-close'
   tasks-axi add "$bad" "item for $bad" --kind scout --file "$(backlog_of "$case_dir")" >/dev/null \
     || fail "could not create the row for $bad"
   tasks-axi start "$bad" --file "$(backlog_of "$case_dir")" >/dev/null \
