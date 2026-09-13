@@ -867,7 +867,7 @@ test_scout_lavish_line_follows_presentation_floor() {
     PATH="$fakebin:$base" FM_HOME="$case_dir/home" \
       "$ROOT/bin/fm-brief.sh" scout-lavish alpha --scout >/dev/null \
       || fail "$label: scout scaffold failed"
-    brief="$case_dir/home/data/scout-lavish/brief.md"
+    brief="$(fm_test_task_dir "$case_dir/home" scout-lavish alpha)/brief.md"
     if [ "$expect" = hosting ]; then
       assert_grep "$hosting" "$brief" "$label: scout brief did not offer the Lavish review loop"
       assert_no_grep "$text_only" "$brief" "$label: scout brief withheld Lavish from a compatible build"
