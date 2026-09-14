@@ -1,0 +1,41 @@
+firstmate away-return brief - upstream fix ecfe0719 (treat an acked watcher-down marker as no gap)
+repo HEAD: 0935096
+
+===== CASE A: downtime episode detected AND handled during the away window (acked marker) =====
+$ cat $FM_HOME/state/.watcher-down
+acked:downtime:fixture-generation
+$ bin/fm-afk-return.sh begin
+=== Return brief (away 2026-09-13T23:36:06Z -> 2026-09-13T23:36:11Z, 5s) ===
+Supervisor health:
+  - supervision ran through the away window with no detected gap (watcher beat 0s old at return)
+Mandate clauses:
+  (none recorded)
+Waiting on you:
+  (nothing)
+Tried and failed, or could not be fixed:
+  (nothing)
+Handled while away:
+  (no routine outcomes recorded in the store for this window)
+Cost: 0 supervision outcome(s) recorded (0 routine, 0 captain); 0 task(s) live at return.
+catch-up health: supervision ran through the away window with no detected gap (watcher beat 0s old at return)
+fm-afk-return: catch-up clear; ordinary captain work may proceed
+
+===== CASE B: same window, episode still open (pending marker) =====
+$ cat $FM_HOME/state/.watcher-down
+pending:downtime:fixture-generation
+$ bin/fm-afk-return.sh begin
+=== Return brief (away 2026-09-13T23:36:12Z -> 2026-09-13T23:36:15Z, 3s) ===
+Supervisor health:
+  - GAP: watcher downtime was detected during the away window (recovery marker present)
+Mandate clauses:
+  (none recorded)
+Waiting on you:
+  (nothing)
+Tried and failed, or could not be fixed:
+  (nothing)
+Handled while away:
+  (no routine outcomes recorded in the store for this window)
+Cost: 0 supervision outcome(s) recorded (0 routine, 0 captain); 0 task(s) live at return.
+catch-up health: GAP: watcher downtime was detected during the away window (recovery marker present)
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation fixture-generation
+

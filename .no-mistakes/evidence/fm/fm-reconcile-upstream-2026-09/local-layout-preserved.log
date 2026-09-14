@@ -1,0 +1,27 @@
+FM_TEST_BEGIN 2026-09-13T23:37:43Z tests/fm-task-data.test.sh family=unclassified expected_gate_skip=none
+ok - fm-task-data: both scripts parse cleanly
+ok - fm-brief.sh: a fresh scaffold writes the project-grouped path
+ok - fm-brief.sh: a whitespace project name is refused before its directory exists
+ok - fm-brief.sh: a whitespace task id is refused before its directory exists
+ok - fm-task-data-lib: the whitespace refusals hold under a C/POSIX locale
+ok - fm-brief.sh: a non-whitespace project name the validator accepts still scaffolds
+ok - fm-brief.sh: the marker records project, title, and creation date
+ok - fm-brief.sh: a reworded title cannot move the folder
+ok - fm-brief.sh: a project-less task uses the documented _none literal
+ok - layout: a legacy-only task is found by every reader and never duplicated
+ok - layout: a task with legacy data keeps using it rather than splitting
+ok - layout: data/ keeps its own top-level files and directories
+ok - fm-task-data.sh: the dry run is the default and removes nothing
+ok - fm-task-data.sh: a task that is not finished is refused and named
+ok - fm-task-data.sh: a protected folder is skipped without the override and removed with it
+ok - fm-task-data.sh: protect and unprotect accept a whole project
+ok - fm-task-data.sh: the migration reports are protectable by their id prefix and survive a prune
+ok - fm-task-data.sh: images-only on the protected migration set keeps every report
+ok - fm-task-data.sh: images-only leaves every .md intact
+ok - fm-task-data.sh: project, task, and age filters compose
+ok - fm-task-data.sh: --archive moves instead of deleting
+ok - fm-task-data.sh: running twice is safe
+FM_TEST_END 2026-09-13T23:38:00Z tests/fm-task-data.test.sh exit=0 duration_ms=16618 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=16794
+FM_TEST_SUMMARY_FAMILY family=unclassified count=1 duration_ms=16618 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-task-data.test.sh duration_ms=16618

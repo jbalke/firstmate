@@ -1,0 +1,23 @@
+firstmate fork <- upstream merge provenance
+
+$ git log -1 --format=%H %P  (the merge commit)
+merge   e85e644  Merge upstream firstmate into the fork, preserving local behaviour
+parent1 a8c4125  Merge pull request #9 from jbalke/fm/fm-reconcile-upstream-108
+parent2 b182d0f  fix(bin): rebind fm-procevent-when trust bindings after a self-update (#4361)
+
+$ git rev-list --count <fork-tip>..<upstream-tip>   (upstream commits the fork lacked)
+27
+$ git rev-list --count <upstream-tip>..<fork-tip>   (local commits upstream lacks)
+52
+$ git diff --stat a8c41254...b182d0f9 | tail -1   (three-dot diff measured at intake)
+ 156 files changed, 14163 insertions(+), 1198 deletions(-)
+
+The four upstream fixes the captain named, now ancestors of HEAD (0935096):
+  reachable  e0d269e  fix(herdr): verify agent liveness at process level before trusting registration (#4191)
+  reachable  ecfe071  fix(afk-return): treat an acked watcher-down marker as no gap (#4355)
+  reachable  b182d0f  fix(bin): rebind fm-procevent-when trust bindings after a self-update (#4361)
+  reachable  fb19dd9  fix(backlog): bound per-item backlog row reads so a wedged backend cannot blind a session start (#4027)
+
+Fork-only code preserved through the merge (present in HEAD, absent upstream):
+  bin/fm-task-data-lib.sh: HEAD=present upstream-tip=absent
+  bin/fm-task-data.sh: HEAD=present upstream-tip=absent
