@@ -1076,12 +1076,38 @@ assert_absent "$FM_PROCEVENT_CLAIM_ROOT/shared-src.claim" "retire releases the c
 pass "retiring a never-completing source stops its runner and its blocked child"
 
 # reconcile must also stop a runner whose registration was removed out from under it.
+#
+# A claim exists before the runner has reached its source command: the runner
+# re-reads the registration at the end of the launch floor and exits on its own
+# when it is gone (cmd_start's floor-wait status 2), releasing its claim. So a
+# registration removed in that startup window is stopped by whichever of the two
+# wins, and reconcile reports uncertain= rather than stopped= when it loses.
+# That window is not what this asserts: the leak was a runner already BLOCKED ON
+# ITS SOURCE, which nothing but reconcile stops. The source therefore records
+# that it started, and the registration is removed only once it has.
+ORPHAN_STARTED="$TMP_ROOT/orphan-started"
+ORPHAN_SOURCE="$TMP_ROOT/orphan-source.sh"
+cat > "$ORPHAN_SOURCE" <<'SH'
+#!/usr/bin/env bash
+# $BLOCKER's shape plus a marker that the source command itself is running.
+marker=$1
+trigger=$2
+printf 'started\n' >> "$marker"
+while [ ! -e "$trigger" ]; do
+  [ "$SECONDS" -lt "${FM_TEST_STUB_MAX_BLOCK_SECONDS:-120}" ] || exit 75
+  sleep 0.05
+done
+printf 'orphan\n'
+SH
+chmod +x "$ORPHAN_SOURCE"
 TRIG4="$TMP_ROOT/trigger-four"
 HZ="$TMP_ROOT/hz"; new_home "$HZ"
-pe_register "$HZ" lavish orphan-src -- "$BLOCKER" "$TRIG4" "orphan" >/dev/null
+pe_register "$HZ" lavish orphan-src -- "$ORPHAN_SOURCE" "$ORPHAN_STARTED" "$TRIG4" >/dev/null
 pe "$HZ" reconcile >/dev/null
 orphan_pid=$(wait_for_runner_group "$FM_PROCEVENT_CLAIM_ROOT/orphan-src.claim") \
   || fail "orphan fixture runner did not start as a signalable process-group leader"
+wait_for "$ORPHAN_STARTED" \
+  || fail "the orphan fixture's source command never started"
 kill -0 "$orphan_pid" 2>/dev/null || fail "orphan fixture runner did not stay live"
 rm -f "$HZ/state/procevent/orphan-src.source"
 out=$(pe "$HZ" reconcile)
