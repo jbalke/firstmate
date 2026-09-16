@@ -87,6 +87,15 @@
 # dark/muted TRUECOLOR foreground - and keeps only normal-intensity,
 # normally-coloured text.
 #
+# DECORATIVE ANIMATION (task fm-composer-braille-particles): ghost stripping is
+# not the only source of non-typed content. Codex animates falling snow across
+# its composer area in NORMAL intensity, so it survives fm_composer_strip_ghost
+# and the advisory pre-check in bin/fm-send.sh read it as operator text and
+# skipped the doorbell on EVERY send to a Codex worker.
+# _fm_composer_row_is_codex_particles below is the one owner of which glyphs are
+# animation furniture; a row of nothing but those plus whitespace is empty, and
+# it also stops a bare region from swallowing the footer below snowed padding.
+#
 # UNICODE WHITESPACE (issue #1988; open PRs #1995/#2047 target the same
 # defect and #1995's naming is adopted here so the implementations converge):
 # a harness may separate its prompt glyph from composer content with a
