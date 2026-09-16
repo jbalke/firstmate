@@ -480,6 +480,23 @@ Cursor is deliberately outside this cursor-anchored empty-composer matrix becaus
 
 `zellij action dump-screen --pane-id <id> --ansi` was verified at zellij 0.44.0 to preserve ANSI styling (real Claude Code rendered inside a zellij pane dumped `ESC[m` `❯` U+00A0 for its idle composer row), which is the capability the zellij composer classifier reads.
 
+### Codex particle-only composer rows
+
+Verified on 2026-09-16 with `codex-cli 0.154.0` and Herdr 0.9.0.
+The real ANSI capture in `tests/fixtures/codex-snow-composer.ansi-escaped` includes snow on the prompt and its blank padding, with the status footer immediately below.
+The previous classifier returned `pending`; the corrected classifier returns `empty` with both cursor-anchored and cursorless capabilities.
+The portable refresh command is `bin/fm-test-run.sh tests/fm-composer-lib.test.sh tests/fm-composer-ghost.test.sh`.
+Its focused output is:
+
+```text
+ok - Codex captured snow is empty with and without cursor metadata
+ok - Codex snow preserves typed words, mixed braille, spinners and wrapped input
+ok - only Codex single-dot particle-only content is furniture
+```
+
+A live `bin/fm-send.sh` delivery to that same Codex worker, using an isolated test home and inbox, returned exit 0 without the pending-text skip notice; the worker received the doorbell, read its record, and moved it to `handled/`.
+This supplements the live matrix guard above for the snow-enabled Codex surface; it does not refresh other harness versions.
+
 ## Steering-inbox doorbell
 
 The steering channel's one behavioral assumption - a real worker agent follows the constant self-describing doorbell line (list the inbox, read and act on its records in numeric order, then `mv` each into `handled/`) - was verified on 2026-08-23 against every installed verified harness, on tmux 3.6a, macOS arm64, on an isolated private socket, driving the REAL `bin/fm-send.sh` end to end (durable record plus doorbell, with one mid-wait re-ring playing the watcher's role).
