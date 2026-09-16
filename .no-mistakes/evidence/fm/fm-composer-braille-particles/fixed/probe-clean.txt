@@ -1,0 +1,8 @@
+mode=clean
+pane agent state : alive
+cursor row       : 3
+composer verdict : empty
+fm-send exit      : 0
+durable record    : <lab>/home/state/snow-clean.inbox/001.msg
+skip notice       : 0
+bytes typed into pane: 326

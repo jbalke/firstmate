@@ -1,0 +1,18 @@
+mode=wrapped-cursor
+pane agent state : alive
+cursor row       : 4
+composer verdict : pending
+fm-send exit      : 0
+durable record    : <lab>/home/state/snow-wrapped-cursor.inbox/001.msg
+skip notice       : 1
+bytes typed into pane: 0
+--- fm-send stderr ---
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.bhSA0S/home/state/snow-wrapped-cursor.inbox/001.msg and the watcher will re-ring
+--- bytes the pane received on stdin ---

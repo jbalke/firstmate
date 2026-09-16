@@ -1,0 +1,25 @@
+mode=ladder
+pane agent state : alive
+cursor row       : 3
+composer verdict : empty
+ladder attempt 1: due_action=ring ring_rc=0 doorbell-lines-in-pane=2
+ladder attempt 2: due_action=ring ring_rc=0 doorbell-lines-in-pane=3
+ladder attempt 3: due_action=ring ring_rc=0 doorbell-lines-in-pane=4
+ladder attempt 4: due_action=escalate
+fm-send exit      : 0
+durable record    : <lab>/home/state/snow-ladder.inbox/001.msg
+skip notice       : 0
+bytes typed into pane: 1312
+--- fm-send stderr ---
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--- bytes the pane received on stdin ---
+: Firstmate instruction waiting: list '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/handled/.
+: Firstmate instruction waiting: list '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/handled/.
+: Firstmate instruction waiting: list '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/handled/.
+: Firstmate instruction waiting: list '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.haEoOu/home/state/snow-ladder.inbox'/handled/.

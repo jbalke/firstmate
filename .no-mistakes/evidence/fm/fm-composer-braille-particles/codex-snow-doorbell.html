@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Codex snow: composer pre-check vs the doorbell</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#14161a; color:#e7e9ee; font:14px/1.5 -apple-system,Segoe UI,sans-serif; margin:0; padding:2rem; }
+  h1 { font-size:1.5rem; margin:0 0 .25rem; }
+  h2 { font-size:1.05rem; margin:2rem 0 .5rem; color:#9fb4ff; }
+  h4 { margin:0 0 .5rem; font-size:.95rem; }
+  p.sub { color:#98a0b0; margin:0 0 1rem; max-width:70rem; }
+  pre.pane { background:#1e1e1e; margin:0; padding:.6rem .8rem; border-radius:.4rem;
+    font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace; overflow-x:auto; border:1px solid #2c3038; }
+  pre.stdin { background:#0f1114; border:1px solid #2c3038; border-radius:.4rem; padding:.5rem .6rem;
+    font:11.5px/1.45 ui-monospace,Menlo,monospace; white-space:pre-wrap; word-break:break-all; margin:.25rem 0 0; color:#cfe3d0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr)); gap:1rem; }
+  .card { border:1px solid #2c3038; border-radius:.5rem; padding:.9rem 1rem; background:#181b20; min-width:0; }
+  .card.good { border-left:4px solid #3fb950; }
+  .card.bad { border-left:4px solid #f85149; }
+  dl { display:grid; grid-template-columns:auto minmax(0,1fr); gap:.15rem .75rem; margin:0 0 .5rem; }
+  dt { color:#98a0b0; } dd { margin:0; min-width:0; overflow-wrap:anywhere; }
+  code { font:12px/1.4 ui-monospace,Menlo,monospace; }
+  code.notice { color:#f0883e; } code.ok { color:#3fb950; }
+  p.lbl { color:#98a0b0; margin:.6rem 0 0; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+  table { border-collapse:collapse; margin-top:.5rem; }
+  th, td { border:1px solid #2c3038; padding:.3rem .6rem; text-align:left; }
+  th { color:#98a0b0; font-weight:600; }
+</style></head><body>
+<h1>Codex snow no longer blocks the doorbell</h1>
+<p class="sub">Every panel below is a real <code>bin/fm-send.sh</code> run against a live pane (tmux below, real herdr in section 4) whose screen is the
+captured Codex snow composer (<code>tests/fixtures/codex-snow-composer.ansi-escaped</code>), with the terminal cursor
+parked in the composer and a pane process the tmux liveness probe reads as a live <code>codex</code> agent.
+The only difference between the two columns is which <code>bin/fm-composer-lib.sh</code> is installed.</p>
+
+<h2>1. The pane the operator's send is judging</h2>
+<pre class="pane"><span></span><span style="font-weight:700"></span><span style="color:rgb(255,255,255);font-weight:700">•</span><span> </span><span style="font-weight:700"></span><span style="color:rgb(255,255,255);font-weight:700">Working</span><span> </span><span style="opacity:.55">(48s • esc to interrupt)</span><span>
+
+</span><span style="background:rgb(30,30,30)">                                                 </span><span style="color:rgb(86,86,86);background:rgb(30,30,30)">⠐</span><span style="background:rgb(30,30,30)">                        </span><span style="color:rgb(143,143,143);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)"> </span><span style="color:rgb(129,129,129);background:rgb(30,30,30)">⠄</span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠄</span><span style="color:rgb(39,39,39);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">            </span><span style="color:rgb(149,149,149);background:rgb(30,30,30)">⡀</span><span style="background:rgb(30,30,30)">   </span><span style="color:rgb(151,151,151);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">    </span><span style="color:rgb(145,145,145);background:rgb(30,30,30)">⡀</span><span style="background:rgb(30,30,30)">                 </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">  </span><span style="color:rgb(139,139,139);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)">         </span><span>
+</span><span style="font-weight:700"></span><span style="background:rgb(30,30,30);font-weight:700">›</span><span></span><span style="color:rgb(148,148,148)"></span><span style="color:rgb(148,148,148);background:rgb(30,30,30)">⠁</span><span style="color:rgb(148,148,148);background:rgb(30,30,30);opacity:.55"></span><span style="background:rgb(30,30,30);opacity:.55">Ask Codex to do anything</span><span></span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)"> </span><span style="color:rgb(53,53,53);background:rgb(30,30,30)">⠂</span><span style="background:rgb(30,30,30)">  </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">                                              </span><span style="color:rgb(148,148,148);background:rgb(30,30,30)">⠁</span><span style="color:rgb(152,152,152);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">       </span><span style="color:rgb(41,41,41);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">               </span><span style="color:rgb(108,108,108);background:rgb(30,30,30)">⠂</span><span style="background:rgb(30,30,30)">      </span><span style="color:rgb(55,55,55);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(148,148,148);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)">          </span><span>
+</span><span style="background:rgb(30,30,30)">       </span><span style="color:rgb(142,142,142);background:rgb(30,30,30)">⢀</span><span style="color:rgb(43,43,43);background:rgb(30,30,30)">⠐</span><span style="background:rgb(30,30,30)">        </span><span style="color:rgb(63,63,63);background:rgb(30,30,30)">⠄</span><span style="background:rgb(30,30,30)">                                  </span><span style="color:rgb(75,75,75);background:rgb(30,30,30)">⠠</span><span style="background:rgb(30,30,30)">                     </span><span style="color:rgb(39,39,39);background:rgb(30,30,30)">⠄</span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(77,77,77);background:rgb(30,30,30)">⠂</span><span style="background:rgb(30,30,30)">                 </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)">        </span><span style="color:rgb(104,104,104);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">                  </span><span style="color:rgb(100,100,100);background:rgb(30,30,30)">⠠</span><span style="background:rgb(30,30,30)">         </span><span>
+  </span><span style="color:rgb(246,226,183)">gpt-6-astra low</span><span style="color:rgb(246,226,183);opacity:.55"></span><span style="opacity:.55"> · </span><span></span><span style="color:rgb(171,223,167)">~/project</span><span style="color:rgb(171,223,167);opacity:.55"></span><span style="opacity:.55"> · </span><span></span><span style="color:rgb(156,222,211)">Fix the snow bug</span><span>
+</span></pre>
+
+<h2>2. Same send, before and after the fix</h2>
+<div class="grid">
+
+    <div class="card bad">
+      <h4>Before the fix (base f3c650d)</h4>
+      <dl>
+        <dt>composer verdict</dt><dd><code>pending</code></dd>
+        <dt>fm-send exit</dt><dd><code>0</code></dd>
+        <dt>operator saw</dt><dd><code class="notice">fm-send: doorbell skipped (composer visibly holds pending text)</code></dd>
+        <dt>bytes the worker received</dt><dd><code>0</code></dd>
+      </dl>
+      <p class="lbl">what the Codex pane actually received on stdin</p>
+      <pre class="stdin">(empty - nothing reached the worker)</pre>
+    </div>
+
+    <div class="card good">
+      <h4>After the fix (549cde2)</h4>
+      <dl>
+        <dt>composer verdict</dt><dd><code>empty</code></dd>
+        <dt>fm-send exit</dt><dd><code>0</code></dd>
+        <dt>operator saw</dt><dd><code class="ok">no skip notice</code></dd>
+        <dt>bytes the worker received</dt><dd><code>326</code></dd>
+      </dl>
+      <p class="lbl">what the Codex pane actually received on stdin</p>
+      <pre class="stdin">: Firstmate instruction waiting: list &#x27;/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.SYfwMI/home/state/snow-clean.inbox&#x27;/*.msg and, in numeric order, read and act on each, then mv each handled file to &#x27;/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.SYfwMI/home/state/snow-clean.inbox&#x27;/handled/.</pre>
+    </div>
+</div>
+
+<h2>3. Adversarial: operator words typed among the snow must still be protected</h2>
+<pre class="pane"><span></span><span style="font-weight:700"></span><span style="color:rgb(255,255,255);font-weight:700">•</span><span> </span><span style="font-weight:700"></span><span style="color:rgb(255,255,255);font-weight:700">Working</span><span> </span><span style="opacity:.55">(48s • esc to interrupt)</span><span>
+
+</span><span style="background:rgb(30,30,30)">                                                 </span><span style="color:rgb(86,86,86);background:rgb(30,30,30)">⠐</span><span style="background:rgb(30,30,30)">                        </span><span style="color:rgb(143,143,143);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)"> </span><span style="color:rgb(129,129,129);background:rgb(30,30,30)">⠄</span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠄</span><span style="color:rgb(39,39,39);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">            </span><span style="color:rgb(149,149,149);background:rgb(30,30,30)">⡀</span><span style="background:rgb(30,30,30)">   </span><span style="color:rgb(151,151,151);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">    </span><span style="color:rgb(145,145,145);background:rgb(30,30,30)">⡀</span><span style="background:rgb(30,30,30)">                 </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">  </span><span style="color:rgb(139,139,139);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)">         </span><span>
+</span><span style="font-weight:700"></span><span style="background:rgb(30,30,30);font-weight:700">›ship the scope cut </span><span></span><span style="color:rgb(148,148,148)"></span><span style="color:rgb(148,148,148);background:rgb(30,30,30)">⠁</span><span style="color:rgb(148,148,148);background:rgb(30,30,30);opacity:.55"></span><span style="background:rgb(30,30,30);opacity:.55">Ask Codex to do anything</span><span></span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)"> </span><span style="color:rgb(53,53,53);background:rgb(30,30,30)">⠂</span><span style="background:rgb(30,30,30)">  </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">                                              </span><span style="color:rgb(148,148,148);background:rgb(30,30,30)">⠁</span><span style="color:rgb(152,152,152);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">       </span><span style="color:rgb(41,41,41);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">               </span><span style="color:rgb(108,108,108);background:rgb(30,30,30)">⠂</span><span style="background:rgb(30,30,30)">      </span><span style="color:rgb(55,55,55);background:rgb(30,30,30)">⠈</span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(148,148,148);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)">          </span><span>
+</span><span style="background:rgb(30,30,30)">       </span><span style="color:rgb(142,142,142);background:rgb(30,30,30)">⢀</span><span style="color:rgb(43,43,43);background:rgb(30,30,30)">⠐</span><span style="background:rgb(30,30,30)">        </span><span style="color:rgb(63,63,63);background:rgb(30,30,30)">⠄</span><span style="background:rgb(30,30,30)">                                  </span><span style="color:rgb(75,75,75);background:rgb(30,30,30)">⠠</span><span style="background:rgb(30,30,30)">                     </span><span style="color:rgb(39,39,39);background:rgb(30,30,30)">⠄</span><span style="background:rgb(30,30,30)">         </span><span style="color:rgb(77,77,77);background:rgb(30,30,30)">⠂</span><span style="background:rgb(30,30,30)">                 </span><span style="color:rgb(153,153,153);background:rgb(30,30,30)">⢀</span><span style="background:rgb(30,30,30)">        </span><span style="color:rgb(104,104,104);background:rgb(30,30,30)">⠁</span><span style="background:rgb(30,30,30)">                  </span><span style="color:rgb(100,100,100);background:rgb(30,30,30)">⠠</span><span style="background:rgb(30,30,30)">         </span><span>
+  </span><span style="color:rgb(246,226,183)">gpt-6-astra low</span><span style="color:rgb(246,226,183);opacity:.55"></span><span style="opacity:.55"> · </span><span></span><span style="color:rgb(171,223,167)">~/project</span><span style="color:rgb(171,223,167);opacity:.55"></span><span style="opacity:.55"> · </span><span></span><span style="color:rgb(156,222,211)">Fix the snow bug</span><span>
+</span></pre>
+<div class="grid">
+
+    <div class="card good">
+      <h4>Typed words among snow, after the fix</h4>
+      <dl>
+        <dt>composer verdict</dt><dd><code>pending</code></dd>
+        <dt>fm-send exit</dt><dd><code>0</code></dd>
+        <dt>operator saw</dt><dd><code class="notice">fm-send: doorbell skipped (composer visibly holds pending text)</code></dd>
+        <dt>bytes the worker received</dt><dd><code>0</code></dd>
+      </dl>
+      <p class="lbl">what the Codex pane actually received on stdin</p>
+      <pre class="stdin">(empty - nothing reached the worker)</pre>
+    </div>
+
+    <div class="card good">
+      <h4>Wrapped words with the caret in them, after the fix</h4>
+      <dl>
+        <dt>composer verdict</dt><dd><code>pending</code></dd>
+        <dt>fm-send exit</dt><dd><code>0</code></dd>
+        <dt>operator saw</dt><dd><code class="notice">fm-send: doorbell skipped (composer visibly holds pending text)</code></dd>
+        <dt>bytes the worker received</dt><dd><code>0</code></dd>
+      </dl>
+      <p class="lbl">what the Codex pane actually received on stdin</p>
+      <pre class="stdin">(empty - nothing reached the worker)</pre>
+    </div>
+</div>
+
+<h2>4. The cursorless backend (herdr), which the reported incident ran on</h2>
+<p class="sub">A real isolated herdr server (herdr 0.9.0) via <code>bin/fm-herdr-lab.sh</code>, a registered
+<code>codex</code> agent on the pane, and herdr's own <code>capture --ansi</code> read - so the verdict comes from
+the CURSORLESS selector, not the tmux cursor path.</p>
+<div class="grid">
+
+    <div class="card bad">
+      <h4>Snow only, before the fix</h4>
+      <dl>
+        <dt>composer verdict</dt><dd><code>pending</code></dd>
+        <dt>fm-send exit</dt><dd><code>0</code></dd>
+        <dt>operator saw</dt><dd><code class="notice">fm-send: doorbell skipped (composer visibly holds pending text)</code></dd>
+        <dt>bytes the worker received</dt><dd><code>0</code></dd>
+      </dl>
+      <p class="lbl">what the Codex pane actually received on stdin</p>
+      <pre class="stdin">(empty - nothing reached the worker)</pre>
+    </div>
+
+    <div class="card good">
+      <h4>Snow only, after the fix</h4>
+      <dl>
+        <dt>composer verdict</dt><dd><code>empty</code></dd>
+        <dt>fm-send exit</dt><dd><code>0</code></dd>
+        <dt>operator saw</dt><dd><code class="ok">no skip notice</code></dd>
+        <dt>bytes the worker received</dt><dd><code>338</code></dd>
+      </dl>
+      <p class="lbl">what the Codex pane actually received on stdin</p>
+      <pre class="stdin">: Firstmate instruction waiting: list &#x27;/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-herdr.kYB7Eg/home/state/snowherdr-clean.inbox&#x27;/*.msg and, in numeric order, read and act on each, then mv each handled file to &#x27;/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-herdr.kYB7Eg/home/state/snowherdr-clean.inbox&#x27;/handled/.</pre>
+    </div>
+
+    <div class="card good">
+      <h4>Adversarial: typed words among snow, after the fix</h4>
+      <dl>
+        <dt>composer verdict</dt><dd><code>pending</code></dd>
+        <dt>fm-send exit</dt><dd><code>0</code></dd>
+        <dt>operator saw</dt><dd><code class="notice">fm-send: doorbell skipped (composer visibly holds pending text)</code></dd>
+        <dt>bytes the worker received</dt><dd><code>0</code></dd>
+      </dl>
+      <p class="lbl">what the Codex pane actually received on stdin</p>
+      <pre class="stdin">(empty - nothing reached the worker)</pre>
+    </div>
+</div>
+
+<h2>5. A REAL Codex worker, end to end, with the fix installed</h2>
+<p class="sub">codex-cli 0.154.0 launched idle in an isolated tmux server with an isolated CODEX_HOME. Today's Codex
+draws no snow, so this is the regression half: the ordinary idle Codex composer must still read <code>empty</code> and
+the doorbell must still reach a real worker.</p>
+<pre class="stdin">Real Codex worker, codex-cli 0.154.0, isolated tmux server, fix installed (549cde2).
+composer verdict on the real idle codex pane: empty   (agent state: alive)
+bin/fm-send.sh exit: 0, no &#x27;doorbell skipped&#x27; notice on stderr
+worker acted: yes   worker acked (mv into handled/): yes
+
+--- pane transcript (tail) ---
+  Tip: This is GPT-6, a new generation of intelligence. Astra is state-of-the-art in coding, computer use, science, and professional work. Give it a hard problem, a half-formed idea, or anything you&#x27;ve been meaning to
+  build. See where it takes you.
+• You have 1 usage limit reset available. Run /usage to use one.
+⚠ Heads up, you have less than 25% of your weekly limit left. Run /status for a breakdown.
+› : Firstmate instruction waiting: list &#x27;/tmp/rc-lab.Vh4M0H/home/state/live-codex.inbox&#x27;/*.msg and, in numeric order, read and act on each, then mv each handled file to &#x27;/tmp/rc-lab.Vh4M0H/home/state/live-codex.inbox&#x27;/
+  handled/.
+• Captain, I’ll read the queued instructions in numeric order and move each to handled/ after acting on it.
+• Ran for f in /tmp/rc-lab.Vh4M0H/home/state/live-codex.inbox/*.msg; do printf &#x27;%s\n&#x27; &quot;$f&quot;; done
+  └ /tmp/rc-lab.Vh4M0H/home/state/live-codex.inbox/001.msg
+• Explored
+  └ Read 001.msg
+• Ran touch /tmp/rc-lab.Vh4M0H/acted
+  └ (no output)
+• Ran mkdir -p /tmp/rc-lab.Vh4M0H/home/state/live-codex.inbox/handled
+  └ (no output)
+• Ran mv /tmp/rc-lab.Vh4M0H/home/state/live-codex.inbox/001.msg /tmp/rc-lab.Vh4M0H/home/state/live-codex.inbox/handled/
+  └ (no output)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+• Captain, created /tmp/rc-lab.Vh4M0H/acted and moved 001.msg to handled/.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+› Ask Codex to do anything
+  gpt-6-astra default fast · ~/.no-mistakes/worktrees/6b5c7015552c/01M2P1SM47S69041NNQ3EEMCFJ · Process inbox messages</pre>
+
+<h2>6. The watcher's re-ring ladder on the same pane</h2>
+<p class="sub">Driven through <code>fm_task_inbox_due_action</code> / <code>fm_task_inbox_ring</code> - the owner
+<code>bin/fm-watch.sh</code> calls - with no grace, so all three rungs run.</p>
+<table><tbody><tr><th rowspan="4">before the fix</th><td><code>ladder attempt 1: due_action=ring ring_rc=1 doorbell-lines-in-pane=0</code></td></tr><tr><td><code>ladder attempt 2: due_action=ring ring_rc=1 doorbell-lines-in-pane=0</code></td></tr><tr><td><code>ladder attempt 3: due_action=ring ring_rc=1 doorbell-lines-in-pane=0</code></td></tr><tr><td><code>ladder attempt 4: due_action=escalate</code></td></tr><tr><th rowspan="4">after the fix</th><td><code>ladder attempt 1: due_action=ring ring_rc=0 doorbell-lines-in-pane=2</code></td></tr><tr><td><code>ladder attempt 2: due_action=ring ring_rc=0 doorbell-lines-in-pane=3</code></td></tr><tr><td><code>ladder attempt 3: due_action=ring ring_rc=0 doorbell-lines-in-pane=4</code></td></tr><tr><td><code>ladder attempt 4: due_action=escalate</code></td></tr></tbody></table>
+</body></html>

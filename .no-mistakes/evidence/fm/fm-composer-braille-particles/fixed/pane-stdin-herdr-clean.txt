@@ -1,0 +1,1 @@
+: Firstmate instruction waiting: list '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-herdr.kYB7Eg/home/state/snowherdr-clean.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-herdr.kYB7Eg/home/state/snowherdr-clean.inbox'/handled/.

@@ -1,0 +1,8 @@
+mode=typed
+pane agent state : alive
+cursor row       : 3
+composer verdict : pending
+fm-send exit      : 0
+durable record    : <lab>/home/state/snow-typed.inbox/001.msg
+skip notice       : 1
+bytes typed into pane: 0

@@ -1,0 +1,18 @@
+mode=clean
+pane agent state : alive
+cursor row       : 3
+composer verdict : empty
+fm-send exit      : 0
+durable record    : <lab>/home/state/snow-clean.inbox/001.msg
+skip notice       : 0
+bytes typed into pane: 326
+--- fm-send stderr ---
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--- bytes the pane received on stdin ---
+: Firstmate instruction waiting: list '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.SYfwMI/home/state/snow-clean.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-snow-live.SYfwMI/home/state/snow-clean.inbox'/handled/.
