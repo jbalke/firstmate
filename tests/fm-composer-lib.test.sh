@@ -728,3 +728,55 @@ test_queued_enter_verdict_does_not_convert_other_states() {
 test_queued_enter_verdict_busy_pending_is_empty
 test_queued_enter_verdict_idle_pending_stays_pending
 test_queued_enter_verdict_does_not_convert_other_states
+
+# Real Codex capture, 2026-09-16: snow fills the prompt and blank padding
+# below it (footer path anonymized). Decode escapes to keep ANSI styling: some particles survive ghost extraction.
+test_codex_snow_capture_is_empty() {
+  local screen out caps locale
+  screen=$(printf '%b' "$(cat "$ROOT/tests/fixtures/codex-snow-composer.ansi-escaped")")
+  for locale in C en_US.UTF-8; do
+    for caps in 'styled=1' $'styled=1\ncursor=1'; do
+      out=$(LC_ALL=$locale fm_composer_classify_screen "$caps" "$screen" 3)
+      [ "$out" = empty ] || fail "Codex snow capture ($locale, $caps): expected empty, got $out"
+    done
+  done
+  out=$(fm_composer_classify_screen $'styled=1\ncursor=1' "$screen" 4)
+  [ "$out" = empty ] || fail "Codex snow padding under cursor: expected empty, got $out"
+  pass "Codex captured snow is empty with and without cursor metadata"
+}
+
+test_codex_snow_preserves_real_input() {
+  local screen out text caps
+  screen=$(printf '%b' "$(cat "$ROOT/tests/fixtures/codex-snow-composer.ansi-escaped")")
+  for text in 'real pending words' 'words ⠁ with braille' '⠋'; do
+    # Insert normal-intensity text into the real prompt row, keeping its snow.
+    for caps in 'styled=1' $'styled=1\ncursor=1'; do
+      out=$(fm_composer_classify_screen "$caps" "${screen/›/›$text}" 3)
+      [ "$out" = pending ] || fail "Codex snow plus '$text': expected pending, got $out"
+    done
+  done
+  out=$(fm_composer_classify_screen 'styled=1' $'⠋ Working\n› ⠁ ⠂ ⠄ ⠈ ⠐ ⠠ ⡀ ⢀\nwrapped words ⠁\n⠂\nfooter')
+  [ "$out" = pending ] || fail "Codex snow plus wrapped input must remain pending, got $out"
+  out=$(fm_composer_classify_screen $'styled=1\ncursor=1' $'⠋ Working\n› ⠁\n⠂\nwrapped words ⠁' 3)
+  [ "$out" = pending ] || fail "cursor-proven input after snow must remain pending, got $out"
+  pass "Codex snow preserves typed words, mixed braille, spinners and wrapped input"
+}
+
+test_codex_particles_are_narrow_furniture() {
+  local out particle
+  for particle in '⠁' '⠂' '⠄' '⠈' '⠐' '⠠' '⡀' '⢀'; do
+    out=$(LC_ALL=C fm_composer_classify_screen 'styled=1' "› $particle")
+    [ "$out" = empty ] || fail "single-dot particle $particle must be empty, got $out"
+  done
+  out=$(fm_composer_classify_screen 'styled=1' $'⠋ Working\n›\n\n⠙ Progress')
+  [ "$out" = empty ] || fail "outside progress glyphs must not become input, got $out"
+  out=$(fm_composer_classify_screen 'styled=1' '❯ ⠁')
+  [ "$out" = pending ] || fail "other harness braille input must remain pending, got $out"
+  out=$(LC_ALL=C fm_composer_classify_screen 'styled=1' '› ⣿')
+  [ "$out" = pending ] || fail "other Braille must remain pending, got $out"
+  pass "only Codex single-dot particle-only content is furniture"
+}
+
+test_codex_snow_capture_is_empty
+test_codex_snow_preserves_real_input
+test_codex_particles_are_narrow_furniture

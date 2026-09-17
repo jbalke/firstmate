@@ -87,6 +87,15 @@
 # dark/muted TRUECOLOR foreground - and keeps only normal-intensity,
 # normally-coloured text.
 #
+# DECORATIVE ANIMATION (task fm-composer-braille-particles): ghost stripping is
+# not the only source of non-typed content. Codex animates falling snow across
+# its composer area in NORMAL intensity, so it survives fm_composer_strip_ghost
+# and the advisory pre-check in bin/fm-send.sh read it as operator text and
+# skipped the doorbell on EVERY send to a Codex worker.
+# _fm_composer_row_is_codex_particles below is the one owner of which glyphs are
+# animation furniture; a row of nothing but those plus whitespace is empty, and
+# it also stops a bare region from swallowing the footer below snowed padding.
+#
 # UNICODE WHITESPACE (issue #1988; open PRs #1995/#2047 target the same
 # defect and #1995's naming is adopted here so the implementations converge):
 # a harness may separate its prompt glyph from composer content with a
@@ -513,6 +522,20 @@ fm_composer_idle_matches() {
   esac
 }
 
+# Codex snow uses exactly the eight single-dot Braille cells U+2801,
+# U+2802, U+2804, U+2808, U+2810, U+2820, U+2840, U+2880.
+# Remove literal whole cells, not a byte-oriented character class: LC_ALL=C
+# must not turn other Braille (including progress spinners) into furniture.
+# Only a row containing nothing but these particles and whitespace qualifies.
+_fm_composer_row_is_codex_particles() {
+  local remainder=$1 particle
+  for particle in '⠁' '⠂' '⠄' '⠈' '⠐' '⠠' '⡀' '⢀'; do
+    remainder=${remainder//"$particle"/}
+  done
+  fm_composer_normalize_trim_var remainder
+  [ -z "$remainder" ]
+}
+
 # fm_composer_classify_content: the single shared composer-content verdict.
 #   <bordered> 1 when <content> came from a genuine agent-composer container (a
 #              bordered composer box, an identity-proven separated composer, or
@@ -557,6 +580,9 @@ fm_composer_classify_content() {  # <bordered> <content> [idle_re] [idle_case] [
     content=${content#*"$glyph"}
   fi
   fm_composer_normalize_trim_var content
+  if [ "$glyph" = '›' ] && _fm_composer_row_is_codex_particles "$content"; then
+    printf 'empty'; return 0
+  fi
   [ -n "$content" ] || { printf 'empty'; return 0; }
   fm_composer_idle_matches "$content" "$idle_re" "$idle_case" && idle_collision=1
   # Ghost stripping can leave a REMNANT of an idle placeholder rather than
@@ -1021,6 +1047,9 @@ _fm_composer_classify_bare_wrap() {  # <screen> <styled> <glyph-row> <cursor-row
       content=${content#*"$glyph"}
     fi
     fm_composer_normalize_trim_var content
+    if [ "$glyph" = '›' ] && _fm_composer_row_is_codex_particles "$content"; then
+      content=''
+    fi
     [ -z "$content" ] || text_seen=1
     row=$((row + 1))
   done
@@ -1128,12 +1157,19 @@ _fm_composer_select_cursorless() {
     return 1
   fi
   if [ "$FM_COMPOSER_SELECTED_KIND" = bare ]; then
+    local bare_glyph=''
+    raw=$(_fm_composer_screen_row "$FM_COMPOSER_SELECTED_FIRST" "$plain")
+    fm_composer_leading_agent_glyph_var bare_glyph "$raw" || true
     next=$((FM_COMPOSER_SELECTED_LAST + 1))
     while :; do
       raw=$(_fm_composer_screen_row "$next" "$plain")
       trimmed=$raw
       fm_composer_normalize_trim_var trimmed
       [ -n "$trimmed" ] || break
+      # Snow on Codex's blank padding must not extend input into its footer.
+      if [ "$bare_glyph" = '›' ] && _fm_composer_row_is_codex_particles "$trimmed"; then
+        break
+      fi
       fm_composer_row_has_edge "$trimmed" && break
       _fm_composer_row_is_omp_status "$trimmed" && break
       FM_COMPOSER_SELECTED_LAST=$next

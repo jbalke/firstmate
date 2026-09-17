@@ -14,6 +14,7 @@ Verified on 2026-06-11 with codex-cli 0.139.0 unless a fact gives a newer versio
 | Model flag | `--model <model>`. |
 | Effort flag | `-c 'model_reasoning_effort="<low\|medium\|high\|xhigh>"'`, verified on codex-cli 0.142.1 whose installed schema contains `model_reasoning_effort`, active config uses it, and bundled catalog advertises only these four values while omitting `max`. |
 | Model discovery | Open the current interactive session's `/model` picker. |
+| Composer | Bare `›` row the shared classifier already reads, overdrawn by a decorative falling-snow animation in normal intensity that ghost stripping cannot remove; `../../../bin/fm-composer-lib.sh` owns which glyphs are animation furniture and reads a snow-only row as `empty`, verified on codex-cli 0.154.0, with captures owned by `../../../docs/verification/runtime-backends.md` under "Codex particle-only composer rows". |
 | Marker | None; identity comes from ancestry, and `../../../bin/fm-harness.sh` is what keeps a retained foreign `CLAUDECODE` from renaming it. Verified on 2026-09-01 with codex-cli 0.152.0: the pane process is the `node` npm shim and the native `codex` binary runs as its foreground child, so a tool subprocess reaches the native name directly while the shim itself is identified from its script path. |
 
 A directory trust dialog appears on the first run for a repository root: "Do you trust the contents of this directory?"
