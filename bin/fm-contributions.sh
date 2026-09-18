@@ -68,6 +68,9 @@ FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-$FM_ROOT}"
 STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
+# Compared as a literal prefix below, so trailing slashes are stripped as text.
+# Nothing is resolved: a symlinked data root is still refused as one.
+while [ "$DATA" != / ] && [ "${DATA%/}" != "$DATA" ]; do DATA=${DATA%/}; done
 export FM_HOME FM_STATE_OVERRIDE="$STATE"
 # shellcheck source=bin/fm-pr-lib.sh
 . "$SCRIPT_DIR/fm-pr-lib.sh"
@@ -174,6 +177,10 @@ write_record() { # task record-json-file
   local task=$1 file dir device staged record_project
   fm_pr_task_id_valid "$task" || fail 'invalid contribution task'
   record_project=$(jq -r --arg task "$task" '[.backlog.records[]? | select(.id == $task) | .repo // empty] | first // ""' "$TMP/input.json")
+  # A backlog row's repo: metadata is prose, not a registry name. It only groups
+  # the directory, so an unusable one falls back to no-project rather than
+  # ending the poll for every other owner.
+  fm_task_data_project_slug "$record_project" >/dev/null 2>&1 || record_project=
   dir=$(fm_task_data_dir "$DATA" "$task" "$record_project") || fail 'invalid contribution directory'
   safe_record_path "$dir" || fail 'contribution directory is a symlink'
   mkdir -p "$dir"
