@@ -54,10 +54,15 @@
 #                older claude). The bottom border may carry a TITLE (grok
 #                writes its model name there); a titled bottom border that
 #                still starts and ends with the family's rule glyph is
-#                tolerated, not ambiguity.
+#                tolerated, including Grok 1.0.5's three-column title overhang.
 #   bare       - an agent prompt glyph row with no border at all (claude `❯`,
 #                codex `›`, muse `⟩`, cursor `→`). The agent glyph is itself the container
 #                proof; a bare SHELL glyph (`>` `$` `%` `#`) never is.
+#                A bare composer's WRAP region (typed input continuing on the
+#                rows beneath the glyph row) is bounded by blank rows, by
+#                structural edges, and by the FURNITURE rows a harness draws
+#                directly below its composer - omp's status row and
+#                Codex particle-only animation rows - none of which is ever typed input.
 #   left-bar   - opencode: rows prefixed by a heavy left bar `┃` with no
 #                closing border, holding the idle hint, blank rows, and a
 #                mode/model footer line.
@@ -81,12 +86,13 @@
 # otherwise-empty composer with de-emphasized ghost text - claude's rotating
 # prompt suggestion, codex's idle suggestion, grok's placeholder, or cursor's
 # idle placeholder - which a
-# plain capture cannot tell apart from text a human typed.
+# plain capture cannot tell apart from text a human typed. codex-cli 0.154.0
+# draws its `Ask Codex to do anything` placeholder as SGR-2 dim text after the
+# bare `›` glyph, which fm_composer_strip_ghost removes.
 # fm_composer_strip_ghost is the ONE ANSI-aware extractor of "real typed
 # content": it drops every de-emphasized run - dim/faint (SGR 2) AND a
 # dark/muted TRUECOLOR foreground - and keeps only normal-intensity,
 # normally-coloured text.
-#
 # DECORATIVE ANIMATION (task fm-composer-braille-particles): ghost stripping is
 # not the only source of non-typed content. Codex animates falling snow across
 # its composer area in NORMAL intensity, so it survives fm_composer_strip_ghost
@@ -403,13 +409,14 @@ FM_COMPOSER_SHELL_PROMPT_GLYPHS=$(printf '%s\n' '>' '$' '%' '#')
 
 # The ONE fleet-wide idle-placeholder set: composer text a harness renders in
 # an EMPTY composer that a plain capture cannot tell from typed text. Grok's
-# bordered placeholder and opencode's left-bar hint (which continues with a
-# rotating quoted suggestion, hence the unanchored tail). cursor-agent renders
+# bordered placeholder and opencode's left-bar hint (which uses either three
+# ASCII periods or U+2026 and continues with a rotating quoted suggestion,
+# hence the unanchored tail). cursor-agent renders
 # two, both anchored: `Plan, search, build anything` in a fresh session and
 # `Add a follow-up` once a turn has completed (verified live on cursor-agent
 # 2026.08.11-e8db854). FM_COMPOSER_IDLE_RE overrides for an unverified harness;
 # matching is case-insensitive.
-FM_COMPOSER_IDLE_RE_DEFAULT='^Type a message\.\.\.$|^Ask anything\.\.\.|^Plan, search, build anything$|^Add a follow-up$'
+FM_COMPOSER_IDLE_RE_DEFAULT='^Type a message\.\.\.$|^Ask anything(\.\.\.|…)|^Plan, search, build anything$|^Add a follow-up$'
 
 # Opencode draws a mode/model footer line INSIDE its left-bar composer
 # ("Build · GPT-5.5 Fast OpenAI · high"). It is composer furniture, not typed
@@ -434,7 +441,6 @@ FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT='^(Build|Plan)[[:space:]]+·[[:space:]]+'
 # a middle dot. It is consulted only as the boundary BELOW a bare composer,
 # never on the composer row itself.
 FM_COMPOSER_OMP_STATUS_RE_DEFAULT='^[[:space:]]*(π|󰵗)[[:space:]]+·[[:space:]]|^[[:space:]]*'"$FM_OMP_SPINNER_FRAMES_RE"'[[:space:]]+[0-9]+[smh]([[:space:]]|$)|[[:space:]]·[[:space:]].*[0-9]+(\.[0-9]+)?%/[0-9]+K'
-
 # The bounded row window adapters should capture for a composer read. One
 # shared policy (previously three per-backend variables that had drifted to
 # 20/20/200): the composer is bottom-anchored, so a small tail window is
@@ -446,6 +452,13 @@ FM_COMPOSER_CAPTURE_LINES=${FM_COMPOSER_CAPTURE_LINES:-20}
 # structural candidate so two unrelated transcript rules with an arbitrarily
 # large region between them can never be promoted into a composer.
 FM_COMPOSER_PI_MAX_LINES=${FM_COMPOSER_PI_MAX_LINES:-8}
+
+# Column overhang of Grok 1.0.5's titled bottom border over its aligned top
+# and content rows, captured live in issue #3436's 2026-09-14 idle repro
+# (see docs/verification/runtime-backends.md). Not re-verified against a live
+# Grok install since; may need to change if a future Grok release renders a
+# different overhang or scales it with title/model-name length.
+FM_COMPOSER_GROK_TITLE_OVERHANG=3
 
 # 0 when <content> is exactly one glyph drawn from <glyph-list>.
 _fm_composer_is_prompt_glyph() {  # <content> <glyph-list>
@@ -868,7 +881,7 @@ EOF
 # inner (corners already stripped) still starts and ends with the family's own
 # rule glyph, so the title is embedded IN the rule rather than replacing it.
 _fm_composer_titled_bottom_ok() {  # <family> <bottom-inner> <top-spaces>
-  local family=$1 inner=$2 expected=$3 dash spaces
+  local family=$1 inner=$2 expected=$3 dash spaces title effort model
   fm_composer_normalize_trim_var inner
   case "$family" in
     rounded|light) dash='─' ;;
@@ -886,7 +899,31 @@ _fm_composer_titled_bottom_ok() {  # <family> <bottom-inner> <top-spaces>
   case "$spaces" in
     *[![:space:]]*) return 1 ;;
   esac
-  [ "$spaces" = "$expected" ]
+  [ "$spaces" = "$expected" ] && return 0
+
+  # Grok 1.0.5 renders its real model title FM_COMPOSER_GROK_TITLE_OVERHANG
+  # columns wider than the otherwise aligned top and content rows (issue
+  # #3436; see the constant's definition for provenance and caveats). Accept
+  # only that exact overhang and only the typed Grok model/effort title
+  # shape. This keeps arbitrary malformed bottoms ambiguous while preserving
+  # the complete-box proof around a genuinely idle or pending Grok composer.
+  local overhang
+  overhang=$(printf '%*s' "$FM_COMPOSER_GROK_TITLE_OVERHANG" '')
+  [ "$spaces" = "$expected$overhang" ] || return 1
+  title=${inner//"$dash"/}
+  fm_composer_normalize_trim_var title
+  case "$title" in
+    'Grok '*\ \(low\)) effort=low ;;
+    'Grok '*\ \(medium\)) effort=medium ;;
+    'Grok '*\ \(high\)) effort=high ;;
+    'Grok '*\ \(xhigh\)) effort=xhigh ;;
+    *) return 1 ;;
+  esac
+  model=${title#Grok }
+  model=${model%" ($effort)"}
+  [ -n "$model" ] || return 1
+  case "$model" in *[!A-Za-z0-9._-]*) return 1 ;; esac
+  return 0
 }
 
 # fm_composer_row_has_edge: 0 when the trimmed row starts or ends with a
@@ -1043,8 +1080,10 @@ _fm_composer_classify_bare_wrap() {  # <screen> <styled> <glyph-row> <cursor-row
   while [ "$row" -le "$cy" ]; do
     raw=$(_fm_composer_screen_row "$row" "$screen")
     content=$(_fm_composer_row_content "$raw" "$styled")
-    if [ "$row" -eq "$g" ] && fm_composer_leading_agent_glyph_var glyph "$content"; then
-      content=${content#*"$glyph"}
+    if [ "$row" -eq "$g" ]; then
+          if fm_composer_leading_agent_glyph_var glyph "$content"; then
+        content=${content#*"$glyph"}
+      fi
     fi
     fm_composer_normalize_trim_var content
     if [ "$glyph" = '›' ] && _fm_composer_row_is_codex_particles "$content"; then
