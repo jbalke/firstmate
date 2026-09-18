@@ -124,7 +124,10 @@ done
 plain=$(printf '%s\n' "$styled" | fm_composer_strip_ansi)
 starfield=no
 while IFS= read -r row; do
-  if _fm_composer_row_is_braille_furniture "$row"; then starfield=yes; break; fi
+  trimmed=$row
+  fm_composer_normalize_trim_var trimmed
+  [ -n "$trimmed" ] || continue
+  if _fm_composer_row_is_codex_particles "$trimmed"; then starfield=yes; break; fi
 done <<PLAIN
 $plain
 PLAIN

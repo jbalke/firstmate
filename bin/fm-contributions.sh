@@ -301,7 +301,8 @@ settle_final() { # canonical-url task... : copy the URL's final observation to e
       and (.observation.state | IN("merged","closed")))] as $final
     | ([$final[] | select(.error == null)] | first) // ($final | first)' > "$TMP/final.json"
   for task in "$@"; do
-    fm_pr_task_id_valid "$task" || { printf 'contributions: invalid durable task id\n'; continue; }
+    fm_pr_task_id_valid "$task" && fm_task_data_valid_id "$task" \
+      || { printf 'contributions: invalid durable task id\n'; continue; }
     jq -n --slurpfile saved "$TMP/saved.json" --arg task "$task" --arg url "$url" '
       [$saved[0][] | select(.task == $task) | .records[] | select(.url == $url)] | first' > "$TMP/old.json"
     if jq -e '. == null' "$TMP/old.json" >/dev/null; then
@@ -353,7 +354,8 @@ poll() {
     fi
     case "$url" in */issues/*) kind=issue ;; *) kind="pr" ;; esac
     for task in "${row[@]:1}"; do
-      fm_pr_task_id_valid "$task" || { printf 'contributions: invalid durable task id\n'; continue; }
+      fm_pr_task_id_valid "$task" && fm_task_data_valid_id "$task" \
+        || { printf 'contributions: invalid durable task id\n'; continue; }
       old="$TMP/old.json"
       jq -n --slurpfile saved "$TMP/saved.json" --arg task "$task" --arg url "$url" --arg kind "$kind" '
         ([$saved[0][] | select(.task == $task) | .records[] | select(.url == $url)] | first)
