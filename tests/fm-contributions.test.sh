@@ -120,6 +120,7 @@ forge_home() {
   cat > "$home/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 set -eu
+printf '%s\n' "$*" >> "$FORGE/calls.log"
 case "$*" in
   'pr view '*headRefOid,reviewDecision*)
     jq -n --arg head "$(cat "$FORGE/head")" '{headRefOid:$head,reviewDecision:"APPROVED"}' ;;
@@ -838,7 +839,7 @@ test_unusable_project_hint_keeps_poll_alive() {
 }
 
 test_unusable_task_id_keeps_poll_alive() {
-  local home out err later=2026-09-17T08:00:00Z
+  local home out later=2026-09-17T08:00:00Z
   home=$(new_home unusable-task-id)
   forge_home "$home"
   mutate_record "$home" delivery '.records[0].checked_at="2026-09-15T08:00:00Z"'
@@ -846,29 +847,30 @@ test_unusable_task_id_keeps_poll_alive() {
     >> "$home/data/backlog.md"
   printf -- '- [ ] -dash - Filed https://github.com/o/r/pull/8 (repo: sample) (kind: ship)\n' \
     >> "$home/data/backlog.md"
-  err="$home/poll.err"
-  out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" poll 2> "$err") \
-    || fail 'a task id the data layer cannot name aborted the whole poll'
-  [ "$(grep -c 'invalid durable task id' "$err")" = 2 ] \
-    || fail "both unusable task ids must be skipped and disclosed on stderr: $(cat "$err")"
+  printf -- '- [ ] -dash - Filed https://github.com/o/r/issues/9 (repo: sample) (kind: ship)\n' \
+    >> "$home/data/backlog.md"
+  out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" poll 2>"$home/poll.err") \
+    || fail "a task id the data layer cannot name aborted the whole poll: $(cat "$home/poll.err")"
   [ -z "$(printf '%s' "$out" | grep -v '^contribution-wake: ')" ] \
     || fail "an unusable task id must not put a wake reason on poll stdout: $out"
+  [ "$(grep -c 'issues/9' "$home/forge/calls.log")" = 0 ] \
+    || fail "a URL whose only owner is unnameable was observed: $(cat "$home/forge/calls.log")"
   jq -e --arg now "$NOW" '.records[0].checked_at == $now' "$home/data/delivery/contributions.json" >/dev/null \
     || fail 'an unusable task id discarded another owner observation in the same poll'
   [ ! -e "$home/data/tasks/sample/tasks" ] && [ ! -e "$home/data/tasks/sample/-dash" ] \
     || fail 'a skipped owner still created a durable directory'
   printf 'merged\n' > "$home/forge/state"
-  with_home "$home" "$ROOT/bin/fm-contributions.sh" poll >/dev/null 2>/dev/null \
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" poll >/dev/null 2>&1 \
     || fail 'an unusable task id aborted the poll that recorded a terminal observation'
-  out=$(with_home "$home" env FM_CONTRIBUTIONS_NOW="$later" "$ROOT/bin/fm-contributions.sh" poll 2> "$err") \
-    || fail 'an unusable task id aborted the settled-observation poll'
-  [ "$(grep -c 'invalid durable task id' "$err")" = 2 ] \
-    || fail "a settled observation must skip the same unusable owners: $(cat "$err")"
+  out=$(with_home "$home" env FM_CONTRIBUTIONS_NOW="$later" "$ROOT/bin/fm-contributions.sh" poll 2>"$home/poll.err") \
+    || fail "an unusable task id aborted the settled-observation poll: $(cat "$home/poll.err")"
   [ -z "$(printf '%s' "$out" | grep -v '^contribution-wake: ')" ] \
     || fail "a settled observation must not put a wake reason on poll stdout: $out"
+  [ "$(grep -c 'issues/9' "$home/forge/calls.log")" = 0 ] \
+    || fail "a settled poll still observed the unowned URL: $(cat "$home/forge/calls.log")"
   jq -e '.records[0].observation.state == "merged"' "$home/data/delivery/contributions.json" >/dev/null \
     || fail 'the usable owner lost its terminal observation'
-  pass 'a task id the data layer cannot name skips one owner instead of ending the poll'
+  pass 'a task id the data layer cannot name owns nothing and costs no forge read'
 }
 
 test_unusable_task_id_raises_no_captain_wake() {
