@@ -315,7 +315,7 @@ settle_final() { # canonical-url task... : copy the URL's final observation to e
 }
 
 poll() {
-  local task url old kind error observed owned
+  local task url old kind error observed
   local -a row
   acquire
   get_input
@@ -326,20 +326,6 @@ poll() {
     known($input[0];$saved[0]) | map(. as $k | . + {at:([$saved[0][] | select(.task == $k.task) | .records[] | select(.url == $k.url) | .checked_at] | first // "")})
     | group_by(.url) | map({url:.[0].url,at:(map(.at) | min),tasks:(map(.task) | unique)})
     | sort_by(.at,.tasks[0],.url)[] | [.url] + .tasks | @tsv' > "$TMP/known.tsv"
-  # An id the durable layer cannot name owns nothing, so it is dropped from the
-  # rows here rather than at each point of use; a URL left with no owner is not a
-  # row at all and is never observed. Skipping it silently is acceptable only
-  # because the cost is now zero: no forge read, no record, no standing spend.
-  while IFS=$'\t' read -r -a row; do
-    [ "${#row[@]}" -ge 2 ] || continue
-    owned=${row[0]}
-    for task in "${row[@]:1}"; do
-      fm_pr_task_id_valid "$task" && fm_task_data_valid_id "$task" || continue
-      owned="$owned"$'\t'"$task"
-    done
-    [ "$owned" = "${row[0]}" ] || printf '%s\n' "$owned"
-  done < "$TMP/known.tsv" > "$TMP/owned.tsv"
-  mv "$TMP/owned.tsv" "$TMP/known.tsv"
   DEADLINE=$(( $(date +%s) + BUDGET ))
   BUDGET_EXHAUSTED=0
   while IFS=$'\t' read -r -a row; do

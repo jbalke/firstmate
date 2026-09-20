@@ -528,11 +528,14 @@ test_home_summary_coverage() {
   printf '# Fixture\n' > "$child/AGENTS.md"
   printf 'child\n' > "$child/.fm-secondmate-home"
   record "$child" child-work 15 open mergeable
+  printf -- '- [ ] tasks - Filed https://github.com/o/r/pull/99 (repo: sample) (kind: ship)\n' \
+    >> "$child/data/backlog.md"
   FM_SNAPSHOT_NOW="$NOW" with_home "$child" "$ROOT/bin/fm-fleet-snapshot.sh" --secondmate-home-summary > "$child/state/home-summary.json" \
     || fail 'child summary failed'
   printf -- '- child - fixture (home: %s; scope: fixture; projects: sample; added 2026-09-16)\n' "$child" > "$home/data/secondmates.md"
   bearings "$home" | jq -e '.contributions.known == 1 and .contributions.checked == 1
-    and .contributions.proven_clear == true' >/dev/null || fail 'measured child coverage did not reach parent'
+    and .contributions.proven_clear == true' >/dev/null \
+    || fail 'an unnameable owner in a child home demoted its measured coverage'
   jq '.contributions.valid_until=0' "$child/state/home-summary.json" > "$child/update.json"
   mv "$child/update.json" "$child/state/home-summary.json"
   bearings "$home" | jq -e '.contributions.known == 1 and .contributions.checked == 0
@@ -855,6 +858,9 @@ test_unusable_task_id_keeps_poll_alive() {
     || fail "an unusable task id must not put a wake reason on poll stdout: $out"
   [ "$(grep -c 'issues/9' "$home/forge/calls.log")" = 0 ] \
     || fail "a URL whose only owner is unnameable was observed: $(cat "$home/forge/calls.log")"
+  bearings "$home" | jq -e '.contributions.known == 1 and .contributions.checked == 1
+    and .contributions.complete == true and .contributions.proven_clear == true' >/dev/null \
+    || fail 'an unnameable owner left coverage permanently incomplete'
   jq -e --arg now "$NOW" '.records[0].checked_at == $now' "$home/data/delivery/contributions.json" >/dev/null \
     || fail 'an unusable task id discarded another owner observation in the same poll'
   [ ! -e "$home/data/tasks/sample/tasks" ] && [ ! -e "$home/data/tasks/sample/-dash" ] \
@@ -870,6 +876,13 @@ test_unusable_task_id_keeps_poll_alive() {
     || fail "a settled poll still observed the unowned URL: $(cat "$home/forge/calls.log")"
   jq -e '.records[0].observation.state == "merged"' "$home/data/delivery/contributions.json" >/dev/null \
     || fail 'the usable owner lost its terminal observation'
+  home=$(new_home unusable-task-id-only)
+  printf -- '- [ ] tasks - Filed https://github.com/o/r/pull/8 (repo: sample) (kind: ship)\n' \
+    >> "$home/data/backlog.md"
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" arm --if-owned >/dev/null 2>"$home/arm.err" \
+    || fail "conditional arming failed on an unnameable-only home: $(cat "$home/arm.err")"
+  [ ! -e "$home/state/contributions.check.sh" ] \
+    || fail 'an unnameable owner armed a contribution check nothing can ever clear'
   pass 'a task id the data layer cannot name owns nothing and costs no forge read'
 }
 
@@ -892,7 +905,7 @@ test_unusable_task_id_raises_no_captain_wake() {
     || fail "a task id the data layer cannot name ended the watcher cycle (rc=$rc): $(cat "$home/watcher.out")"
   jq -e --arg now "$NOW" '.records[0].checked_at == $now' "$home/data/delivery/contributions.json" >/dev/null \
     || fail 'the watcher sweep discarded the usable owner observation'
-  pass 'an unusable task id discloses without raising a captain wake'
+  pass 'an unusable task id raises no captain wake and does not end the cycle'
 }
 
 test_data_root_trailing_slash() {

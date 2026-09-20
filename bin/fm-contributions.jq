@@ -3,6 +3,19 @@ def canonical_url:
   type == "string" and (test("^https://github.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/(pull|issues)/[1-9][0-9]*$")
     or test("^https://[A-Za-z0-9.-]+/[A-Za-z0-9._/-]+/-/merge_requests/[1-9][0-9]*$"));
 def sha: type == "string" and test("^[a-fA-F0-9]{40}$");
+# One definition of an owner the durable layer can name, shared by every caller
+# of known(): poll, arm --if-owned, verdict, ack and the coverage projection.
+# Unifying the definition is not a weakening of coverage - a row whose id cannot
+# name a durable record could never be observed or recorded, so counting it as a
+# known contribution only reported permanent, unclearable incompleteness. With
+# this rule shared, dropping such a row costs nothing: no forge read, no record,
+# and no coverage row that can never be cleared.
+# This is the intersection of the two shell predicates it mirrors, and they must
+# be changed together: fm_task_id_path_safe (bin/fm-pr-lib.sh) refuses an empty
+# id, a leading dot, and any character outside [A-Za-z0-9._-];
+# fm_task_data_valid_id (bin/fm-task-data-lib.sh) additionally refuses a leading
+# dash and the FM_TASK_DATA_SUBDIR container name "tasks".
+def nameable_task: type == "string" and test("^[A-Za-z0-9_][A-Za-z0-9._-]*$") and . != "tasks";
 def valid_record:
   try (.schema == "fm-contributions.v1" and (.task | type == "string")
   and (.records | type == "array")
@@ -30,7 +43,7 @@ def known($input; $saved):
    + [($input.backlog.records // [])[] | select(.structured == true) as $task
       | ($task.links // [])[] | select(canonical_url) | {task:$task.id,url:.}]
    + [$saved[] | .task as $task | .records[] | {task:$task,url}])
-  | unique_by([.task,.url]);
+  | map(select(.task | nameable_task)) | unique_by([.task,.url]);
 def latest_checks:
   group_by(.name) | map(sort_by([(.started_at // ""),(.id // 0)]) | last);
 def projected($input; $saved; $now; $max_age):
