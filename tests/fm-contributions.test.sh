@@ -846,15 +846,14 @@ test_unusable_task_id_keeps_poll_alive() {
   home=$(new_home unusable-task-id)
   forge_home "$home"
   mutate_record "$home" delivery '.records[0].checked_at="2026-09-15T08:00:00Z"'
-  printf -- '- [ ] tasks - Filed https://github.com/o/r/pull/8 (repo: sample) (kind: ship)\n' \
-    >> "$home/data/backlog.md"
-  printf -- '- [ ] -dash - Filed https://github.com/o/r/pull/8 (repo: sample) (kind: ship)\n' \
-    >> "$home/data/backlog.md"
-  printf -- '- [ ] -dash - Filed https://github.com/o/r/issues/9 (repo: sample) (kind: ship)\n' \
-    >> "$home/data/backlog.md"
+  {
+    printf -- '- [ ] tasks - Filed https://github.com/o/r/pull/8 (repo: sample) (kind: ship)\n'
+    printf -- '- [ ] -dash - Filed https://github.com/o/r/pull/8 (repo: sample) (kind: ship)\n'
+    printf -- '- [ ] -dash - Filed https://github.com/o/r/issues/9 (repo: sample) (kind: ship)\n'
+  } >> "$home/data/backlog.md"
   out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" poll 2>"$home/poll.err") \
     || fail "a task id the data layer cannot name aborted the whole poll: $(cat "$home/poll.err")"
-  [ -z "$(printf '%s' "$out" | grep -v '^contribution-wake: ')" ] \
+  ! printf '%s' "$out" | grep -qv '^contribution-wake: ' \
     || fail "an unusable task id must not put a wake reason on poll stdout: $out"
   [ "$(grep -c 'issues/9' "$home/forge/calls.log")" = 0 ] \
     || fail "a URL whose only owner is unnameable was observed: $(cat "$home/forge/calls.log")"
@@ -870,7 +869,7 @@ test_unusable_task_id_keeps_poll_alive() {
     || fail 'an unusable task id aborted the poll that recorded a terminal observation'
   out=$(with_home "$home" env FM_CONTRIBUTIONS_NOW="$later" "$ROOT/bin/fm-contributions.sh" poll 2>"$home/poll.err") \
     || fail "an unusable task id aborted the settled-observation poll: $(cat "$home/poll.err")"
-  [ -z "$(printf '%s' "$out" | grep -v '^contribution-wake: ')" ] \
+  ! printf '%s' "$out" | grep -qv '^contribution-wake: ' \
     || fail "a settled observation must not put a wake reason on poll stdout: $out"
   [ "$(grep -c 'issues/9' "$home/forge/calls.log")" = 0 ] \
     || fail "a settled poll still observed the unowned URL: $(cat "$home/forge/calls.log")"
