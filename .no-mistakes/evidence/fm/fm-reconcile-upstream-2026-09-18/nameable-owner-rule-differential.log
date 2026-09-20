@@ -1,0 +1,21 @@
+Adversarial differential of the shared nameable-owner rule (1e2e5e5, bin/fm-contributions.jq):
+
+ID               fm_pr_task_id_valid fm_task_data_valid_id jq:nameable VERDICT
+'delivery'       yes            yes                yes        agree
+'ok_id'          yes            yes                yes        agree
+'ok.id'          yes            yes                yes        agree
+'ok-id'          yes            yes                yes        agree
+'_under'         yes            yes                yes        agree
+'UPPER9'         yes            yes                yes        agree
+'tasks'          yes            no                 no         agree
+'-dash'          yes            no                 no         agree
+'.hidden'        no             yes                no         agree
+'a b'            no             yes                no         agree
+'a/b'            no             no                 no         agree
+'../escape'      no             no                 no         agree
+'tasks2'         yes            yes                yes        agree
+'üñî'         no             yes                no         agree
+'$(touch /tmp/pwned)' no             no                 no         agree
+
+ok - poll and the coverage projection share one nameable-owner rule across the whole probe set
+exit=0

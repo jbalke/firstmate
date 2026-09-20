@@ -1,0 +1,14 @@
+host stock shell: GNU bash, version 3.2.57(1)-release (arm64-apple-darwin25)
+PATH pinned as the macos-stock-bash CI lane does, so fm-watch.sh's '#!/usr/bin/env bash' resolves to /bin/bash 3.2:
+  PATH=/bin:/usr/bin:/usr/sbin:/sbin:/opt/homebrew/bin
+/bin/bash
+GNU bash, version 3.2.57(1)-release (arm64-apple-darwin25)
+
+=== NEGATIVE CONTROL: e213343c guard reverted to bare ${missing_keys[@]} ===
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-watch.sh: line 560: missing_keys[@]: unbound variable
+not ok - a churning turn-end inside an open deferral window was not absorbed: 
+exit=1
+
+=== WITH e213343c AS MERGED (HEAD 1e2e5e5) ===
+ok - a churning turn-end inside an already-open deferral window is absorbed without re-marking
+exit=0

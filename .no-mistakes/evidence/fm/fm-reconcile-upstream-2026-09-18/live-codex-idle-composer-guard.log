@@ -1,0 +1,12 @@
+host codex: codex-cli 0.155.0
+--- bash tests/fm-composer-codex-idle-live-e2e.test.sh (live, default-on gate) ---
+# codex (codex-cli 0.155.0): starfield furniture observed=no placeholder observed=no
+# codex pane tail at failure:
+not ok - codex (codex-cli 0.155.0): idle screen never classified empty (tmux read: unknown, cursorless styled read: unknown)
+exit=1
+
+=== NEGATIVE CONTROL: starfield report loop reverted to pre-d82afe3 (_fm_composer_row_is_braille_furniture, removed by upstream's rename) ===
+tests/fm-composer-codex-idle-live-e2e.test.sh: line 127: _fm_composer_row_is_braille_furniture: command not found
+# codex (codex-cli 0.155.0): starfield furniture observed=no placeholder observed=no
+# codex pane tail at failure:
+not ok - codex (codex-cli 0.155.0): idle screen never classified empty (tmux read: unknown, cursorless styled read: unknown)

@@ -1,0 +1,263 @@
+--- bash tests/fm-teardown.test.sh ---
+ok - local-only worktree with HEAD on a fork remote is torn down and the home summary is refreshed
+ok - teardown closes its own backlog item before reporting success
+ok - teardown honors config/backlog-backend=manual and still finishes cleanly
+ok - local-only worktree with truly unpushed work is refused (safety preserved)
+ok - local-only worktree with work merged into local main is torn down (no regression)
+ok - no-mistakes worktree with HEAD on origin is torn down (no regression)
+ok - no-mistakes worktree with genuinely unlanded work is refused (safety preserved)
+ok - local-only worktree with unpushed work is torn down under --force (escape hatch)
+ok - fm-pr-check publishes the PR-ready line on a secondmate's parent channel once
+ok - a secondmate home's teardown delivers the child's final line or refuses until it can
+ok - teardown completes when an exact busy-state sidecar is already absent
+ok - herdr teardown removes pane-owned escalation dedupe state
+ok - herdr flat teardown refuses before returning the isolated copy under lock contention and the retry completes cleanly
+ok - herdr flat teardown never erases records when pane presence is unparseable
+ok - herdr flat teardown preflight refuses before every destructive change
+ok - forced secondmate teardown preflights every Herdr child before cleanup mutation
+ok - forced secondmate teardown holds every descendant lifecycle and metadata lock
+ok - forced secondmate teardown retains Herdr child identity until exact pane disappearance
+ok - forced teardown retains a nested secondmate home and its grandchild's Herdr identity when the grandchild close is unconfirmed
+ok - herdr projection teardown retires its journal only after confirming the exact recorded pane is gone
+ok - herdr projection teardown retains every record when post-close presence is unknown
+ok - herdr projection teardown surfaces failed focus restoration without turning confirmed cleanup into a hard failure
+ok - squash-merged + deleted-branch worktree (PR merged) is torn down (the fix)
+ok - squash-merged PR accepts a local HEAD that is an ancestor of the final PR head
+ok - teardown discovers a merged PR by branch name and tears down when no pr= was ever recorded
+ok - squash-merged PR accepts replayed unpushed local patches contained in the PR head
+ok - merged PR does not allow teardown after a later local commit
+ok - squash-merged task whose local branch followed the pipeline rebase is torn down
+ok - squash-merged same-path different content still refuses
+ok - squash-merged rebased local still refuses a genuinely unlanded follow-up commit
+ok - squash-merged stale local still refuses when the forge is unreachable
+fm-contributions: data directory unavailable
+contributions: observation not armed; coverage is unconfirmed
+fm-contributions: data directory unavailable
+contributions: observation not armed; coverage is unconfirmed
+ok - fm-pr-check does not refresh PR head after HEAD moves
+fm-contributions: data directory unavailable
+contributions: observation not armed; coverage is unconfirmed
+ok - fm-pr-check records the remote PR head when the local worktree lags
+ok - worktree whose content already landed in the default branch is torn down (content fallback)
+ok - content fallback refreshes origin default before comparing trees
+ok - dirty worktree is refused even when its committed work has landed (dirty always wins)
+ok - gh lookup error with content not in default refuses (fail-safe)
+ok - a record predating spawn_gen refuses teardown until --legacy-record is passed
+ok - a landed legacy record with a dead endpoint tears down and logs its accepted incarnation
+ok - --legacy-record never relaxes the unlanded-work refusal
+ok - an endpoint that cannot be confidently read as dead refuses --legacy-record teardown
+ok - --legacy-record teardown rolls its stamp back when the close marker write fails
+ok - a legacy stamp a failed rollback left behind still faces the endpoint gate
+ok - a corrupt spawn_gen is never accepted as a legacy record
+ok - provably-stale worktree index.lock (old, no live holder) is cleared and teardown succeeds
+ok - live-held worktree index.lock is never removed and teardown refuses
+ok - lsof errors leave worktree index.lock in place and refuse teardown
+ok - stale lock cleanup rechecks and refuses dirty worktree before return
+ok - normal repo index.lock is resolved from the worktree and cleared when stale
+ok - index-lock mtime fault injection is PATH-based; skipped on Darwin where stat is /usr/bin/stat
+ok - transient index.lock cleared after first failed return is retried successfully without force-remove
+ok - persistent index.lock exhausts retries and refuses without force-removing the lock
+ok - empty retry wait overrides use the default without aborting teardown
+ok - fractional legacy retry wait remains supported without arithmetic
+ok - a task's own parked no-mistakes run is aborted, not orphaned, before the worker is removed
+ok - a parked run the pipeline advanced past the task copy is still concluded from the runs ledger, not orphaned
+ok - a ledger row for a different head never authorizes a parked-run abort
+ok - a malformed ledger row never authorizes a parked-run abort
+ok - an impossible ledger date never authorizes a parked-run abort
+ok - a terminal status with a stale gate never reaches ledger cleanup
+ok - an advanced head present locally aborts through the strict rule alone - the ledger fallback stays dormant
+ok - an unresolvable active row with no same-branch anchor is never concluded (conservative refusal)
+ok - an ancestor-only anchor never binds an advanced parked run to this task
+ok - a terminal unfetched-head row is stale history and never concludes a run
+ok - a terminal newest row anchored at this worktree's head never authorizes an abort
+ok - a resolvable diverged newer same-branch row makes every older row stale history; no run is concluded
+ok - consecutive unresolvable rows are ambiguous and never conclude a run
+ok - a ledger-proven continuation is still left alone while the run is autonomously active
+ok - teardown refuses before reap or removal when a task-owned run remains parked
+ok - a different run cannot confirm the targeted abort
+ok - empty post-abort status is not accepted as confirmation
+ok - the CLI's exact run-not-found signal confirms completion
+ok - a parked run on another branch is never aborted by this task's teardown (ownership is precise)
+ok - a task-owned autonomous running step is left alone rather than aborted
+ok - a leaked descendant process rooted under the task's worktree is reaped by teardown, not left surviving
+ok - a leaked descendant process rooted under the task's per-task tasktmp is reaped by teardown too
+ok - missing lsof falls back to reaping the tmux pane process group
+ok - an erroring lsof scan refuses teardown and preserves the task
+ok - a reused pid with a different start time is never force-killed
+ok - an exec change preserves birth identity and the process is reaped
+ok - a process spawned during grace is reaped on a later pass
+ok - persistent leaked processes refuse teardown after bounded retries
+ok - a process exiting during identity lookup does not block teardown
+ok - the run abort and the leaked-process reap both complete before the destructive worktree return
+exit=0
+--- bash tests/fm-teardown-endpoint-safety.test.sh ---
+ok - fm-teardown: missing, empty, malformed, ambiguous, and task-mismatched endpoints refuse before every mutation or runtime call
+ok - fm-teardown: a concurrent lifecycle action refuses before mutation
+ok - fm-teardown: non-pool cleanup ignores unrelated task publication locks
+ok - fm-teardown: destructive cleanup serializes with metadata writers
+ok - cleanup identity: valid tmux, Herdr, Zellij, Orca, and cmux records validate while every empty backend target refuses
+ok - cleanup identity: an Orca record's real composite worktree id validates while a separatorless or newline-carrying id refuses
+ok - tmux backend: direct empty target returns nonzero without invoking tmux
+ok - process cleanup: creation-time PID identity removes only the exact child and preserves the control child
+ok - fm-teardown: exact tmux cleanup preserves invalid and prefix-matched neighbors while removing only the recorded target
+ok - fm-teardown: a close that genuinely failed refuses and keeps the record naming the surviving endpoint, and the same teardown finishes once the close works
+ok - fm-teardown: --force continues past a close it could not make while still reporting it, and the same case refuses without --force
+ok - fm-teardown: a close re-read that could not run refuses, while a definitively absent session or server still completes silently
+ok - fm-teardown: forced secondmate cleanup still refuses on a child endpoint close that failed
+ok - fm-teardown: an Orca close its missing CLI never attempted refuses even under --force, keeping the record naming the terminal
+ok - fm-teardown: an already-exited endpoint, and a server that is already gone, still complete cleanup silently
+ok - Treehouse locking resolves a bare local origin against its source project, matching the provisioned clone
+ok - fm-teardown: a pool slot named by a second task record is never returned, killed, or reset
+ok - fm-teardown: a pool slot held by another firstmate home is never returned
+ok - fm-teardown: a task that solely holds its slot still returns it
+ok - fm-teardown: a pool slot claimed by another task is left alone while the task's own cleanup finishes
+ok - fm-teardown: a task's own slot claim, and an unclaimed slot, both still tear down
+ok - fm-teardown: an exact recorded endpoint still tears down after changing cwd outside its worktree
+ok - Treehouse project locking anchors at the local root for main-home, local-secondmate, and remote-seeded layouts
+ok - fm-teardown: a remote-seeded secondmate home returns its own uncontested pool slot
+ok - fm-teardown: slot ownership across a remote-seeded home and its local child still refuses
+ok - Treehouse project locking still serializes two homes across the remote-seeded boundary
+exit=0
+--- bash tests/fm-backlog-handoff.test.sh ---
+ok - a routed handoff wakes once and a successful rerun stays idempotent
+ok - a failed receiver wake is loud and retries from an already-present handoff
+ok - a failed advisory doorbell leaves the inbox delivery successful and idempotent
+ok - concurrent reconciliation treats enqueue as delivery despite a failed advisory ring
+tests/fm-backlog-handoff.test.sh: line 263: 10162 Killed: 9                  FM_REAL_TASKS_AXI="$real_tasks" PATH="$fakebin:$PATH" FM_HOME="$home" "$ROOT/bin/fm-backlog-handoff.sh" design crash-item > "$TMP_ROOT/move-crash.out" 2>&1
+ok - a post-move crash preserves wake intent for an idempotent retry
+tests/fm-backlog-handoff.test.sh: line 339: 15871 Killed: 9                  FM_REAL_TASKS_AXI="$real_tasks" PATH="$fakebin:$PATH" FM_HOME="$home" "$ROOT/bin/fm-backlog-handoff.sh" design pre-move-crash > "$TMP_ROOT/pre-move-crash.out" 2>&1
+ok - a pre-move crash wakes only after retry makes the item durable
+tests/fm-backlog-handoff.test.sh: line 414: 20445 Killed: 9                  PATH="$fakebin:$PATH" FM_REAL_RM="$real_rm" FM_CONFIRM_CRASH_ONCE="$TMP_ROOT/confirm-crash.once" FM_CONFIRM_WAKE_MARKER="$home/state/.backlog-handoff-design.wake-pending" FM_HOME="$home" "$ROOT/bin/fm-backlog-handoff.sh" design confirm-crash > "$TMP_ROOT/confirm-crash.out" 2>&1
+ok - a post-confirmation crash reconciles once without suppressing a later handoff wake
+ok - an unresolved delivery attempt refuses an immediate duplicate wake
+ok - concurrent local handoffs serialize each durable move with its wake
+ok - local teardown waits for the routed move and receiver wake
+ok - failed local home removal preserves its wake and a retry retires both
+ok - body followed by another item moves intact with no source orphans
+ok - body followed by section heading moves intact; section stays
+ok - multi-paragraph body with internal blank lines moves whole and is idempotent
+ok - body as last lines of the file moves intact
+ok - EOF body before a seeded destination section keeps its boundary
+ok - untouched EOF line preserves its original terminator
+ok - body-carrying handoff is idempotent: re-run changes nothing
+ok - noncanonical one-space and tab continuations refuse without changes
+ok - indented ## Intent / ## Acceptance are body, not section boundaries
+ok - registry home parses when summary has parentheses before (home: ...)
+ok - registry entry without (home: ...) fails cleanly with has no home
+ok - handoff reports a moved item whose public commitment still binds this home
+ok - handoff says nothing about public commitments in a relay-free home
+ALL TESTS PASSED
+exit=0
+--- bash tests/fm-backlog-atomicity.test.sh ---
+ok - backend resolution preserves unreadable configuration errors for every caller
+ok - backend resolution preserves environment, project, user, and default precedence
+ok - backlog readers and mutations refuse unresolved backends without touching either backlog
+ok - captain hold refuses backend errors and preserves relocated addressing for valid configuration
+ok - dispatch publishes the record and moves the backlog item In flight in one run
+ok - dispatch omits the markdown file when probing a Beads backlog
+ok - a leftover markdown symlink does not brick a Beads home's dispatch
+ok - completion applies and closes a Beads backlog without any markdown file
+ok - dispatch refuses to supersede a pending authoritative close
+ok - dispatch refuses held rows before creating resources
+ok - dispatch refuses dependency-blocked rows before creating resources
+ok - dispatch refuses held In-flight rows before relaunch
+ok - dispatch reads backlog rows from the backlog addressing root
+ok - recovery uses the parent of a trailing-slash data record
+ok - completion targets nested relative data from the caller directory
+ok - an immediate-child absolute data path keeps one paired backlog
+ok - bare relative data addresses one backlog through dispatch and completion
+ok - dispatch refuses symlinked backlogs without crossing homes
+ok - automatic homes refuse lifecycle mutation without compatible tasks-axi
+ok - dispatch refuses an unresolvable backlog data directory
+ok - completion refuses before mutation when backlog data is unresolvable
+ok - dispatch refuses, before creating anything, when the home has no item for the id
+ok - dispatch distinguishes backlog read failures from missing items
+ok - dispatch refuses a closed item instead of silently reopening it
+ok - dispatch cannot commit without a verified task-record publication
+ok - a failed backlog transition fails the dispatch loudly and leaves no record
+ok - dispatch reports when failed-transition rollback cannot remove its record
+ok - dispatch verifies both task and busy records during rollback
+ok - dispatch commits neither record nor backlog state before launch delivery succeeds
+ok - dispatch retries interrupted transitions before honoring termination
+ok - a signal-deferred spawn verifies its preserved state and repairs a row that did not move
+ok - a signal-deferred spawn reports attempted preservation as attempted when it cannot be verified
+ok - a signal-deferred spawn bounds its verification so an unresponsive tasks-axi cannot hold the meta lock forever
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: dirname: command not found
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: cd: null directory
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: /fm-timeout-lib.sh: No such file or directory
+ok - fm_tasks_axi bounds the call through its perl watchdog when no timeout binary exists
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: dirname: command not found
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: cd: null directory
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: /fm-timeout-lib.sh: No such file or directory
+ok - fm_tasks_axi's perl watchdog passes the child status and output through unchanged
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: dirname: command not found
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: cd: null directory
+/Users/johnbalke/.no-mistakes/worktrees/6b5c7015552c/01M2ZFHFZER4D9XE67D807JABW/bin/fm-backlog-transition-lib.sh: line 80: /fm-timeout-lib.sh: No such file or directory
+ok - fm_tasks_axi fails closed rather than running unbounded when no bounding mechanism exists
+ok - fm_tasks_axi's GNU timeout forces termination (skipped: no timeout binary on this host)
+ok - Kimi readiness interruptions fail before backlog commit
+ok - dispatch does not resurrect a row closed after preflight
+ok - dispatch fails when its backlog row vanishes after preflight
+ok - completion closes a local-only ship, with its landing note, before reporting success
+ok - completion closes a scout item against its report
+ok - completion is never handed a report path the validator rejects
+ok - completion leaves legacy records open when no incarnation can be recorded
+ok - completion refuses ambiguous task incarnations
+ok - completion records relocated scout reports relative to the backlog root
+ok - space-containing scout report paths round-trip through recovery
+ok - control-byte data paths fail closed before paired transitions
+ok - unreplayable data paths are refused before destructive cleanup
+ok - completion preserves recovery state when task-record removal fails
+ok - completion refuses to report success while its item is still open, and records what it owes
+ok - restart recovers closes recorded before destructive cleanup
+ok - completion refuses directory-symlink close targets
+ok - completion reports failure until its durable close marker is removed
+ok - session start retries a close whose marker could not be removed
+ok - session start reports owned backlog rows it cannot read
+ok - Orca cleanup recovery is excluded from backlog lifecycle transitions
+ok - session start marks an item In flight when this home already owns a worker for it
+ok - session start rejects internal worker-record symlinks
+ok - session start rejects symlinked worker records
+ok - session start finishes a close an interrupted cleanup recorded but never landed
+ok - recovery backfills recorded links onto already Done items
+ok - session start preserves a pending close across a transient backlog read failure
+ok - recovery preserves incomplete-cleanup evidence across a failed replay
+ok - session start finishes a close for the matching meta incarnation
+ok - recovery preserves closes for ambiguous task incarnations
+ok - recovery preserves both records when meta removal fails
+ok - recovery preserves closes beside symlinked metadata
+ok - recovery binds close-marker identity to its locked filename
+ok - recovery rejects close markers targeting another home's data
+ok - recovery validates an unterminated final marker field
+ok - recovery rejects lexical traversal before resolving marker data
+ok - recovery rejects marker control bytes before parsing
+ok - recovery rejects malformed PR URL values
+ok - a retained pending close is never started by reconciliation
+ok - recovery rejects close-marker arguments outside its protocol
+ok - recovery reports and rejects dangling symlink close markers
+ok - session start drops a close recorded for an older meta incarnation
+ok - session start rejects an unversioned close marker
+ok - bootstrap rechecks worker-record containment after locking
+ok - lifecycle files reject ancestor symlinks outside home roots
+ok - same-home state overrides remain supported
+ok - bootstrap refuses symlinked state before reconciliation
+ok - bootstrap data-disappears fault injection is PATH-based; skipped on Darwin where stat is /usr/bin/stat
+ok - bootstrap preserves secondmate, manual, and absent-backlog exemptions
+ok - session start leaves a captain-held item where the captain put it
+ok - no-backlog teardown refuses symlinked records before resource actions
+ok - teardown rechecks record parents after locking
+ok - teardown refuses symlinked state before resource actions
+ok - a home with no backlog remains exempt from lifecycle transitions
+ok - spawn refuses a special-file tasks-axi config instead of blocking on it
+ok - spawn refuses an unsafe tasks-axi config before any exemption is derived from it
+ok - spawn refuses a data directory symlinked outside the home
+ok - a configured adapter refuses a data directory outside the home
+ok - dispatch and completion transition structurally with evidence
+ok - refused teardown leaves the backlog item in flight
+ok - environment-selected adapters bypass the legacy markdown file override
+ok - a manual-backlog home dispatches and completes without a hard failure
+ok - a secondmate home keeps its own books paired through dispatch and completion
+ok - dispatching a persistent secondmate needs no backlog item
+ok - retained report artifacts follow the tasks-axi validator but never carry a traversal
+exit=0
+BATCHDONE

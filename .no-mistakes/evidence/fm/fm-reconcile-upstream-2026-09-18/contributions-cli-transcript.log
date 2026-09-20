@@ -1,0 +1,82 @@
+================ backlog the captain left ================
+# Backlog
+
+## Queued
+- [ ] delivery - Contribution delivery https://github.com/o/r/pull/8 (repo: sample) (kind: ship)
+- [ ] tasks - Filed https://github.com/o/r/pull/8 (repo: sample) (kind: ship)
+- [ ] -dash - Filed https://github.com/o/r/issues/9 (repo: sample) (kind: ship)
+- [ ] upstream - Filed https://github.com/o/r/pull/8 (repo: kunchenguid/firstmate) (kind: ship)
+
+================ 1. poll the forge ================
+
+$ fm-contributions.sh poll
+(exit 0)
+
+================ 2. which forge reads were actually spent ================
+
+$ cat forge/calls.log
+api repos/o/r/pulls/8
+api repos/o/r/issues/8/comments?per_page=100 --paginate --slurp
+api repos/o/r/pulls/8/reviews?per_page=100 --paginate --slurp
+api repos/o/r/pulls/8/comments?per_page=100 --paginate --slurp
+api repos/o/r/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/check-runs?filter=all&per_page=100 --paginate --slurp
+api repos/o/r/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses?per_page=100 --paginate --slurp
+api repos/o/r
+pr view https://github.com/o/r/pull/8 --json headRefOid,reviewDecision
+
+reads against issues/9 (owned only by the unnameable "-dash"): 0
+
+================ 3. durable records written ================
+
+$ find data -name contributions.json
+data/delivery/contributions.json
+data/tasks/_none/upstream/contributions.json
+
+$ jq .records[0].checked_at data/delivery/contributions.json
+2026-09-16T08:00:00Z
+
+$ jq .task data/tasks/_no-project/upstream/contributions.json  # prose repo hint fell back to no-project
+_none
+
+/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-drive.Z1pEQm/data/tasks/_none:
+upstream
+
+/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-drive.Z1pEQm/data/tasks/_none/upstream:
+contributions.json
+
+================ 4. what Bearings reports to the captain ================
+
+$ fm-bearings-snapshot.sh --json | jq .contributions
+{
+  "known": 1,
+  "checked": 1,
+  "complete": true,
+  "proven_clear": true,
+  "counts": {
+    "captain": 0,
+    "fleet": 0,
+    "maintainer": 1,
+    "nobody": 0
+  }
+}
+
+================ 5. arm --if-owned on an unnameable-only home ================
+
+$ fm-contributions.sh arm --if-owned   # backlog has ONLY the unnameable row
+(exit 0)
+
+$ ls state/*.check.sh
+ls: /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-drive-unowned.uew6J6/state/*.check.sh: No such file or directory
+no check armed - nothing can ever clear it, so nothing was armed
+
+================ 6. data root spelled with a trailing slash ================
+
+$ FM_DATA_OVERRIDE="$HOME/data/" fm-contributions.sh poll
+(exit 0)
+
+$ jq .records[0].checked_at data/delivery/contributions.json
+2026-09-16T08:00:00Z
+
+$ same trailing slash, but the data root is now a symlink
+fm-contributions: data directory unavailable
+refused as expected: YES

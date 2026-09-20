@@ -1,0 +1,15 @@
+--- FM_TEST_ONLY=test_gone_endpoint_reports_once_instead_of_escalating_forever tests/fm-watch-triage.test.sh ---
+ok - a record whose endpoint is dead or missing reports itself once and is never re-escalated
+exit=0
+--- FM_TEST_ONLY=test_gone_report_rearms_when_the_endpoint_comes_back tests/fm-watch-triage.test.sh ---
+ok - the once-only gone report re-arms when the endpoint comes back, and reports a later death again
+exit=0
+--- FM_TEST_ONLY=test_identical_dead_display_of_a_successor_still_reports tests/fm-watch-triage.test.sh ---
+ok - a successor's byte-identical dead display reports in full, and the same incarnation still absorbs
+exit=0
+--- FM_TEST_ONLY=test_second_death_after_a_same_window_relaunch_reports_in_full tests/fm-watch-triage.test.sh ---
+ok - a second death after a same-window relaunch reports in full without a live probe, and an unchanged dead pane stays silent
+exit=0
+--- FM_TEST_ONLY=test_live_and_unproven_endpoints_still_wedge_escalate tests/fm-watch-triage.test.sh ---
+ok - a live wedged agent, an unattributable one, and an unreadable endpoint escalate unchanged
+exit=0
