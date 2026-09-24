@@ -1,0 +1,22 @@
+== Scenario A: one transiently slow read (7s real sleep) on a healthy PR
+[A] rc=0 elapsed=7s stdout=<none>
+[A] record.error=null
+[A] pulls/8 reads so far=2
+== Scenario B: flapping - first read of every poll slow, 3 consecutive polls
+[B1] rc=0 elapsed=7s stdout=<none>
+[B1] record.error=null
+[B1] pulls/8 reads so far=2
+[B2] rc=0 elapsed=7s stdout=<none>
+[B2] record.error=null
+[B2] pulls/8 reads so far=4
+[B3] rc=0 elapsed=8s stdout=<none>
+[B3] record.error=null
+[B3] pulls/8 reads so far=6
+== Scenario C: read is persistently slow (both attempts time out)
+[C] rc=0 elapsed=12s stdout=contributions: observation unavailable for https://github.com/o/r/pull/8
+[C] record.error="forge observation unavailable or changed during read"
+[C] pulls/8 reads so far=2
+== Scenario D: slow read with only a small budget left (FM_CONTRIBUTIONS_BUDGET=3)
+[D] stdout=<none>
+[D] prior record kept unchanged
+[D] pulls/8 reads=1
