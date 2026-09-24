@@ -32,7 +32,8 @@
 #
 # poll consumes fm-fleet-snapshot.sh --contribution-input, a local-only read,
 # and spends at most FM_CONTRIBUTIONS_BUDGET seconds on forge reads (default 20,
-# 1..25). Each gh call is bounded by the remaining budget and five seconds.
+# 1..25). Each gh call is bounded by the remaining budget and five seconds;
+# a call that hits its five-second cap is retried once while budget remains.
 # Oldest observations go first, so a large corpus progresses across polls.
 # Each distinct URL is observed once per poll and applied to every owner. A
 # final observation applies to every owner without another forge read. When
@@ -201,15 +202,21 @@ write_record() { # task record-json-file
 }
 
 forge() {
-  local remaining bounded=0 rc=0
-  remaining=$((DEADLINE - $(date +%s)))
-  # The budget, not the forge, refused this read.
-  [ "$remaining" -gt 0 ] || { BUDGET_EXHAUSTED=1; return 1; }
-  if [ "$remaining" -le 5 ]; then bounded=1; else remaining=5; fi
-  fm_run_timed "$remaining" env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 \
-    gh "$@" 2> "$TMP/forge.err" || rc=$?
-  # A read killed at the budget's own deadline is budget exhaustion too.
-  [ "$rc" -ne 124 ] || [ "$bounded" -eq 0 ] || BUDGET_EXHAUSTED=1
+  local remaining bounded rc _
+  # A read that hit its own five-second cap is retried once, so one slow read
+  # of a healthy contribution is not a failure; a second timeout is.
+  for _ in 1 2; do
+    bounded=0 rc=0
+    remaining=$((DEADLINE - $(date +%s)))
+    # The budget, not the forge, refused this read.
+    [ "$remaining" -gt 0 ] || { BUDGET_EXHAUSTED=1; return 1; }
+    if [ "$remaining" -le 5 ]; then bounded=1; else remaining=5; fi
+    fm_run_timed "$remaining" env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 \
+      gh "$@" 2> "$TMP/forge.err" || rc=$?
+    # A read killed at the budget's own deadline is budget exhaustion too.
+    [ "$rc" -ne 124 ] || [ "$bounded" -eq 0 ] || BUDGET_EXHAUSTED=1
+    [ "$rc" -eq 124 ] && [ "$bounded" -eq 0 ] || break
+  done
   return "$rc"
 }
 

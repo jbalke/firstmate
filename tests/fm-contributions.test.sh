@@ -571,6 +571,10 @@ case "$fault:$*" in
   fail:'api repos/o/r/pulls/8/reviews?'*) printf 'HTTP 502\n' >&2; exit 1 ;;
   down:*) printf 'HTTP 502\n' >&2; exit 1 ;;
   hang:'api repos/o/r/pulls/8') sleep 4 ;;
+  # 124 is what the per-read timeout returns for a read that ran too long.
+  slow:'api repos/o/r/pulls/8') exit 124 ;;
+  slow-once:'api repos/o/r/pulls/8')
+    [ -e "$FORGE/slowed" ] || { : > "$FORGE/slowed"; exit 124; } ;;
   head:'pr view '*) printf '{"headRefOid":"%s","reviewDecision":"APPROVED"}\n' "$(printf 'b%.0s' $(seq 40))"; exit 0 ;;
 esac
 exec "$(dirname "$0")/gh-fixture" "$@"
@@ -621,6 +625,28 @@ test_genuine_failure_near_deadline_is_unavailable() {
     and .records[0].error == "forge observation unavailable or changed during read"' \
     "$home/data/delivery/contributions.json" >/dev/null || fail 'a genuine forge failure left no error evidence'
   pass 'a genuine forge failure inside the budget still records the error and wakes'
+}
+
+test_single_slow_read_is_retried() {
+  local mode home out calls
+  for mode in slow-once slow; do
+    home=$(new_home "slow-read-$mode")
+    forge_home "$home"
+    wrap_forge "$home"
+    printf '%s\n' "$mode" > "$home/forge/fault"
+    out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" poll) || fail "poll failed on a slow read ($mode)"
+    if [ "$mode" = slow-once ]; then
+      [ -z "$out" ] || fail "one transiently slow read raised an alert for a healthy PR: $out"
+      jq -e '.records[0].error == null' "$home/data/delivery/contributions.json" >/dev/null \
+        || fail 'one transiently slow read recorded an error'
+    else
+      [ "$out" = 'contributions: observation unavailable for https://github.com/o/r/pull/8' ] \
+        || fail "a read that timed out twice was swallowed: $out"
+    fi
+    calls=$(grep -cFx 'api repos/o/r/pulls/8' "$home/forge/calls")
+    [ "$calls" = 2 ] || fail "a timed-out read was attempted $calls times instead of retried once ($mode)"
+  done
+  pass 'one timed-out read is retried silently, while a read that times out again stays unavailable'
 }
 
 test_shared_url_observed_once() {
@@ -952,7 +978,7 @@ test_grouped_symlink_refusal() {
 }
 
 failures=0
-for test_name in test_grouped_records_and_legacy_fallback test_grouped_symlink_refusal test_unusable_project_hint_keeps_poll_alive test_unusable_task_id_keeps_poll_alive test_unusable_task_id_raises_no_captain_wake test_data_root_trailing_slash test_actor_coverage test_stale_verdict test_unchecked_is_not_silence test_newest_check_has_no_verdict test_comment_wake test_review_wake test_inline_wake test_ready_issue_wake test_fresh_issue_requires_maintainer test_missing_lane_remains_missing test_partial_freshness_keeps_measured_rows test_malformed_record_cannot_prove_silence test_issue_timeline_and_exact_ack test_verdict_retains_judged_head test_observed_replacement_refreshes_verdict test_unobserved_head_leaves_verdict_unknown test_away_yolo_is_fleet_work test_away_yolo_cross_home_is_fleet_work test_retired_and_unsupported_coverage test_unsupported_forge_is_not_fleet_work test_held_unsupported_forge_is_not_captain_work test_shared_contribution_signal_wakes_once test_watcher_keeps_diagnostics_separate_from_contribution_wakes test_expired_child_unsupported_forge_stays_unmeasured test_watcher_surfaces_new_contribution_once test_home_summary_coverage test_unreadable_pending_is_not_empty test_budget_refusal_between_calls test_budget_bounded_call_timeout test_genuine_failure_near_deadline_is_unavailable test_shared_url_observed_once test_terminal_contribution_settles test_late_owner_inherits_terminal_observation test_done_task_open_pr_still_observed test_failure_wakes_once_per_episode test_late_owner_keeps_failure_episode_suppressed; do
+for test_name in test_grouped_records_and_legacy_fallback test_grouped_symlink_refusal test_unusable_project_hint_keeps_poll_alive test_unusable_task_id_keeps_poll_alive test_unusable_task_id_raises_no_captain_wake test_data_root_trailing_slash test_actor_coverage test_stale_verdict test_unchecked_is_not_silence test_newest_check_has_no_verdict test_comment_wake test_review_wake test_inline_wake test_ready_issue_wake test_fresh_issue_requires_maintainer test_missing_lane_remains_missing test_partial_freshness_keeps_measured_rows test_malformed_record_cannot_prove_silence test_issue_timeline_and_exact_ack test_verdict_retains_judged_head test_observed_replacement_refreshes_verdict test_unobserved_head_leaves_verdict_unknown test_away_yolo_is_fleet_work test_away_yolo_cross_home_is_fleet_work test_retired_and_unsupported_coverage test_unsupported_forge_is_not_fleet_work test_held_unsupported_forge_is_not_captain_work test_shared_contribution_signal_wakes_once test_watcher_keeps_diagnostics_separate_from_contribution_wakes test_expired_child_unsupported_forge_stays_unmeasured test_watcher_surfaces_new_contribution_once test_home_summary_coverage test_unreadable_pending_is_not_empty test_budget_refusal_between_calls test_budget_bounded_call_timeout test_genuine_failure_near_deadline_is_unavailable test_single_slow_read_is_retried test_shared_url_observed_once test_terminal_contribution_settles test_late_owner_inherits_terminal_observation test_done_task_open_pr_still_observed test_failure_wakes_once_per_episode test_late_owner_keeps_failure_episode_suppressed; do
   ( "$test_name" ) || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures contribution regressions"
