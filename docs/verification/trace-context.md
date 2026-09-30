@@ -13,7 +13,7 @@ The spawn-path integration suite `tests/fm-trace-context-spawn.test.sh` (13 asse
 The per-task boundary regression models the reviewed Secondmate scenario exactly: two unrelated tasks spawned sequentially from one home while the same fixed `TRACEPARENT` sits in the spawning environment (a persistent Secondmate's launch-time carrier) record and inject valid carriers whose trace ids differ from each other and from the ambient carrier, and a relaunch of the first task reuses its original carrier verbatim for both the meta record and the injected export.
 Two further assertions drive a genuine two-level primary -> Secondmate -> worker chain, running `bin/fm-spawn.sh` twice with the exact environment the primary injects into the Secondmate, and prove the primary's effective override governs the nested worker both ways: env-on with no config file keeps the nested worker enabled while it roots its own per-task trace distinct from the Secondmate's carrier, and env-off with the file present keeps the nested worker disabled even though the `config/trace-context` file was copied into the Secondmate home.
 A final assertion drives the file-decided path (`FM_TRACE_CONTEXT` unset) and proves the Secondmate's recorded/injected carrier and its delivered `FM_TRACE_CONTEXT=on|off` snapshot are always derived from one frozen decision, so a carrier is never paired with the opposite enable state.
-One assertion pins the pane-carrier clear as a real program rather than a shell builtin: the emitted launch command must start with `env -u TRACEPARENT` and carry no builtin-only prefix, and, where fish is installed, the same assertion proves executably that the previous `unset TRACEPARENT;` form leaks the carrier under a login shell with no `unset` builtin while `env -u` clears it.
+One assertion pins the pane-carrier clear as a real program rather than a shell builtin: after the launch command's leading `export NAME=value; ` statements, the command itself must start with `env -u TRACEPARENT`, and the launch must carry no builtin-only syntax, and, where fish is installed, the same assertion proves executably that the previous `unset TRACEPARENT;` form leaks the carrier under a login shell with no `unset` builtin while `env -u` clears it.
 The suite touches no real harness or live fleet.
 `tests/fm-session-start.test.sh` additionally proves only a lock-owning session start writes the effective state and a lock-refused read-only start leaves it unchanged.
 
@@ -39,6 +39,7 @@ Shell under test: fish 4.8.1 (Homebrew, macOS), the operator login shell a spawn
 The relaunch and metadata-failure paths clear an inherited `TRACEPARENT` before launch.
 `unset` is not a fish builtin (`export` is, and still works), so the previous builtin form silently left the previous incarnation's carrier in the pane while the metadata recorded none.
 `env -u` is a program and composes with both launch prefixes that occur - a leading `env -u ...` invocation and a run of `VAR=value` assignments.
+The launch also opens with `export NAME=value; ` statements, so the clear sits on the command after them: `env` cannot run `export` as a program.
 
 ```console
 $ TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 fish -c "unset TRACEPARENT; sh -c 'printf %s \"\$TRACEPARENT\"'"
@@ -49,6 +50,13 @@ unset TRACEPARENT; sh -c 'printf %s "$TRACEPARENT"'
 00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01
 $ TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 fish -c "env -u TRACEPARENT sh -c 'printf %s \"\$TRACEPARENT\"'"
 $ TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 bash -c "env -u TRACEPARENT sh -c 'printf %s \"\$TRACEPARENT\"'"
+```
+
+Refreshed on 2026-09-30 with fish 4.9.3 for the export-prefixed launch shape:
+
+```console
+$ TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 fish -c "export COMPACT_ADVISER_DISABLE=1; env -u TRACEPARENT sh -c 'printf %s:%s \"\$TRACEPARENT\" \"\$COMPACT_ADVISER_DISABLE\"'"
+:1
 ```
 
 `tests/fm-trace-context-spawn.test.sh` and `tests/fm-control-relaunch.test.sh` both assert the emitted launch command carries no builtin-only clear, so a regression fails in portable CI even where fish is absent.
