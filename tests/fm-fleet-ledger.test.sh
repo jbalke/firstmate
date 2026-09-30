@@ -6,8 +6,8 @@
 # bin/fm-teardown.sh. docs/fleet-ledger.md owns the record contract.
 set -u
 
-# shellcheck source=tests/lib.sh
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=tests/fixtures.sh
+. "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 
 TMP_ROOT=$(fm_test_tmproot fm-fleet-ledger)
 
@@ -165,14 +165,16 @@ EOF
 # Optional arguments are the scaffold's state and config overrides; the
 # scaffold runs from the home, so a relative config override names its config/.
 worker_status_command() {  # <state> <note> [<state-dir> [<config-dir>]]
-  local cmd
-  rm -rf "${HOME_DIR:?}/data/$TASK"
+  local cmd brief
+  brief=$(fm_test_task_brief "$HOME_DIR" "$TASK" sample) || fail "no task data folder"
+  rm -rf "$(dirname "$brief")"
   (cd "$HOME_DIR" && in_home env FM_STATE_OVERRIDE="${3:-$HOME_DIR/state}" \
     FM_CONFIG_OVERRIDE="${4:-$HOME_DIR/config}" \
     "$ROOT/bin/fm-brief.sh" "$TASK" sample --mode no-mistakes >/dev/null) \
     || fail "brief scaffold failed"
+  brief=$(fm_test_task_brief "$HOME_DIR" "$TASK" sample) || fail "no task data folder"
   # shellcheck disable=SC2016 # Match literal backticks in the generated brief.
-  cmd=$(sed -n '/`echo "{state}/s/.*`\(echo .*\)`.*/\1/p' "$HOME_DIR/data/$TASK/brief.md" | head -1)
+  cmd=$(sed -n '/`echo "{state}/s/.*`\(echo .*\)`.*/\1/p' "$brief" | head -1)
   [ -n "$cmd" ] || fail "the brief carries no status command"
   cmd=${cmd//\{state\}/$1}
   cmd=${cmd//<epoch>/1790000000}
