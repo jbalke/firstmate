@@ -552,11 +552,13 @@ test_unreadable_pending_is_not_empty() {
 
 # Each record's durable task identity is the directory the snapshot loop finds
 # it in, exactly as `basename "$(dirname "$file")"` named it, however the data
-# root is spelled and whatever bytes the directory name carries.
+# root is spelled and whatever bytes the directory name carries. Names the task
+# data layer cannot name (a leading dash, a newline) are unreadable records,
+# covered by the unusable-task-id test.
 test_record_task_identity_matches_dirname_basename() {
   local home data name file want n=0 names=() tasks=() expected actual
   home=$(new_home task-identity)
-  names=(plain dot.ted 'two words' -dash $'caf\xc3\xa9' $'nl\n' '*')
+  names=(plain dot.ted 'two words' $'caf\xc3\xa9' '*')
   for data in "$home/data" "$home/data/" "$home/data//"; do
     for name in "${names[@]}"; do
       n=$((n + 1))
@@ -842,7 +844,7 @@ test_reservation_defers_later_url_when_fifteen_seconds_do_not_remain() {
     || fail 'reservation poll failed'
   [ -z "$out" ] || fail "reservation poll printed an unavailable wake: $out"
   jq -e --arg now "$NOW" '.records[0] | .checked_at == $now and .error == null' \
-    "$home/data/filed/contributions.json" >/dev/null \
+    "$(fm_task_data_find "$home/data" filed)/contributions.json" >/dev/null \
     || fail 'the first issue was not observed before reserving the remaining budget'
   grep -F 'api repos/o/r/pulls/8' "$home/forge/calls" >/dev/null \
     && fail 'a later PR began without the fifteen-second observation reservation'
@@ -947,7 +949,7 @@ test_unmeasured_url_does_not_starve_the_tail() {
       jq -e --slurpfile prior "$home/terminal.json" '.records[0] | .error == null
         and .checked_at == $prior[0].records[0].checked_at
         and .observation == $prior[0].records[0].observation' \
-        "$home/data/$task/contributions.json" >/dev/null \
+        "$(fm_task_data_find "$home/data" "$task")/contributions.json" >/dev/null \
         || fail "terminal settlement or freshness changed for $task"
     done
     if grep -Eq '^api repos/o/r/pulls/9[0-3]($|/)' "$home/forge/calls"; then
