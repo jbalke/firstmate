@@ -1670,11 +1670,11 @@ claude_launch_brief_arg() {  # <launch>
 # claude_add_dirs_flag resolves it. Prints a trailing space so callers can
 # drop it straight into an expected command.
 claude_worker_add_dirs() {  # <home> <id>
-  local state_real data_real root_real
+  local state_real task_real root_real
   state_real=$(cd "$1/state" && pwd -P)
-  data_real=$(cd "$1/data" && pwd -P)
+  task_real=$(cd "$(fm_test_task_dir "$1" "$2")" && pwd -P)
   root_real=$(cd "$ROOT" && pwd -P)
-  printf '%s ' "--add-dir '$state_real/operational-inbox' --add-dir '$state_real/$2.inbox' --add-dir '$data_real/$2' --add-dir '$root_real/.agents/skills'"
+  printf '%s ' "--add-dir '$state_real/operational-inbox' --add-dir '$state_real/$2.inbox' --add-dir '$task_real' --add-dir '$root_real/.agents/skills'"
 }
 
 claude_expected_launch() {  # <launch> <home> <id> <permission-flag>

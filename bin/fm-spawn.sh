@@ -2765,7 +2765,9 @@ rovo_config_override_flag() {
 # Firstmate worker always reads outside its cwd - a secondmate's steers live
 # in the PARENT home's state/<id>.inbox, and a ship or scout worker's launch
 # record, steers, and brief live in this home's state/operational-inbox,
-# state/<id>.inbox, and data/<id>, with the code root's .agents/skills named
+# state/<id>.inbox, and its task data directory (BRIEF_DIR_REAL, the
+# brief's own folder under data/tasks/<project>/<id>/, never rebuilt from a
+# layout literal), with the code root's .agents/skills named
 # by its definition of done - so every Claude launch, fresh spawn and
 # relaunch, in both permission modes, grants exactly those task-channel
 # directories. Paths resolve the way rovo_config_override_flag resolves them
@@ -2774,9 +2776,9 @@ rovo_config_override_flag() {
 # directory that does not exist at launch would leave the channel created
 # later outside the grant. The grant never covers the whole state/ (watcher
 # internals live there) or anything wider.
-claude_add_dirs_flag() {  # <kind> <state-dir> <data-dir> <code-root> <task-id>
-  local kind=$1 state_dir=$2 data_dir=$3 code_root=$4 id=$5
-  local state_real data_real root_real out='' d
+claude_add_dirs_flag() {  # <kind> <state-dir> <brief-dir> <code-root> <task-id>
+  local kind=$1 state_dir=$2 brief_dir=$3 code_root=$4 id=$5
+  local state_real brief_real root_real out='' d
   local dirs=()
   state_real=$(cd "$state_dir" && pwd -P) || return 1
   case "$kind" in
@@ -2785,11 +2787,11 @@ claude_add_dirs_flag() {  # <kind> <state-dir> <data-dir> <code-root> <task-id>
     dirs=("$state_real/$id.inbox")
     ;;
   *)
-    data_real=$(cd "$data_dir" && pwd -P) || return 1
+    brief_real=$(cd "$brief_dir" && pwd -P) || return 1
     root_real=$(cd "$code_root" && pwd -P) || return 1
     [ -d "$root_real/.agents/skills" ] || return 1
-    mkdir -p "$state_real/operational-inbox" "$state_real/$id.inbox/handled" "$data_real/$id" || return 1
-    dirs=("$state_real/operational-inbox" "$state_real/$id.inbox" "$data_real/$id" "$root_real/.agents/skills")
+    mkdir -p "$state_real/operational-inbox" "$state_real/$id.inbox/handled" || return 1
+    dirs=("$state_real/operational-inbox" "$state_real/$id.inbox" "$brief_real" "$root_real/.agents/skills")
     ;;
   esac
   for d in "${dirs[@]}"; do
@@ -5110,7 +5112,7 @@ case "$LAUNCH" in
 esac
 case "$LAUNCH" in
 *__CLAUDEADDDIRS__*)
-  CLAUDE_ADD_DIRS=$(claude_add_dirs_flag "$KIND" "$STATE" "$DATA" "$FM_ROOT" "$ID") || {
+  CLAUDE_ADD_DIRS=$(claude_add_dirs_flag "$KIND" "$STATE" "$BRIEF_DIR_REAL" "$FM_ROOT" "$ID") || {
     echo "error: could not resolve the task-channel directories for $ID's claude --add-dir grant" >&2
     exit 1
   }
