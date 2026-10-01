@@ -428,12 +428,12 @@ test_promotion_persists_the_selected_ship_branch() {
   printf 'window=fm-%s\nkind=scout\nworktree=/tmp/wt\n' "$id" > "$meta"
   FM_HOME="$home" "$BRIEF" "$id" fixture-project --scout >/dev/null 2>&1 \
     || fail "branch-prefix promotion scout brief should scaffold"
-  fill_brief_subsections "$home/data/$id/brief.md" \
+  fill_brief_subsections "$(fm_test_task_dir "$home" "$id")/brief.md" \
     "Promote the branch-prefix fixture." "Use the configured branch exactly."
   out=$(FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" "$PROMOTE" "$id" \
     --mode local-only --yolo off --branch-prefix fix/) \
     || fail "branch-prefix promotion should succeed"
-  instructions="$home/data/$id/ship-instructions.md"
+  instructions="$(fm_test_task_dir "$home" "$id")/ship-instructions.md"
   assert_grep "branch=fix/$id" "$meta" \
     "promotion did not persist the selected full ship branch"
   assert_grep "git checkout -b fix/$id --" "$instructions" \
@@ -458,12 +458,12 @@ test_promotion_branch_command_is_shell_safe() {
   printf 'window=fm-%s\nkind=scout\nworktree=/tmp/wt\n' "$id" > "$meta"
   FM_HOME="$home" "$BRIEF" "$id" fixture-project --scout >/dev/null 2>&1 \
     || fail "shell-safe promotion scout brief should scaffold"
-  fill_brief_subsections "$home/data/$id/brief.md" \
+  fill_brief_subsections "$(fm_test_task_dir "$home" "$id")/brief.md" \
     "Promote the shell-safe fixture." "Use the configured branch exactly."
   FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" "$PROMOTE" "$id" \
     --mode local-only --yolo off --branch-prefix "$prefix" >/dev/null 2>&1 \
     || fail "a ref-format-valid metacharacter prefix should promote safely"
-  instructions="$home/data/$id/ship-instructions.md"
+  instructions="$(fm_test_task_dir "$home" "$id")/ship-instructions.md"
   # shellcheck disable=SC2016  # Single quotes are required: the sed expression holds literal backticks.
   command=$(sed -n 's/.*create your branch: `\(.*\)`\.$/\1/p' "$instructions")
   [ -n "$command" ] || fail "promotion instructions exposed no branch-creation command"
@@ -1183,7 +1183,7 @@ $rec
 EOF
   FM_HOME="$home" "$BRIEF" forge-yolo-s1 proj --mode no-mistakes --forge gerrit >/dev/null \
     || fail "a gerrit ship brief should scaffold"
-  fill_brief_subsections "$home/data/forge-yolo-s1/brief.md" \
+  fill_brief_subsections "$(fm_test_task_dir "$home" forge-yolo-s1)/brief.md" \
     "Run the review loop on the Gerrit project." "Ship the review pass."
   out=$(run_spawn "$home" "$fakebin" forge-yolo-s1 "$proj" claude --mode no-mistakes --yolo on 2>&1)
   status=$?
@@ -1214,7 +1214,7 @@ test_forge_gerrit_changes_what_no_mistakes_means() {
   mkdir -p "$home/data" "$home/state"
   FM_HOME="$home" "$BRIEF" forge-dod-g1 review-server-project --mode no-mistakes --forge gerrit >/dev/null \
     || fail "a gerrit no-mistakes brief should scaffold"
-  brief="$home/data/forge-dod-g1/brief.md"
+  brief="$(fm_test_task_dir "$home" forge-dod-g1)/brief.md"
   grep -qx "Delivery contract: mode=no-mistakes forge=gerrit shape=squash" "$brief" \
     || fail "the brief did not record the machine-readable forge in its delivery contract"
 
@@ -1260,7 +1260,7 @@ test_forge_gerrit_changes_what_no_mistakes_means() {
   assert_grep 'NEVER pass `--yes` (or `-y`)' "$brief" "the gerrit worker lost the --yes ban"
   FM_HOME="$home" "$BRIEF" forge-dod-n1 other-project --mode no-mistakes >/dev/null \
     || fail "a default-forge no-mistakes brief should scaffold"
-  plain="$home/data/forge-dod-n1/brief.md"
+  plain="$(fm_test_task_dir "$home" forge-dod-n1)/brief.md"
   awk '/^You drive no-mistakes by responding to its gates/ { emit = 1 }
        emit { print }
        emit && /hard rule violation\.$/ { exit }' "$brief" > "$TMP_ROOT/forge-dod/gerrit-middle"
@@ -1300,9 +1300,9 @@ EOF
   status=$?
   [ "$status" -ne 0 ] || fail "a gerrit project launched on a brief that records no forge"
   assert_contains "$out" "forge mismatch for forge-agree-a1" "the refusal did not name the drift it caught"
-  assert_contains "$out" "remove $home/data/forge-agree-a1/brief.md" \
+  assert_contains "$out" "remove $(fm_test_task_dir "$home" forge-agree-a1)/brief.md" \
     "the refusal did not name the authored brief the re-scaffold must replace"
-  assert_not_contains "$out" "remove $home/data/forge-agree-a1/launch-brief.md" \
+  assert_not_contains "$out" "remove $(fm_test_task_dir "$home" forge-agree-a1)/launch-brief.md" \
     "the refusal named the generated launch brief instead of the authored one"
   assert_contains "$out" "fm-brief.sh forge-agree-a1 proj --mode no-mistakes --forge gerrit" \
     "the refusal did not print a re-scaffold command that can actually run"
@@ -1312,14 +1312,14 @@ EOF
 
   FM_HOME="$home" "$BRIEF" forge-agree-a2 proj --mode direct-PR --forge gerrit >/dev/null \
     || fail "a gerrit direct-PR brief should scaffold"
-  fill_brief_subsections "$home/data/forge-agree-a2/brief.md" "Publish the change." "Ship it."
+  fill_brief_subsections "$(fm_test_task_dir "$home" forge-agree-a2)/brief.md" "Publish the change." "Ship it."
   out=$(run_spawn "$home" "$fakebin" forge-agree-a2 "$proj" claude --mode direct-PR --yolo off 2>&1)
   assert_not_contains "$out" "forge mismatch" "a gerrit direct-PR brief was reported as drift"
   assert_not_contains "$out" "cannot ship" "direct-PR was refused on the forge it publishes to"
 
   FM_HOME="$home" "$BRIEF" forge-agree-a3 proj --mode no-mistakes --forge gerrit >/dev/null \
     || fail "a gerrit ship brief should scaffold"
-  fill_brief_subsections "$home/data/forge-agree-a3/brief.md" "Run the review loop." "Ship it."
+  fill_brief_subsections "$(fm_test_task_dir "$home" forge-agree-a3)/brief.md" "Run the review loop." "Ship it."
   out=$(run_spawn "$home" "$fakebin" forge-agree-a3 "$proj" claude --mode no-mistakes --yolo off 2>&1)
   assert_not_contains "$out" "forge mismatch" "an agreeing brief and registry were reported as drift"
 
@@ -1328,7 +1328,7 @@ EOF
   # fast-forward local main with content the review server never saw.
   FM_HOME="$home" "$BRIEF" forge-agree-a4 proj --mode local-only >/dev/null \
     || fail "a local-only ship brief should scaffold without a forge"
-  fill_brief_subsections "$home/data/forge-agree-a4/brief.md" "Land it locally." "Stop at a ready branch."
+  fill_brief_subsections "$(fm_test_task_dir "$home" forge-agree-a4)/brief.md" "Land it locally." "Stop at a ready branch."
   out=$(run_spawn "$home" "$fakebin" forge-agree-a4 "$proj" claude --mode local-only --yolo off 2>&1)
   status=$?
   [ "$status" -ne 0 ] || fail "a local-only launch on a gerrit-bound project was accepted"
@@ -1343,7 +1343,7 @@ $rec
 EOF
   FM_HOME="$home" "$BRIEF" forge-agree-a5 proj --mode no-mistakes --forge gerrit >/dev/null \
     || fail "a gerrit ship brief should scaffold"
-  fill_brief_subsections "$home/data/forge-agree-a5/brief.md" "Run the review loop." "Ship it."
+  fill_brief_subsections "$(fm_test_task_dir "$home" forge-agree-a5 proj)/brief.md" "Run the review loop." "Ship it."
   out=$(run_spawn "$home" "$fakebin" forge-agree-a5 "$proj" claude --mode no-mistakes --yolo off 2>&1)
   status=$?
   [ "$status" -ne 0 ] || fail "a gerrit brief launched on a project with no registered forge"
@@ -1371,7 +1371,7 @@ EOF
 
   FM_HOME="$home" "$BRIEF" branch-agree-a1 proj --mode no-mistakes --branch-prefix fix/ >/dev/null \
     || fail "a fix/-prefixed brief should scaffold"
-  fill_brief_subsections "$home/data/branch-agree-a1/brief.md" "Run the review loop." "Ship it."
+  fill_brief_subsections "$(fm_test_task_dir "$home" branch-agree-a1 proj)/brief.md" "Run the review loop." "Ship it."
   out=$(run_spawn "$home" "$fakebin" branch-agree-a1 "$proj" claude --mode no-mistakes --yolo off --branch-prefix contrib/)
   status=$?
   [ "$status" -ne 0 ] || fail "a spawn selecting a different prefix than its brief records was accepted"
@@ -1396,7 +1396,7 @@ EOF
 
   FM_HOME="$home" "$BRIEF" branch-agree-a4 proj --mode no-mistakes --branch-prefix fix/ >/dev/null \
     || fail "a second fix/-prefixed brief should scaffold"
-  fill_brief_subsections "$home/data/branch-agree-a4/brief.md" "Run the review loop." "Ship it."
+  fill_brief_subsections "$(fm_test_task_dir "$home" branch-agree-a4 proj)/brief.md" "Run the review loop." "Ship it."
   out=$(run_spawn "$home" "$fakebin" branch-agree-a4 "$proj" claude --mode no-mistakes --yolo off --branch-prefix fix/)
   assert_not_contains "$out" "branch mismatch" "an agreeing brief and selection were reported as drift"
   assert_not_contains "$out" "records no ship branch" "an agreeing spawn reported the brief as legacy"
@@ -1445,7 +1445,7 @@ EOF
 
   FM_HOME="$home" "$BRIEF" prefix-dev-a2 proj --mode no-mistakes --branch-prefix fix/ >/dev/null \
     || fail "a fix/-prefixed brief should scaffold"
-  fill_brief_subsections "$home/data/prefix-dev-a2/brief.md" "Run the review loop." "Ship it."
+  fill_brief_subsections "$(fm_test_task_dir "$home" prefix-dev-a2 proj)/brief.md" "Run the review loop." "Ship it."
   out=$(run_spawn "$home" "$fakebin" prefix-dev-a2 "$proj" claude --mode no-mistakes --yolo off --branch-prefix fix/)
   assert_not_contains "$out" "registers the ship-branch prefix" \
     "a spawn matching the registered prefix was announced as a deviation"
@@ -1499,7 +1499,7 @@ STUB
   printf 'window=fm-%s\nkind=scout\nworktree=/tmp/wt\nproject=%s\n' "$id" "$home/projects/proj" > "$meta"
   FM_HOME="$home" "$BRIEF" "$id" proj --scout >/dev/null 2>&1 \
     || fail "scout brief generation should succeed"
-  fill_brief_subsections "$home/data/$id/brief.md" \
+  fill_brief_subsections "$(fm_test_task_dir "$home" "$id")/brief.md" \
     "Fix what the investigation found on the Gerrit project." "Carry over only the fix."
 
   out=$(FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" "$PROMOTE" "$id" --mode no-mistakes --yolo off 2>&1) \
@@ -1522,10 +1522,10 @@ STUB
 
   # Both real generation paths must end in the same contract, as they do for every
   # mode: a promoted worker is never handed a weaker one than a briefed worker.
-  rm "$home/data/$id/brief.md"
+  rm "$(fm_test_task_dir "$home" "$id")/brief.md"
   FM_HOME="$home" "$BRIEF" "$id" proj --mode no-mistakes --forge gerrit >/dev/null 2>&1 \
     || fail "ordinary gerrit ship brief generation should succeed"
-  awk '/^# Definition of done$/ { emit=1 } emit' "$home/data/$id/brief.md" > "$TMP_ROOT/forge-promote/brief-dod"
+  awk '/^# Definition of done$/ { emit=1 } emit' "$(fm_test_task_dir "$home" "$id")/brief.md" > "$TMP_ROOT/forge-promote/brief-dod"
   awk '/^# Definition of done$/ { emit=1 } emit' "$payload" > "$TMP_ROOT/forge-promote/delivered-dod"
   cmp -s "$TMP_ROOT/forge-promote/brief-dod" "$TMP_ROOT/forge-promote/delivered-dod" \
     || fail "promotion and ordinary brief generation delivered different gerrit contracts"
@@ -1542,7 +1542,7 @@ test_forge_gerrit_direct_pr_publishes_one_change() {
   mkdir -p "$home/data" "$home/state"
   FM_HOME="$home" "$BRIEF" forge-direct-g1 review-server-project --mode direct-PR --forge gerrit >/dev/null \
     || fail "a gerrit direct-PR brief should scaffold"
-  brief="$home/data/forge-direct-g1/brief.md"
+  brief="$(fm_test_task_dir "$home" forge-direct-g1 proj)/brief.md"
   grep -qx "Delivery contract: mode=direct-PR forge=gerrit shape=squash" "$brief" \
     || fail "the brief did not record the forge and shape in its delivery contract"
   # shellcheck disable=SC2016 # Backticks are literal generated Markdown.
@@ -1569,7 +1569,7 @@ test_forge_gerrit_direct_pr_publishes_one_change() {
   [ "$status" -ne 0 ] || fail "a stack-shaped gerrit brief scaffolded"
   assert_contains "$out" "--shape stack is refused" "the stack refusal did not name the refused shape"
   assert_contains "$out" "pinned when its watch is armed" "the stack refusal did not carry its reason"
-  assert_absent "$home/data/forge-direct-g2/brief.md" "the refused stack brief was still written"
+  assert_absent "$(fm_test_task_dir "$home" forge-direct-g2 review-server-project)/brief.md" "the refused stack brief was still written"
   out=$(FM_HOME="$home" "$BRIEF" forge-direct-g3 review-server-project --mode direct-PR --shape squash 2>&1)
   status=$?
   [ "$status" -ne 0 ] || fail "a shape was accepted without a forge that publishes changes"
