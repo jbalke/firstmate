@@ -1,0 +1,39 @@
+$ FM_HOME=$H bin/fm-brief.sh sync-demo-a1 some-proj --mode no-mistakes --title "Sync demo"
+scaffolded: /tmp/fmhome.OEge/data/tasks/some-proj/sync-demo-a1/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+exit=0
+$ FM_HOME=$H bin/fm-brief.sh scout-demo-b2 some-proj --scout
+scaffolded: /tmp/fmhome.OEge/data/tasks/some-proj/scout-demo-b2/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+exit=0
+$ find $H/data -type f
+data/tasks/some-proj/scout-demo-b2/brief.md
+data/tasks/some-proj/scout-demo-b2/task.meta
+data/tasks/some-proj/sync-demo-a1/brief.md
+data/tasks/some-proj/sync-demo-a1/task.meta
+$ cat data/tasks/*/sync-demo-a1/task.meta
+project=some-proj
+title=Sync demo
+kind=ship
+created=2026-10-01
+$ grep -n "Definition of done" -A12 brief.md
+41:   turn after it; continue the same stage until a defined `done:` gate under Definition of done.
+42-   Use `paused: {why}` - distinct from `blocked:` - when deliberately waiting for work or an external condition expected to clear on its own, including your own validation round.
+43-   Before ending your turn with your own background shell or monitor still running, or before waiting on your own pipeline run or a long foreground command, append `paused [at=<epoch>]: {job and completion condition}` to the status file.
+44-   Name what you are waiting for and what will let you resume; do not repeat the declaration on every poll.
+45-   Do not declare active implementation or reasoning as a wait.
+46-   Firstmate may still raise one first-sight alert; the declared wait then uses the existing long recheck cadence instead of repeated possible-wedge alarms.
+47-   When you know when the wait clears, include `until <YYYY-MM-DDTHH:MMZ>` (UTC) for a recheck at that time.
+48-   Follow the resolution rule below when the wait clears, then resume the task.
+49-   Use `blocked:` when you are stuck and need help.
+50-
+51-5. If you hit the same obstacle twice, append `blocked [at=<epoch>]: {why}` and stop; firstmate will help.
+52-6. If a decision belongs above the implementation worker (product choices, destructive actions),
+53-   append `needs-decision [at=<epoch>]: {summary of options}` and stop. Firstmate will reply with the decision.
+--
+96:# Definition of done
+97-Delivery contract: mode=no-mistakes
+98-Ship branch: fm/sync-demo-a1
+99-The task is complete only when committed on your branch.
+100-When you believe it is complete, append `done [at=<epoch>]: {summary}` to the status file and stop.
+101-Firstmate will then instruct you to run /no-mistakes to validate and ship a PR.
+$ legacy flat path exists?
+"/tmp/fmhome.OEge/data/sync-demo-a1": No such file or directory (os error 2)
