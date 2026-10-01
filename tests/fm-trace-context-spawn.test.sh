@@ -79,7 +79,11 @@ case "${1:-}" in
           -t) skip_next=1; continue ;;
           -l) continue ;;
           Enter|C-m) continue ;;
-          *) printf '%s\n' "$a" >> "$FM_FAKE_LAUNCH_LOG" ;;
+          *)
+            case "$a" in
+              ". '"*"'") staged=${a#". '"}; staged=${staged%"'"}; [ ! -f "$staged" ] || a=$(cat "$staged") ;;
+            esac
+            printf '%s\n' "$a" >> "$FM_FAKE_LAUNCH_LOG" ;;
         esac
       done
     fi
@@ -206,6 +210,8 @@ run_two_level() {
   printf '# Firstmate\n' > "$sm/AGENTS.md"
   printf 'sm-%s\n' "$name" > "$sm/.fm-secondmate-home"
   printf 'charter\n' > "$sm/data/charter.md"
+  git -C "$sm" init -q -b main
+  printf '%s\n' 'projects/' 'state/' 'data/' 'config/' '.no-mistakes/' > "$sm/.gitignore"
 
   # Spawn 1: the primary launches the secondmate; capture what it injects.
   sm_id="sm-$name"
@@ -355,24 +361,34 @@ test_unsafe_delivery_refuses_to_append_launch() {
 # inherited TRACEPARENT with a real program, never a shell builtin. The pane
 # shell is the operator's login shell, and `unset` is not a fish builtin, so a
 # builtin-based clear silently left the previous incarnation's carrier in place
-# and reported nothing (docs/verification/trace-context.md).
+# and reported nothing (docs/verification/trace-context.md). The launch may open
+# with `export NAME=value; ` statements, which fish also runs; the clear must sit
+# on the command after them, because `env` cannot run `export` as a program.
 assert_launch_clear_is_shell_agnostic() {  # <launch-log>
-  local log=$1 line
+  local log=$1 line command
   line=$(grep -m1 'TRACEPARENT.*claude' "$log") \
     || fail "no launch command carrying a TRACEPARENT clear was emitted"
-  case "$line" in
+  command=$line
+  while [ "${command#export }" != "$command" ]; do
+    case "$command" in
+      *'; '*) command=${command#*; } ;;
+      *) fail "launch command is only export statements: $line" ;;
+    esac
+  done
+  case "$command" in
     "env -u TRACEPARENT "*) ;;
-    *) fail "launch clear must start with env -u TRACEPARENT, got: $line" ;;
+    *) fail "launch clear must lead the command after its export statements, got: $line" ;;
   esac
   case " $line " in
-    *" unset "*|*" export "*|*" set "*|*" setenv "*)
+    *" unset "*|*" set "*|*" setenv "*)
       fail "launch command must carry no shell-builtin-only syntax: $line" ;;
   esac
 }
 
 # Executable proof of WHY the assertion above is a program and not a builtin:
 # under a login shell with no `unset` builtin the old form leaked the carrier,
-# while `env -u` clears it. Self-skips where fish is not installed.
+# while `env -u` clears it, also behind the launch's export statements.
+# Self-skips where fish is not installed.
 test_env_u_clears_the_carrier_where_a_builtin_cannot() {
   local fish leaked cleared
   fish=$(command -v fish 2>/dev/null) || {
@@ -384,8 +400,8 @@ test_env_u_clears_the_carrier_where_a_builtin_cannot() {
   [ -n "$leaked" ] \
     || fail "expected the builtin form to leak the carrier under fish; the regression premise no longer holds"
   cleared=$(TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 \
-    "$fish" -c "env -u TRACEPARENT sh -c 'printf %s \"\$TRACEPARENT\"'" 2>/dev/null)
-  [ -z "$cleared" ] || fail "env -u TRACEPARENT failed to clear the carrier under fish: $cleared"
+    "$fish" -c "export COMPACT_ADVISER_DISABLE=1; env -u TRACEPARENT sh -c 'printf %s:%s \"\$TRACEPARENT\" \"\$COMPACT_ADVISER_DISABLE\"'" 2>/dev/null)
+  [ "$cleared" = ":1" ] || fail "env -u TRACEPARENT behind an export failed to clear the carrier under fish: $cleared"
   pass "env -u clears the pane carrier under a login shell with no unset builtin"
 }
 
@@ -405,7 +421,7 @@ test_failed_metadata_append_unsets_carrier_and_still_launches() {
 
   ! grep -q '^traceparent=' "$meta" \
     || fail "failed metadata append must not leave a traceparent= claim in meta"
-  grep -q '^env -u TRACEPARENT .*claude' "$LAUNCH_LOG" \
+  grep -Eq '(^|; )env -u TRACEPARENT .*claude' "$LAUNCH_LOG" \
     || fail "failed metadata append must clear TRACEPARENT in the launch command"
   assert_launch_clear_is_shell_agnostic "$LAUNCH_LOG"
   pass "failed traceparent metadata append removes the carrier from the launched task"
@@ -428,6 +444,7 @@ test_duplicate_secondmate_spawn_does_not_converge_trace_context() {
   printf '# Firstmate\n' > "$sm/AGENTS.md"
   printf '%s\n' "$id" > "$sm/.fm-secondmate-home"
   printf 'charter\n' > "$sm/data/charter.md"
+  git -C "$sm" init -q -b main
   fake=$(make_spawn_fakebin "$base/fake")
 
   # A claude secondmate spawn pre-registers workspace trust for the HOME it
