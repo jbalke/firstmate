@@ -24,7 +24,9 @@ live_lab_cleanup() {
   done
   while read -r pid; do [ -n "$pid" ] && { pkill -P "$pid" 2>/dev/null || true; kill "$pid" 2>/dev/null || true; }; done < "$TMP_ROOT/pids"
   while read -r dir; do
-    [ -n "$dir" ] || continue
+    # tmux falls back to /tmp when TMUX_TMPDIR names a missing directory, so
+    # a lab dir that `down` already removed would reach the default server.
+    [ -n "$dir" ] && [ -d "$dir" ] || continue
     env -u TMUX TMUX_TMPDIR="$dir" tmux kill-server 2>/dev/null
     case "$dir" in /tmp/fml.*) rm -rf "$dir" ;; esac
   done < "$TMP_ROOT/tmux-dirs"
@@ -120,6 +122,7 @@ lab_tmux() {  # <root> <tmux args...>
   local dir
   dir=$(sed -n 's/^tmux_dir=//p' "$1/.fm-live-lab")
   shift
+  [ -n "$dir" ] && [ -d "$dir" ] || return 1  # Never the default server; see live_lab_cleanup.
   env -u TMUX TMUX_TMPDIR="$dir" tmux "$@"
 }
 
