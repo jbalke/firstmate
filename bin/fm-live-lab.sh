@@ -160,7 +160,8 @@ load_lab() {  # <root>: refuse anything up did not build, then load its record
 }
 
 lab_tmux() {
-  [ -n "${TMUX_DIR:-}" ] || return 1
+  # tmux falls back to the default /tmp socket when TMUX_TMPDIR names a missing directory.
+  [ -n "${TMUX_DIR:-}" ] && [ -d "$TMUX_DIR" ] || return 1
   env -u TMUX TMUX_TMPDIR="$TMUX_DIR" tmux "$@"
 }
 
@@ -192,8 +193,9 @@ window_id() {
   esac
   window=$(sed -n 's/^window=//p' "$LAB/state/$name.meta" 2>/dev/null)
   [ -z "$window" ] || name=${window#*:}
-  lab_tmux list-windows -t firstmate -F "#{window_name}$(printf '\t')#{window_id}" 2>/dev/null \
-    | awk -F '\t' -v n="$name" '$1 == n { print $2; exit }'
+  # tmux 3.8 prints a tab in -F as "_"; a window id never holds a space.
+  lab_tmux list-windows -t firstmate -F '#{window_id} #{window_name}' 2>/dev/null \
+    | while IFS= read -r line; do [ "${line#* }" = "$name" ] && { echo "${line%% *}"; break; }; done
 }
 
 window_field() {  # <name> <format>
