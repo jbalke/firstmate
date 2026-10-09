@@ -1,0 +1,9 @@
+not ok - a Claude lab in up's shape is ready: fail primary: window main is not running
+fail probe: no LABREADY-abc12345 reply in window main (model refused, turn still running, or a dialog is open)
+ok trust: /private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-live-lab.4k71zZ/c/home is trusted in the Claude store
+ok mirror: verified writer, check passed, captain=1 main=1
+ok host: supervision host pid 86824
+ok watcher: live watcher with a fresh beacon
+fail mate: the labt86488-mate window is not running
+fail worker: the labt86488-worker window is not running
+ok treehouse: ~/.treehouse unchanged: expected exit 0, got 1

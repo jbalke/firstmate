@@ -1,0 +1,32 @@
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=-f /dev/null new-session -d -s firstmate -n lab -x 220 -y 60 -c /private/tmp/fmlab.x61n3A
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p #{pid}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=new-window -d -t firstmate: -n main -c /private/tmp/fmlab.x61n3A/home env FM_HOME=/private/tmp/fmlab.x61n3A/home CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --setting-sources project,local --model sonnet --effort medium --permission-mode auto
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=set-option -w -t @1 remain-on-exit on
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t @1 #{pane_pid}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=show -Av mouse
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=show -gv focus-events
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t %1 #{session_name}:#{window_id}.#{pane_id}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p #{client_termtype}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=send-keys -t @1 -l Lab readiness probe from bin/fm-live-lab.sh. Run no tool or command for this message. Reply with only the word LABREADY, a hyphen, and then 2552a8742f0b, with no spaces.
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=send-keys -t @1 Enter
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t @1 #{pane_dead}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t @1 #{pane_current_path}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=capture-pane -p -J -t @1 -S -5000
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t @1 #{pane_dead}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t @1 #{pane_current_path}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=capture-pane -p -J -t @1 -S -5000
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t @1 #{pane_dead}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=display-message -p -t @1 #{pane_current_path}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=list-windows -t firstmate -F #{window_id} #{window_name}
+TMUX_TMPDIR=/tmp/fml.4LiSgq args=capture-pane -p -J -t @1 -S -5000

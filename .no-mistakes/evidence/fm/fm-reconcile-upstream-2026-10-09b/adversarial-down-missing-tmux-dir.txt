@@ -1,0 +1,13 @@
+default tmux sessions before:        2
+simulated partial teardown: lab tmux server stopped, /tmp/fml.4LiSgq removed, record kept
+stopped: lab tmux server and lab processes
+fm-lab-home: recorded tmux directory is missing or unsafe
+fm-live-lab: cannot remove the private tmux directory
+down exit=1
+--- tmux calls during down:
+(none)
+lab root exists after down: yes
+default tmux sessions after:        2
+stopped: lab tmux server and lab processes
+removed: 1 Claude project entries under /private/tmp/fmlab.x61n3A
+removed: /private/tmp/fmlab.x61n3A

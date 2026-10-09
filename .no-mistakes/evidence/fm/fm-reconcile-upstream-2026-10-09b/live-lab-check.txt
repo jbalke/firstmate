@@ -1,0 +1,7 @@
+ok primary: claude pid 10604 in /private/tmp/fmlab.x61n3A/home
+ok probe: the primary answered LABREADY-2552a8742f0b
+ok trust: /private/tmp/fmlab.x61n3A/home is trusted in the Claude store
+ok mirror: verified writer, check passed, captain=1 main=1
+ok host: skipped (empty fleet arms no supervision)
+ok watcher: skipped (empty fleet)
+ok treehouse: ~/.treehouse unchanged

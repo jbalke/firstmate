@@ -1,0 +1,18 @@
+=== before (HEAD~1): fm-live-lab.sh down on a lab whose private tmux dir /tmp/fml.87ICFR is gone
+stopped: lab tmux server and lab processes
+removed: 0 Claude project entries under /private/tmp/fmlabroot.BYMOou
+removed: /private/tmp/fmlabroot.BYMOou
+down rc=0
+guard refusals (calls that would have reached the default tmux server):
+  GUARD-REFUSED pid=82923 sock=/tmp/tmux-501/default TMUX_TMPDIR=/tmp/fml.87ICFR args=kill-server
+default-server sessions before=2 after=2
+
+=== after (HEAD): fm-live-lab.sh down on a lab whose private tmux dir /tmp/fml.qwpcfs is gone
+stopped: lab tmux server and lab processes
+removed: 0 Claude project entries under /private/tmp/fmlabroot.j7jjSX
+removed: /private/tmp/fmlabroot.j7jjSX
+down rc=0
+guard refusals (calls that would have reached the default tmux server):
+  none
+default-server sessions before=2 after=2
+

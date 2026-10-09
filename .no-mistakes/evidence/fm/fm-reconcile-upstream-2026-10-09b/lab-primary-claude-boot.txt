@@ -1,0 +1,18 @@
+ ▐▛███▛█   Claude Code v2.1.295
+▝▜██████▀  Opus 5.5 with medium effort · Claude Team
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/6b5c7015552c/01M4GX6C8R7WGHJV3FMWVB3B31
+  ⎿  SessionStart:startup hook error
+  ⎿  Failed to run: prompt-type hooks are not supported for SessionStart events (no conversation context is available). Use a command-type hook instead.
+❯ hi - give me a one-paragraph fleet status, then stop                                                                                                                                                  
+  Listed 2 directories, ran 1 shell command          
+⏺ Captain, the fleet is empty. This session is running in a throwaway test copy of the firstmate repo: the clean, detached branch whose latest commit refuses lab tmux setup when its private directory
+  is missing. Its active home is a fresh temporary lab, and that lab has no projects, no backlog items, no workers or scouts under way, no second mates and no recorded status events. So nothing needs
+  your review, merge or decision. I didn't run the full startup routine, because it takes the session lock and would change state, and you asked for a status and then a stop. If you want the real
+  fleet instead of this lab, point me at your main firstmate home.
+✻ Brewed for 12s · done 7:10 PM
+Cache ███████░░░ 66% hit (171k cached) · warm 59:38 left [ Compact ]                                                                                                                                [-]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ use my main firstmate home                          
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   ~/./w/6/01M4GX6C8R7WGHJV3FMWVB3B31  04705e9  ⊘  Opus 5.5  🌕 6%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 1 agent   
