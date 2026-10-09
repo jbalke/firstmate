@@ -1284,7 +1284,7 @@ test_retire_ends_observation_of_a_gone_contribution() {
   with_home "$home" env FM_CONTRIBUTIONS_NOW=2026-09-16T09:30:00Z "$ROOT/bin/fm-contributions.sh" retire delivery "$url" captain 'repository deleted' \
     || fail 'retire of an owned unreadable contribution failed'
   jq -e '.records[0].retired == {actor:"captain",reason:"repository deleted",at:"2026-09-16T09:30:00Z"}' \
-    "$home/data/delivery/contributions.json" >/dev/null || fail 'retire did not record its provenance'
+    "$(fm_task_data_find "$home/data" delivery)/contributions.json" >/dev/null || fail 'retire did not record its provenance'
   : > "$home/forge/calls"
   for at in 2026-09-16T10:00:00Z 2026-09-16T10:05:00Z; do
     out=$(with_home "$home" env FM_CONTRIBUTIONS_NOW="$at" "$ROOT/bin/fm-contributions.sh" poll) || fail "poll after retire failed at $at"
@@ -1311,8 +1311,8 @@ test_late_owner_of_a_retired_final_contribution_is_not_retired() {
   [ -z "$out" ] || fail "a late owner of a retired final contribution printed: $out"
   [ ! -s "$home/forge/calls" ] || fail 'a known final contribution triggered a forge read'
   jq -e '.records[0] | .retired == null and .observation.state == "merged" and .error == null' \
-    "$home/data/late/contributions.json" >/dev/null || fail 'a late owner inherited another task'"'"'s retirement'
-  jq -e '.records[0].retired.reason == "repository deleted"' "$home/data/delivery/contributions.json" >/dev/null \
+    "$(fm_task_data_find "$home/data" late)/contributions.json" >/dev/null || fail 'a late owner inherited another task'"'"'s retirement'
+  jq -e '.records[0].retired.reason == "repository deleted"' "$(fm_task_data_find "$home/data" delivery)/contributions.json" >/dev/null \
     || fail 'settling a late owner changed the retired record'
   with_home "$home" "$ROOT/bin/fm-fleet-snapshot.sh" --contribution-input > "$home/input.json" || fail 'contribution input failed'
   with_home "$home" "$ROOT/bin/fm-contributions.sh" snapshot "$home/input.json" --all | jq -e '.rows[0].tasks == ["duplicate","late"]' >/dev/null \
@@ -1326,15 +1326,15 @@ test_retire_is_idempotent_and_refuses_unknown_pairs() {
   forge_home "$home"
   retire() { with_home "$home" "$ROOT/bin/fm-contributions.sh" retire "$@"; }
   retire delivery "$url" fleet 'repository deleted' >/dev/null 2>&1 && fail 'retire accepted the fleet as its actor'
-  jq -e '.records[0].retired == null' "$home/data/delivery/contributions.json" >/dev/null || fail 'a fleet retire changed the record'
+  jq -e '.records[0].retired == null' "$(fm_task_data_find "$home/data" delivery)/contributions.json" >/dev/null || fail 'a fleet retire changed the record'
   retire delivery "$url" captain 'repository deleted' >/dev/null || fail 'first retire failed'
-  before=$(cat "$home/data/delivery/contributions.json")
+  before=$(cat "$(fm_task_data_find "$home/data" delivery)/contributions.json")
   retire delivery "$url" captain 'second reason' >/dev/null || fail 'repeating a retire was refused'
-  [ "$(cat "$home/data/delivery/contributions.json")" = "$before" ] || fail 'repeating a retire rewrote its first provenance'
+  [ "$(cat "$(fm_task_data_find "$home/data" delivery)/contributions.json")" = "$before" ] || fail 'repeating a retire rewrote its first provenance'
   printf -- '- [ ] linked - Linked only https://github.com/o/r/pull/30 (repo: sample) (kind: ship)\n' >> "$home/data/backlog.md"
   err=$(retire linked https://github.com/o/r/pull/30 captain gone 2>&1) && fail 'retire created a record for an unobserved pair'
   case "$err" in *'not recorded for this durable task'*) ;; *) fail "unrecorded-pair refusal was unclear: $err" ;; esac
-  [ ! -e "$home/data/linked/contributions.json" ] || fail 'a refused retire created a record'
+  ! fm_task_data_find "$home/data" linked >/dev/null || fail 'a refused retire created a record'
   retire other "$url" captain gone >/dev/null 2>&1 && fail 'retire accepted a task that does not own the URL'
   record "$home" queued 31 open mergeable
   retire queued https://github.com/o/r/pull/31 owner gone >/dev/null 2>&1 && fail 'retire accepted an unknown actor'
@@ -1343,7 +1343,7 @@ test_retire_is_idempotent_and_refuses_unknown_pairs() {
   retire queued https://github.com/o/r/pull/31 captain >/dev/null 2>&1 && fail 'retire accepted a missing reason'
   mutate_record "$home" queued '.records[0].pending=[{token:"comment:1:x",type:"comment"}]'
   retire queued https://github.com/o/r/pull/31 captain gone >/dev/null 2>&1 && fail 'retire dropped an unacknowledged signal'
-  jq -e '.records[0].retired == null' "$home/data/queued/contributions.json" >/dev/null || fail 'a refused retire changed the record'
+  jq -e '.records[0].retired == null' "$(fm_task_data_find "$home/data" queued)/contributions.json" >/dev/null || fail 'a refused retire changed the record'
   pass 'retire is idempotent and refuses non-captain, unknown, malformed and signal-bearing pairs'
 }
 

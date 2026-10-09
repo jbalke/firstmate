@@ -1337,7 +1337,7 @@ test_base_branch_is_rendered_and_bounded() {
 
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-base-dp-b1 some-proj --mode direct-PR --base-branch feature/hub >/dev/null 2>&1 \
     || fail "direct-PR --base-branch should scaffold"
-  brief="$home/data/brief-base-dp-b1/brief.md"
+  brief="$(fm_test_task_dir "$home" brief-base-dp-b1 some-proj)/brief.md"
   base=$(fm_brief_base_branches "$brief")
   [ "$base" = feature/hub ] || fail "the direct-PR brief recorded base '$base', not feature/hub"
   # shellcheck disable=SC2016  # literal backticks in rendered prose must stay unexpanded
@@ -1349,7 +1349,7 @@ test_base_branch_is_rendered_and_bounded() {
 
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-base-nm-b2 some-proj --mode no-mistakes --base-branch release/1.2 >/dev/null 2>&1 \
     || fail "no-mistakes --base-branch should scaffold"
-  brief="$home/data/brief-base-nm-b2/brief.md"
+  brief="$(fm_test_task_dir "$home" brief-base-nm-b2 some-proj)/brief.md"
   # shellcheck disable=SC2016
   assert_grep 'pass `--base-branch release/1.2` on every `no-mistakes axi run`' "$brief" \
     "the no-mistakes definition of done does not pass the base branch to the pipeline"
@@ -1359,7 +1359,7 @@ test_base_branch_is_rendered_and_bounded() {
   meta_base='release/$HOTFIX'
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-base-meta-b8 some-proj --mode no-mistakes --base-branch "$meta_base" >/dev/null 2>&1 \
     || fail "no-mistakes --base-branch with a shell metacharacter should scaffold"
-  brief="$home/data/brief-base-meta-b8/brief.md"
+  brief="$(fm_test_task_dir "$home" brief-base-meta-b8 some-proj)/brief.md"
   base=$(fm_brief_base_branches "$brief")
   [ "$base" = "$meta_base" ] || fail "the brief recorded base '$base', not $meta_base"
   # shellcheck disable=SC2016
@@ -1368,16 +1368,16 @@ test_base_branch_is_rendered_and_bounded() {
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-base-meta-b9 some-proj --mode direct-PR --base-branch "$meta_base" >/dev/null 2>&1 \
     || fail "direct-PR --base-branch with a shell metacharacter should scaffold"
   # shellcheck disable=SC2016
-  assert_grep '(`--base release/\$HOTFIX`)' "$home/data/brief-base-meta-b9/brief.md" \
+  assert_grep '(`--base release/\$HOTFIX`)' "$(fm_test_task_dir "$home" brief-base-meta-b9 some-proj)/brief.md" \
     "the direct-PR command did not shell-quote the base branch"
 
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-base-scout-b3 some-proj --scout --base-branch feature/hub >/dev/null 2>&1 \
     || fail "scout --base-branch should scaffold"
-  base=$(fm_brief_base_branches "$home/data/brief-base-scout-b3/brief.md")
+  base=$(fm_brief_base_branches "$(fm_test_task_dir "$home" brief-base-scout-b3 some-proj)/brief.md")
   [ "$base" = feature/hub ] || fail "the scout brief recorded base '$base', not feature/hub"
 
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-base-none-b4 some-proj --mode direct-PR >/dev/null 2>&1
-  brief="$home/data/brief-base-none-b4/brief.md"
+  brief="$(fm_test_task_dir "$home" brief-base-none-b4 some-proj)/brief.md"
   ! fm_brief_base_branches "$brief" >/dev/null || fail "a brief without --base-branch recorded a base"
   assert_grep 'at a detached HEAD on a clean default branch.' "$brief" \
     "a brief without --base-branch changed its default-branch setup line"
@@ -1390,7 +1390,8 @@ test_base_branch_is_rendered_and_bounded() {
   out=$(FM_HOME="$home" FM_SECONDMATE_CHARTER=charter "$ROOT/bin/fm-brief.sh" brief-base-sm-b7 --secondmate --no-projects --base-branch feature/hub 2>&1); rc=$?
   [ "$rc" -ne 0 ] || fail "a secondmate charter should refuse --base-branch"
   for id in brief-base-lo-b5 brief-base-bad-b6 brief-base-sm-b7; do
-    [ ! -e "$home/data/$id/brief.md" ] || fail "a refused --base-branch scaffold wrote $id"
+    [ ! -e "$(fm_test_task_dir "$home" "$id" some-proj)/brief.md" ] && [ ! -e "$(fm_test_task_dir "$home" "$id" _none)/brief.md" ] \
+      || fail "a refused --base-branch scaffold wrote $id"
   done
   pass "fm-brief.sh: --base-branch records the base, targets the PR at it, and is refused where no PR carries it"
 }

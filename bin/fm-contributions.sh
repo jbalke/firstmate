@@ -521,7 +521,8 @@ case "${1:-}" in
     fm_pr_task_id_valid "$task" || fail 'invalid contribution task'
     [ "$4" = captain ] || fail "invalid retire actor '$4'; expected: captain"
     [ -n "${5//[[:space:]]/}" ] || fail 'retire needs a non-empty reason'
-    acquire; read_saved
+    # write_record groups the record by the backlog row's project, read from input.
+    acquire; get_input; read_saved
     jq -e --arg task "$task" --arg url "$url" '.[] | select(.task == $task) | .records[] | select(.url == $url)' "$TMP/saved.json" > "$TMP/row.json" \
       || fail 'contribution is not recorded for this durable task'
     if jq -e '.retired != null' "$TMP/row.json" >/dev/null; then

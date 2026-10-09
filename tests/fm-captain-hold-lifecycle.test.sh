@@ -2677,7 +2677,7 @@ test_retained_report_survives_a_grouped_task_data_path() {
     > "$report_dir/report.md"
   run_captain "$home" hold "$id" --reason "captain must choose the grouped report follow-up" \
     >/dev/null || fail "could not hold the grouped report fixture"
-  run_captain "$home" complete "$id" "$id" >/dev/null \
+  complete_through_sibling "$home" "$id" >/dev/null \
     || fail "completion gate failed for the grouped report fixture"
 
   run_teardown "$home" "$id" > "$home/grouped-teardown.out" 2> "$home/grouped-teardown.err" \
