@@ -160,7 +160,8 @@ load_lab() {  # <root>: refuse anything up did not build, then load its record
 }
 
 lab_tmux() {
-  [ -n "${TMUX_DIR:-}" ] || return 1
+  # tmux falls back to the default /tmp socket when TMUX_TMPDIR names a missing directory.
+  [ -n "${TMUX_DIR:-}" ] && [ -d "$TMUX_DIR" ] || return 1
   env -u TMUX TMUX_TMPDIR="$TMUX_DIR" tmux "$@"
 }
 
