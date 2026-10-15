@@ -223,22 +223,43 @@ fm_role_git_common_dir() {
   (CDPATH='' cd -- "$common" 2>/dev/null && pwd -P) || printf '%s\n' "$common"
 }
 
+# fm_role_gh_resolved_remote <git-dir> - the remote whose gh set-default
+# record (`remote.<name>.gh-resolved`) gh resolves the default repository
+# from: among remotes carrying one, upstream, then github, then origin, then
+# any other in config order, as gh sorts them. Empty when none carries one.
+fm_role_gh_resolved_remote() {
+  local key value remote candidate
+  local -a resolved=()
+  while read -r key value; do
+    [ -n "$value" ] || continue
+    remote=${key#remote.}
+    resolved+=("${remote%.gh-resolved}")
+  done < <(git -C "$1" config --get-regexp '^remote\..*\.gh-resolved$' 2>/dev/null)
+  [ "${#resolved[@]}" -gt 0 ] || return 0
+  for candidate in upstream github origin "${resolved[@]}"; do
+    for remote in "${resolved[@]}"; do
+      if [ "$remote" = "$candidate" ]; then
+        printf '%s\n' "$remote"
+        return 0
+      fi
+    done
+  done
+}
+
 # fm_role_publication_target <git-dir> - the repository a default publication
 # (gh pr/issue, a no-mistakes PR) would reach: the remote gh's set-default
 # marked as the base, otherwise the first of upstream, github, origin that is
 # configured, in the order gh prefers, normalized to host/owner/repo or
 # path:<abs>. Empty when the repo has no such remote.
 fm_role_publication_target() {
-  local dir=$1 remote key value identity url=
-  # gh's set-default records `remote.<name>.gh-resolved`, and gh then resolves
-  # the default repository there ahead of its name order: `base` is that
-  # remote's own repository, and an <owner>/<repo> value names a repository on
-  # that remote's host. A value this cannot place yields no target, which the
-  # gate refuses.
-  while read -r key value; do
-    [ -n "$value" ] || continue
-    remote=${key#remote.}
-    remote=${remote%.gh-resolved}
+  local dir=$1 remote value identity url=
+  # gh resolves the default repository from its set-default record ahead of
+  # its name order: `base` is that remote's own repository, and an
+  # <owner>/<repo> value names a repository on that remote's host. A value
+  # this cannot place yields no target, which the gate refuses.
+  remote=$(fm_role_gh_resolved_remote "$dir")
+  if [ -n "$remote" ]; then
+    value=$(git -C "$dir" config --get "remote.$remote.gh-resolved" 2>/dev/null) || value=
     url=$(git -C "$dir" remote get-url "$remote" 2>/dev/null) || url=
     [ -n "$url" ] || return 0
     identity=$(fm_role_remote_identity "$url" "$dir")
@@ -254,7 +275,7 @@ fm_role_publication_target() {
       */*) fm_role_scope_norm "${identity%%/*}/$value" ;;
     esac
     return 0
-  done < <(git -C "$dir" config --get-regexp '^remote\..*\.gh-resolved$' 2>/dev/null)
+  fi
   for remote in upstream github origin; do
     if url=$(git -C "$dir" remote get-url "$remote" 2>/dev/null) && [ -n "$url" ]; then
       break
@@ -515,7 +536,7 @@ fm_role_inherit_payload() (
 # and the boundary does not apply. FM_ROLE_PUB_TARGET is the normalized
 # publication target when determinable.
 fm_role_gate_self_publish() {
-  local home=$1 config=$2 proj=$3 root=$4 consent=${5:-} lineage=0
+  local home=$1 config=$2 proj=$3 root=$4 consent=${5:-} lineage=0 gh_remote
   FM_ROLE_PUB_TARGET=
   # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
   FM_ROLE_PUB_AUTHORITY=
@@ -543,6 +564,11 @@ fm_role_gate_self_publish() {
   if [ -z "$FM_ROLE_PUB_TARGET" ]; then
     # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
     FM_ROLE_PUB_DENIAL="this task targets firstmate's own repository but no publication target can be determined (no upstream, github, or origin remote on $proj)"
+    gh_remote=$(fm_role_gh_resolved_remote "$proj")
+    if [ -n "$gh_remote" ]; then
+      # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
+      FM_ROLE_PUB_DENIAL="this task targets firstmate's own repository but no publication target can be determined (gh set-default value '$(git -C "$proj" config --get "remote.$gh_remote.gh-resolved" 2>/dev/null)' on remote $gh_remote of $proj cannot be placed; rerun gh repo set-default)"
+    fi
     return 1
   fi
   if [ -n "$consent" ] && [ "$consent" = "$FM_ROLE_PUB_TARGET" ]; then

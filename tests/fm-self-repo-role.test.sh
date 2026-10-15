@@ -284,6 +284,13 @@ test_check_fork_lineage_reaches_the_gate() {
     "the refusal must name the gh default target"
   out=$(check_as "$fork" "$user_home" "$fork" upstream-consent github.com/kunchenguid/firstmate); rc=$?
   expect_code 1 "$rc" "consent for the parent must not cover a fork whose gh default is the fork (got: $out)"
+  # gh picks among several set-default records by remote order, upstream first.
+  git -C "$fork" config remote.upstream.gh-resolved base
+  out=$(check_as "$fork" "$fork_home" "$fork"); rc=$?
+  expect_code 1 "$rc" "an upstream gh default must win over an origin one listed first (got: $out)"
+  assert_contains "$out" "no publication authority for github.com/kunchenguid/firstmate" \
+    "the refusal must name the upstream gh default, as gh resolves it"
+  git -C "$fork" config --unset remote.upstream.gh-resolved
   # gh may instead name a repository on that remote's host, and a value the
   # gate cannot place leaves no target rather than falling back to name order.
   git -C "$fork" config remote.origin.gh-resolved Kunchenguid/Firstmate
@@ -296,6 +303,8 @@ test_check_fork_lineage_reaches_the_gate() {
   expect_code 1 "$rc" "an unplaceable gh default must refuse (got: $out)"
   assert_contains "$out" "no publication target can be determined" \
     "an unplaceable gh default must not fall back to remote name order"
+  assert_contains "$out" "gh set-default value 'not a repo' on remote origin" \
+    "the refusal must name the unplaceable gh default"
 
   git init -q "$TMP_ROOT/fork-unrelated" || fail "could not initialize unrelated fixture"
   git_commit "$TMP_ROOT/fork-unrelated" unrelated
