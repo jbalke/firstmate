@@ -250,7 +250,8 @@ fm_role_gh_resolved_remote() {
 # (gh pr/issue, a no-mistakes PR) would reach: the remote gh's set-default
 # marked as the base, otherwise the first of upstream, github, origin that is
 # configured, in the order gh prefers, normalized to host/owner/repo or
-# path:<abs>. Empty when the repo has no such remote.
+# path:<abs>. Empty when the repo has no such remote, or when the
+# set-default record cannot be placed.
 fm_role_publication_target() {
   local dir=$1 remote value identity url=
   # gh resolves the default repository from its set-default record ahead of
