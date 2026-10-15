@@ -433,7 +433,7 @@ test_unsupported_forge_is_not_fleet_work() {
 }
 
 test_unsupported_poll_is_silent_and_clears_legacy_errors() {
-  local home mode out url task
+  local home mode out url task record_dir
   for mode in fresh legacy; do
     home=$(new_home "unsupported-poll-$mode")
     forge_home "$home"
@@ -473,7 +473,8 @@ test_unsupported_poll_is_silent_and_clears_legacy_errors() {
           "$home/data/$task/contributions.json" >/dev/null \
           || fail 'legacy cleanup changed evidence beyond its unsupported error'
       else
-        [ ! -e "$home/data/$task/contributions.json" ] || fail 'unsupported poll fabricated a record'
+        record_dir=$(fm_task_data_find "$home/data" "$task") || record_dir=
+        [ -z "$record_dir" ] || [ ! -e "$record_dir/contributions.json" ] || fail 'unsupported poll fabricated a record'
       fi
     done
     bearings "$home" | jq -e '.contributions | .known == 4 and .checked == 0
@@ -1089,7 +1090,7 @@ test_next_url_does_not_inherit_a_forge_diagnostic() {
   [ "$(jq -r .records[0].error "$home/data/delivery/contributions.json" | mask_budget)" = "forge observation unavailable: $why" ] \
     || fail 'the PR record lost its failed read diagnostic'
   jq -e '.records[0].error == "forge observation unavailable: comment pages returned an unexpected shape"' \
-    "$home/data/filed/contributions.json" >/dev/null \
+    "$(fm_task_data_find "$home/data" filed)/contributions.json" >/dev/null \
     || fail 'the issue inherited the preceding PR read diagnostic'
   pass 'a URL never inherits the previous URL read diagnostic'
 }

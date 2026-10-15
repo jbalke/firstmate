@@ -268,6 +268,35 @@ test_check_fork_lineage_reaches_the_gate() {
   out=$(check_as "$fork" "$user_home" "$parent" upstream-consent github.com/kunchenguid/firstmate); rc=$?
   expect_code 0 "$rc" "one-task consent for the parent must authorize (got: $out)"
 
+  # A fork checkout that also tracks the parent as `upstream` publishes where
+  # gh's set-default points, not where the remote name order would.
+  git -C "$fork" remote add upstream https://github.com/kunchenguid/firstmate
+  out=$(check_as "$fork" "$fork_home" "$fork"); rc=$?
+  expect_code 1 "$rc" "without a gh default the parent upstream remote is the target (got: $out)"
+  assert_contains "$out" "no publication authority for github.com/kunchenguid/firstmate" \
+    "without a gh default the refusal must name the parent"
+  git -C "$fork" config remote.origin.gh-resolved base
+  out=$(check_as "$fork" "$fork_home" "$fork"); rc=$?
+  expect_code 0 "$rc" "the fork maintainer scope must cover the gh default fork (got: $out)"
+  out=$(check_as "$fork" "$user_home" "$fork"); rc=$?
+  expect_code 1 "$rc" "a user home must still be refused for the gh default fork (got: $out)"
+  assert_contains "$out" "no publication authority for github.com/someone/firstmate-fork" \
+    "the refusal must name the gh default target"
+  out=$(check_as "$fork" "$user_home" "$fork" upstream-consent github.com/kunchenguid/firstmate); rc=$?
+  expect_code 1 "$rc" "consent for the parent must not cover a fork whose gh default is the fork (got: $out)"
+  # gh may instead name a repository on that remote's host, and a value the
+  # gate cannot place leaves no target rather than falling back to name order.
+  git -C "$fork" config remote.origin.gh-resolved Kunchenguid/Firstmate
+  out=$(check_as "$fork" "$fork_home" "$fork"); rc=$?
+  expect_code 1 "$rc" "a gh default naming the parent must not be covered by the fork scope (got: $out)"
+  assert_contains "$out" "no publication authority for github.com/kunchenguid/firstmate" \
+    "an owner/repo gh default must resolve on the remote's host"
+  git -C "$fork" config remote.origin.gh-resolved 'not a repo'
+  out=$(check_as "$fork" "$fork_home" "$fork"); rc=$?
+  expect_code 1 "$rc" "an unplaceable gh default must refuse (got: $out)"
+  assert_contains "$out" "no publication target can be determined" \
+    "an unplaceable gh default must not fall back to remote name order"
+
   git init -q "$TMP_ROOT/fork-unrelated" || fail "could not initialize unrelated fixture"
   git_commit "$TMP_ROOT/fork-unrelated" unrelated
   git -C "$TMP_ROOT/fork-unrelated" remote add origin https://github.com/kunchenguid/firstmate
@@ -452,12 +481,12 @@ test_dod_block_renders_and_bounds_consent() {
   local out rc
   # shellcheck source=/dev/null
   . "$ROOT/bin/fm-dod-lib.sh"
-  out=$(fm_dod_block direct-PR consent-id fm/consent-id none '' github.com/kunchenguid/firstmate)
+  out=$(fm_dod_block direct-PR consent-id "$TMP_ROOT/dod-task" fm/consent-id none '' github.com/kunchenguid/firstmate)
   assert_contains "$out" "Delivery contract: mode=direct-PR upstream-consent=github.com/kunchenguid/firstmate" \
     "a publishing contract must render the recorded consent token"
-  out=$(fm_dod_block direct-PR noconsent-id fm/noconsent-id)
+  out=$(fm_dod_block direct-PR noconsent-id "$TMP_ROOT/dod-task" fm/noconsent-id)
   assert_not_contains "$out" "upstream-consent" "a contract without consent must not render the token"
-  out=$(fm_dod_block local-only local-id fm/local-id none '' github.com/a/b 2>&1); rc=$?
+  out=$(fm_dod_block local-only local-id "$TMP_ROOT/dod-task" fm/local-id none '' github.com/a/b 2>&1); rc=$?
   expect_code 1 "$rc" "local-only must refuse a consent token it can never spend"
   pass "fm_dod_block: upstream consent renders on publishing contracts and is refused on local-only"
 }
@@ -467,7 +496,7 @@ test_dod_block_renders_and_bounds_consent() {
 test_brief_consent_flag_bounds() {
   local home out rc brief
   home=$(make_role_home brief-user)
-  brief="$home/data/brief-consent-ok/brief.md"
+  brief=$(fm_test_task_brief "$home" brief-consent-ok some-proj)
 
   out=$(FM_HOME="$home" FM_CONFIG_OVERRIDE="$home/config" FM_DATA_OVERRIDE="$home/data" \
     "$BRIEF" brief-consent-bad some-proj --mode direct-PR --upstream-consent 'not a scope' 2>&1); rc=$?
@@ -506,7 +535,7 @@ test_brief_self_repo_pre_gate() {
       "$BRIEF" brief-selfconsent some-proj --mode direct-PR --project "$ROOT" \
       --upstream-consent "$PUB_TARGET" 2>&1); rc=$?
     expect_code 0 "$rc" "recorded consent must let the same scaffold through (got: $out)"
-    assert_grep "upstream-consent=$PUB_TARGET" "$home/data/brief-selfconsent/brief.md" \
+    assert_grep "upstream-consent=$PUB_TARGET" "$(fm_test_task_brief "$home" brief-selfconsent some-proj)" \
       "the consented scaffold must record the consent"
   fi
 

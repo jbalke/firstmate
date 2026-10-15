@@ -37,9 +37,10 @@
 # of the code root's history covers any fork, the parent, and any clone of
 # either. Lineage that cannot be determined (no code root history, or a shallow
 # side sharing no root) refuses rather than permits. The publication target is
-# compared only against a maintainer scope or task consent: the first remote
-# named upstream, github, or origin (the order gh prefers when resolving a
-# default repository), reduced to lowercase host/owner/repo; a local-path remote
+# compared only against a maintainer scope or task consent: the remote gh's
+# set-default marked as the base, otherwise the first remote named upstream,
+# github, or origin (the order gh prefers when resolving a default repository),
+# reduced to lowercase host/owner/repo; a local-path remote
 # is resolved one hop through that repository's own origin, and left as
 # path:<abs> when unreadable. An unknown target never permits.
 #
@@ -222,11 +223,37 @@ fm_role_git_common_dir() {
 }
 
 # fm_role_publication_target <git-dir> - the repository a default publication
-# (gh pr/issue, a no-mistakes PR) would reach: the first of upstream, github,
-# origin that is configured, in the order gh prefers, normalized to
-# host/owner/repo or path:<abs>. Empty when the repo has no such remote.
+# (gh pr/issue, a no-mistakes PR) would reach: the remote gh's set-default
+# marked as the base, otherwise the first of upstream, github, origin that is
+# configured, in the order gh prefers, normalized to host/owner/repo or
+# path:<abs>. Empty when the repo has no such remote.
 fm_role_publication_target() {
-  local dir=$1 remote url=
+  local dir=$1 remote key value identity url=
+  # gh's set-default records `remote.<name>.gh-resolved`, and gh then resolves
+  # the default repository there ahead of its name order: `base` is that
+  # remote's own repository, and an <owner>/<repo> value names a repository on
+  # that remote's host. A value this cannot place yields no target, which the
+  # gate refuses.
+  while read -r key value; do
+    [ -n "$value" ] || continue
+    remote=${key#remote.}
+    remote=${remote%.gh-resolved}
+    url=$(git -C "$dir" remote get-url "$remote" 2>/dev/null) || url=
+    [ -n "$url" ] || return 0
+    identity=$(fm_role_remote_identity "$url" "$dir")
+    if [ "$value" = base ]; then
+      printf '%s\n' "$identity"
+      return 0
+    fi
+    case $identity in
+      path:* | '') return 0 ;;
+    esac
+    case $value in
+      /* | */ | */*/* | *[!A-Za-z0-9._/-]*) ;;
+      */*) fm_role_scope_norm "${identity%%/*}/$value" ;;
+    esac
+    return 0
+  done < <(git -C "$dir" config --get-regexp '^remote\..*\.gh-resolved$' 2>/dev/null)
   for remote in upstream github origin; do
     if url=$(git -C "$dir" remote get-url "$remote" 2>/dev/null) && [ -n "$url" ]; then
       break

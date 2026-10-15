@@ -256,7 +256,7 @@ test_forge_selection_renders_correct_cli() {
 
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-forge-default some-proj --mode direct-PR >/dev/null 2>&1 \
     || fail "a ship brief with no --forge should still scaffold"
-  brief="$home/data/brief-forge-default/brief.md"
+  brief=$(fm_test_task_brief "$home" brief-forge-default some-proj)
   assert_grep "3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations." "$brief" \
     "a brief with no --forge must render the exact pre-existing gh-axi Rule 3 line"
   # shellcheck disable=SC2016 # Backticks are literal generated brief text.
@@ -267,7 +267,7 @@ test_forge_selection_renders_correct_cli() {
 
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-forge-forgejo some-proj --mode direct-PR --forge forgejo >/dev/null 2>&1 \
     || fail "--forge forgejo should scaffold a direct-PR ship brief"
-  brief="$home/data/brief-forge-forgejo/brief.md"
+  brief=$(fm_test_task_brief "$home" brief-forge-forgejo some-proj)
   assert_grep "3. Use tea for Forgejo operations and chrome-devtools-axi for browser operations." "$brief" \
     "--forge forgejo must render the tea Rule 3 line"
   # shellcheck disable=SC2016 # Backticks are literal generated brief text.
@@ -288,7 +288,7 @@ test_forge_selection_renders_correct_cli() {
 
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-forge-nm some-proj --mode no-mistakes --forge forgejo >/dev/null 2>&1 \
     || fail "--forge forgejo should scaffold a no-mistakes ship brief"
-  brief="$home/data/brief-forge-nm/brief.md"
+  brief=$(fm_test_task_brief "$home" brief-forge-nm some-proj)
   assert_grep "3. Use tea for Forgejo operations and chrome-devtools-axi for browser operations." "$brief" \
     "a no-mistakes --forge forgejo brief must render the tea Rule 3 line"
   grep -qx "Delivery contract: mode=no-mistakes forge=forgejo" "$brief" \
@@ -307,7 +307,7 @@ test_forge_selection_renders_correct_cli() {
     out=$(FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-forge-bad some-proj $args 2>&1); rc=$?
     expect_code 1 "$rc" "$label must be refused"
     assert_contains "$out" "$expect" "$label was refused without its reason"
-    [ ! -e "$home/data/brief-forge-bad/brief.md" ] || fail "$label left a brief behind"
+    ! fm_task_data_find "$home/data" brief-forge-bad >/dev/null || fail "$label left a brief behind"
   done <<'ROWS'
 a value outside the closed set|--mode direct-PR --forge gitlab|expected none, gerrit, or forgejo
 the removed github value|--mode direct-PR --forge github|expected none, gerrit, or forgejo

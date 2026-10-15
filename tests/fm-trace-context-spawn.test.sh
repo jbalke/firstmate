@@ -362,19 +362,14 @@ test_unsafe_delivery_refuses_to_append_launch() {
 # shell is the operator's login shell, and `unset` is not a fish builtin, so a
 # builtin-based clear silently left the previous incarnation's carrier in place
 # and reported nothing (docs/verification/trace-context.md). The launch may open
-# with `export NAME=value; ` statements, which fish also runs; the clear must sit
-# on the command after them, because `env` cannot run `export` as a program.
+# with `export NAME=value; ` statements and the Git config env-file step, which
+# fish also runs; the clear must sit on the command after them, because `env`
+# cannot run `export` as a program.
 assert_launch_clear_is_shell_agnostic() {  # <launch-log>
   local log=$1 line command
   line=$(grep -m1 'TRACEPARENT.*claude' "$log") \
     || fail "no launch command carrying a TRACEPARENT clear was emitted"
-  command=$line
-  while [ "${command#export }" != "$command" ]; do
-    case "$command" in
-      *'; '*) command=${command#*; } ;;
-      *) fail "launch command is only export statements: $line" ;;
-    esac
-  done
+  command=$(fm_test_launch_command "$line")
   case "$command" in
     "env -u TRACEPARENT "*) ;;
     *) fail "launch clear must lead the command after its export statements, got: $line" ;;

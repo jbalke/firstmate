@@ -1565,7 +1565,7 @@ EOF
 
   FM_HOME="$home" "$BRIEF" forge-forgejo-s2 proj --mode direct-PR --forge forgejo >/dev/null \
     || fail "a forgejo direct-PR brief should scaffold"
-  fill_brief_subsections "$home/data/forge-forgejo-s2/brief.md" "Open the pull request." "Ship it."
+  fill_brief_subsections "$(fm_test_task_brief "$home" forge-forgejo-s2 proj)" "Open the pull request." "Ship it."
   out=$(run_spawn "$home" "$fakebin" forge-forgejo-s2 "$proj" claude --mode direct-PR --yolo on 2>&1)
   assert_not_contains "$out" "forge mismatch" "an agreeing forgejo brief and registry were reported as drift"
   assert_not_contains "$out" "--yolo on is refused" "yolo was refused on forgejo, where only gerrit deactivates it"
@@ -1582,7 +1582,7 @@ STUB
   printf 'window=fm-%s\nkind=scout\nworktree=/tmp/wt\nproject=%s\n' "$id" "$proj" > "$meta"
   FM_HOME="$home" "$BRIEF" "$id" proj --scout >/dev/null 2>&1 \
     || fail "scout brief generation should succeed"
-  fill_brief_subsections "$home/data/$id/brief.md" "Fix what the investigation found." "Carry over only the fix."
+  fill_brief_subsections "$(fm_test_task_brief "$home" "$id" proj)" "Fix what the investigation found." "Carry over only the fix."
   out=$(FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" "$PROMOTE" "$id" --mode direct-PR --yolo on 2>&1) \
     || fail "promotion should take the forgejo binding and keep yolo: $out"
   payload="$TMP_ROOT/forge-forgejo/payload"
