@@ -1,0 +1,26 @@
+=== fm-self-repo-role
+exit=0
+20
+ok - fm-role.sh report: malformed, unknown, and unsafe input fails closed
+=== fm-brief
+exit=0
+40
+ok - fm-brief.sh: ship and scout scaffolds make omitted Herdr intent fail-visible
+ok - fm-brief.sh: relative directory inputs ignore CDPATH, render stable absolute charter paths, or fail loudly
+ok - fm-brief.sh: the home brief include lands last on ship and scout, verbatim, and fails closed
+=== fm-contributions
+exit=0
+62
+ok - legacy cleanup preserves unsupported ownership and supported missing-evidence failure in the same file
+ok - a genuine forge failure inside the budget still records the error, its cause and wakes
+ok - two transient failures wake once and name the failed read in the record
+ok - a genuinely unavailable forge records an error and wakes once per failure episode
+ok - a late owner does not restart a shared forge failure episode
+=== fm-task-delivery
+exit=0
+28
+=== fm-trace-context-spawn
+exit=0
+13
+ok - failed TRACEPARENT delivery omits metadata while the source task still launches
+ok - failed traceparent metadata append removes the carrier from the launched task

@@ -1,0 +1,45 @@
+== role: maintainer github.com/jbalke/firstmate; remotes:
+origin	https://github.com/jbalke/firstmate.git (fetch)
+upstream	https://github.com/kunchenguid/firstmate.git (fetch)
+
+## S1 no gh set-default -> name order picks upstream (parent), fork maintainer refused
+$ bin/fm-role.sh check $FORK 
+refused: this home runs as firstmate user/operator and holds no publication authority for github.com/kunchenguid/firstmate
+exit=1
+
+## S2 gh repo set-default -> origin (fork): gh-resolved recorded on origin
+remote.origin.gh-resolved base
+$ bin/fm-role.sh check $FORK 
+authorized: maintainer scope github.com/jbalke/firstmate
+exit=0
+
+## S2b same fork target, consent for parent does not cover it (user role)
+$ bin/fm-role.sh check $FORK upstream-consent github.com/kunchenguid/firstmate
+refused: this home runs as firstmate user/operator and holds no publication authority for github.com/jbalke/firstmate
+exit=1
+
+## S3 ADVERSARIAL: origin listed first with gh-resolved base AND upstream gh-resolved base
+remote.origin.gh-resolved base
+remote.upstream.gh-resolved base
+-- gh's own view of the default repo:
+kunchenguid/firstmate
+$ bin/fm-role.sh check $FORK 
+refused: this home runs as firstmate user/operator and holds no publication authority for github.com/kunchenguid/firstmate
+exit=1
+
+## S4 gh-resolved owner/repo naming parent on origin's host
+$ bin/fm-role.sh check $FORK 
+refused: this home runs as firstmate user/operator and holds no publication authority for github.com/kunchenguid/firstmate
+exit=1
+
+## S5 ADVERSARIAL: unplaceable gh-resolved value refuses, names the value
+$ bin/fm-role.sh check $FORK 
+refused: this task targets firstmate's own repository but no publication target can be determined (gh set-default value 'not a repo' on remote origin of /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.txlhGR/projects/firstmate cannot be placed; rerun gh repo set-default)
+exit=1
+
+## S6 no remotes at all -> missing remote denial
+$ bin/fm-role.sh check $FORK 
+refused: this task targets firstmate's own repository but no publication target can be determined (no upstream, github, or origin remote on /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.txlhGR/projects/firstmate)
+exit=1
+
+lab removed: yes
