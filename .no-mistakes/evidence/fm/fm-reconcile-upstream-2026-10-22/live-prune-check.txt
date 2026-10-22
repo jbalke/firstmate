@@ -1,0 +1,13 @@
+## fm-task-data.sh prune --task lab5fdcc800682c-worker --yes
+About to remove:
+  notes
+    lab5fdcc800682c-worker                        40 KB  
+  1 folder(s), 40 KB
+
+removed: /private/tmp/fmlab.CpncRT/home/data/tasks/notes/lab5fdcc800682c-worker
+## remaining under data/
+/private/tmp/fmlab.CpncRT/home/data
+/private/tmp/fmlab.CpncRT/home/data/backlog.md
+/private/tmp/fmlab.CpncRT/home/data/projects.md
+/private/tmp/fmlab.CpncRT/home/data/tasks
+/private/tmp/fmlab.CpncRT/home/data/tasks/notes

@@ -1,0 +1,2 @@
+paused [at=1792680502]: waiting for gate file /private/tmp/fmlab.CpncRT/home/data/lab5fdcc800682c-worker/gate and a resume message
+done: lab validation complete

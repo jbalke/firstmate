@@ -1,0 +1,31 @@
+## data tree after teardown
+/private/tmp/fmlab.CpncRT/home/data
+/private/tmp/fmlab.CpncRT/home/data/tasks
+/private/tmp/fmlab.CpncRT/home/data/tasks/notes
+/private/tmp/fmlab.CpncRT/home/data/tasks/notes/lab5fdcc800682c-worker
+/private/tmp/fmlab.CpncRT/home/data/tasks/notes/lab5fdcc800682c-worker/brief.md
+/private/tmp/fmlab.CpncRT/home/data/tasks/notes/lab5fdcc800682c-worker/launch-brief.md
+/private/tmp/fmlab.CpncRT/home/data/tasks/notes/lab5fdcc800682c-worker/status.log
+/private/tmp/fmlab.CpncRT/home/data/tasks/notes/lab5fdcc800682c-worker/task.meta
+
+## flat data/lab5fdcc800682c-worker present?
+"/private/tmp/fmlab.CpncRT/home/data/lab5fdcc800682c-worker": No such file or directory (os error 2)
+
+## grouped status.log vs live status captured before teardown
+IDENTICAL
+paused [at=1792680502]: waiting for gate file /private/tmp/fmlab.CpncRT/home/data/lab5fdcc800682c-worker/gate and a resume message
+done: lab validation complete
+
+## live state status removed?
+"/private/tmp/fmlab.CpncRT/home/state/lab5fdcc800682c-worker.status": No such file or directory (os error 2)
+
+## windows
+firstmate:lab
+firstmate:main
+
+## fm-task-data.sh list
+Task data under /private/tmp/fmlab.CpncRT/home/data (folder size):
+  notes
+    lab5fdcc800682c-worker                        40 KB  
+  1 folder(s), 40 KB
+
