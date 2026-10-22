@@ -4,6 +4,8 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=bin/fm-task-data-lib.sh
+. "$ROOT/bin/fm-task-data-lib.sh"
 # shellcheck source=tests/remote-herdr-fixture.sh
 . "$(dirname "${BASH_SOURCE[0]}")/remote-herdr-fixture.sh"
 # shellcheck source=tests/herdr-client-pair-fixture.sh
@@ -1589,6 +1591,7 @@ while [ ! -f "$TMP_ROOT/launch.entered" ]; do
 done
 # Opt-in archival must cover the parent-side status on the real remote path.
 touch "$PARENT/config/status-archive"
+IOS_DATA_DIR=$(fm_task_data_dir "$PARENT/data" ios) || fail "could not resolve the secondmate's own data folder"
 printf 'working: remote task history\ndone: remote task complete\n' > "$PARENT/state/ios.status"
 cp "$PARENT/state/ios.status" "$TMP_ROOT/remote-status.expected"
 cp "$PARENT/state/ios.meta" "$TMP_ROOT/remote-meta.saved"
@@ -1642,7 +1645,7 @@ jq -e --arg workspace "$SIBLING_WORKSPACE" --arg pane "$SIBLING_PANE" '
 assert_no_grep 'session stop' "$HERDR_LOG" "remote retirement stopped the shared fm-remote session"
 assert_no_grep 'server stop' "$HERDR_LOG" "remote retirement stopped the shared fm-remote server"
 pass "remote retirement refuses child work, then removes only its own endpoint while a shared-session sibling survives"
-cmp -s "$TMP_ROOT/remote-status.expected" "$PARENT/data/ios/status.log" \
+cmp -s "$TMP_ROOT/remote-status.expected" "$IOS_DATA_DIR/status.log" \
   || fail "remote retirement lost the parent-side status history"
 assert_absent "$PARENT/state/ios.status" "remote retirement left the archived status live"
 pass "remote retirement archives the complete parent-side status log when enabled"
@@ -1650,7 +1653,7 @@ pass "remote retirement archives the complete parent-side status log when enable
 # Reconcile an already-retired remote home with no parent-side status. Holding
 # an unrelated presentation lock proves the no-op without risking an unbounded
 # hang if that fast path regresses.
-mv "$PARENT/data/ios" "$TMP_ROOT/remote-archive.saved"
+mv "$IOS_DATA_DIR" "$TMP_ROOT/remote-archive.saved"
 cp "$TMP_ROOT/remote-meta.saved" "$PARENT/state/ios.meta"
 cat "$TMP_ROOT/remote-route.saved" >> "$PARENT/data/secondmates.md"
 mkdir -p "$PARENT/state/.status-presentation-lock"
@@ -1667,7 +1670,8 @@ assert_grep 'teardown ios complete (remote ' "$TMP_ROOT/remote-noop.out" "no-op 
 cmp -s "$TMP_ROOT/remote-cursor.expected" "$PARENT/state/.status-presentation-cursor" \
   || fail "remote no-op rewrote the neighboring cursor"
 assert_present "$PARENT/state/.status-presentation-lock" "remote no-op acquired another presenter's lock"
-assert_absent "$PARENT/data/ios" "remote no-op created an empty archive directory"
+assert_absent "$IOS_DATA_DIR" "remote no-op created an empty archive directory"
+assert_absent "$PARENT/data/ios" "remote no-op created a flat archive directory"
 assert_absent "$PARENT/state/ios.meta" "remote no-op retained stale parent metadata"
 assert_absent "$REMOTE_HOME" "remote no-op recreated the retired remote home"
 pass "remote missing-status retirement remains lock-free with archival enabled"

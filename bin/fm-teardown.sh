@@ -318,11 +318,12 @@
 # ledger. It runs before the task branch it attributes runs by is deleted and
 # before state/<id>.meta is removed, and is best effort: a failure warns and
 # never blocks cleanup.
-# Opt-in config/status-archive preserves retired status logs in
-# data/<id>/status.log, then status.<N>.log for reused IDs. The presentation
+# Opt-in config/status-archive preserves retired status logs in the task's own
+# data folder (bin/fm-task-data-lib.sh, normally data/tasks/<project>/<id>/) as
+# status.log, then status.<N>.log for reused IDs. The presentation
 # lock covers archive publication, cursor retirement, then the existing live
 # status and bookkeeping removal. A failed publication leaves live state intact.
-# Forced child retirement uses data/<id>/children/<child-id>/ (recursively),
+# Forced child retirement uses <that folder>/children/<child-id>/ (recursively),
 # outside the home being removed. Remote-home retirement with no status is a
 # no-op. Symlinked/non-regular sources and symlinked archive directories refuse
 # cleanup rather than following them; the configured data root may be a symlink.
@@ -446,7 +447,7 @@ teardown_prune_status_archives() {  # <task-directory>
 }
 
 teardown_retire_status() {  # <state> <task-id> [<archive-relative-directory>]
-  local state=$1 task=$2 relative=${3:-$2} dir part archive n=0 entry
+  local state=$1 task=$2 relative=${3:-$2} dir part archive n=0 entry owned
   if [ ! -e "$CONFIG/status-archive" ]; then
     status_retire_presentation_task "$state" "$task"
     return $?
@@ -464,6 +465,24 @@ teardown_retire_status() {  # <state> <task-id> [<archive-relative-directory>]
   # archive components below that trusted root must refuse symlinks.
   mkdir -p -- "$DATA" || return 1
   dir=$(CDPATH='' cd -- "$DATA" && pwd -P) || return 1
+  # A leading $ID component (the default, and every children/ path built from
+  # it) is the owning task's own data folder, so it resolves through
+  # bin/fm-task-data-lib.sh to the grouped folder and one task's records never
+  # split across two locations. The library has already validated those
+  # components; only the symlink refusal applies to them here.
+  case "$relative" in
+    "$ID"|"$ID"/*)
+      owned=$(fm_task_data_dir "$DATA" "$ID") || return 1
+      owned=${owned#"$DATA"/}
+      relative=${relative#"$ID"}
+      relative=${relative#/}
+      while [ -n "$owned" ]; do
+        dir="$dir/${owned%%/*}"
+        teardown_archive_directory "$dir" || return 1
+        case "$owned" in */*) owned=${owned#*/} ;; *) owned= ;; esac
+      done
+      ;;
+  esac
   while [ -n "$relative" ]; do
     part=${relative%%/*}
     fm_task_id_path_safe "$part" || {
@@ -483,7 +502,7 @@ teardown_retire_status() {  # <state> <task-id> [<archive-relative-directory>]
     echo "error: status archival failed for $task; retaining live status for retry" >&2
     return 1
   }
-  for entry in "$DATA"/*; do
+  for entry in "$DATA"/* "$DATA/$FM_TASK_DATA_SUBDIR"/*/*; do
     teardown_prune_status_archives "$entry"
   done
 }

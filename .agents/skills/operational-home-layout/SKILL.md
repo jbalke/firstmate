@@ -71,7 +71,7 @@ data/                personal fleet records; LOCAL, gitignored as a whole
     report.md        scout task deliverable, written by the crewmate; survives teardown
     task.meta        project, title, kind, and creation date recorded at scaffold time, so grouping never depends on parsing brief prose
     .protected       presence marks the folder as never pruned without an explicit override (bin/fm-task-data.sh)
-  <id>/status.log <id>/status.<N>.log <id>/children/<child>/...  optional teardown archives, still written to the flat data/<id>/ folder rather than the grouped one; see docs/architecture.md "Task status archives"
+    status.log status.<N>.log children/<child>/...  optional teardown archives, kept in the task's own folder so list, archive, and prune treat them with the task; see docs/architecture.md "Task status archives"
   pipeline-spend.jsonl  optional per-task no-mistakes pipeline spend, written only when config/pipeline-spend is present; bin/fm-pipeline-spend.sh owns the schema
 projects/            cloned repos; gitignored; read-only except under hard rule 1's concrete captain-approved project operation exception
 state/               runtime records and signals; gitignored

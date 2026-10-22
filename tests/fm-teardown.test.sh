@@ -67,6 +67,8 @@ set -u
 
 # shellcheck source=tests/lib.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=bin/fm-task-data-lib.sh
+. "$ROOT/bin/fm-task-data-lib.sh"
 fm_git_identity fmtest fmtest@example.invalid
 
 TEARDOWN="$ROOT/bin/fm-teardown.sh"
@@ -5317,13 +5319,41 @@ test_status_archive_opt_in() {
     expect_code 0 "$rc" "status archive $mode teardown"
     assert_absent "$case_dir/state/task-x1.status" "live status survived teardown"
     if [ "$mode" = on ]; then
-      cmp -s "$case_dir/expected" "$case_dir/data/task-x1/status.log" || fail "opt-in archive lost history"
+      cmp -s "$case_dir/expected" "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" || fail "opt-in archive lost history"
     else
-      assert_absent "$case_dir/data/task-x1/status.log" "default-off teardown created an archive"
+      assert_absent "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" "default-off teardown created an archive"
       assert_present "$case_dir/data/old/status.log" "default-off teardown pruned an archive"
     fi
   done
   pass "status archival is opt-in and preserves the complete log"
+}
+
+# The archive belongs to the task's own grouped data folder, so the data tool
+# lists and prunes it with the task and no flat data/<id>/ folder appears.
+test_status_archive_lands_in_grouped_task_folder() {
+  local case_dir rc grouped out
+  case_dir=$(make_case status-archive-grouped)
+  write_meta "$case_dir" local-only ship
+  grouped="$case_dir/data/tasks/proj-a/task-x1"
+  mkdir -p "$grouped"
+  printf '# brief\n' > "$grouped/brief.md"
+  printf 'project=proj-a\ntitle=t\nkind=ship\ncreated=2026-10-22\n' > "$grouped/task.meta"
+  printf 'working: started\ndone: complete\n' > "$case_dir/state/task-x1.status"
+  cp "$case_dir/state/task-x1.status" "$case_dir/expected"
+  touch "$case_dir/config/status-archive"
+  rc=0
+  run_teardown "$case_dir" > "$case_dir/stdout" 2> "$case_dir/stderr" || rc=$?
+  expect_code 0 "$rc" "grouped status archive teardown"$'\n'"$(cat "$case_dir/stderr")"
+  cmp -s "$case_dir/expected" "$grouped/status.log" || fail "the archive did not land in the grouped task folder"
+  assert_absent "$case_dir/data/task-x1" "the archive split the task into a flat data/<id>/ folder"
+  out=$(FM_DATA_OVERRIDE="$case_dir/data" "$ROOT/bin/fm-task-data.sh" list --task task-x1 2>&1) \
+    || fail "fm-task-data list failed: $out"
+  assert_contains "$out" "task-x1" "fm-task-data list did not show the archived task"
+  out=$(FM_DATA_OVERRIDE="$case_dir/data" "$ROOT/bin/fm-task-data.sh" prune --task task-x1 --yes 2>&1) \
+    || fail "fm-task-data prune failed: $out"
+  assert_absent "$grouped" "fm-task-data prune left the archived task folder behind"
+  assert_absent "$case_dir/data/task-x1" "fm-task-data prune left an orphaned flat archive"
+  pass "status archival keeps the archive in the task's grouped folder, where the data tool lists and prunes it"
 }
 
 test_status_archive_reuse_and_retention() {
@@ -5345,11 +5375,11 @@ test_status_archive_reuse_and_retention() {
   rc=0
   run_teardown "$case_dir" > "$case_dir/stdout" 2> "$case_dir/stderr" || rc=$?
   expect_code 0 "$rc" "status archive reuse"
-  assert_grep 'first generation' "$case_dir/data/task-x1/status.log" "first archive overwritten"
-  archive="$case_dir/data/task-x1/status.2.log"
+  assert_grep 'first generation' "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" "first archive overwritten"
+  archive="$(fm_task_data_dir "$case_dir/data" task-x1)/status.2.log"
   assert_grep 'second generation' "$archive" "reused ID did not select a fresh archive"
   assert_grep 'outside sentinel' "$case_dir/outside/status.log" "archive or pruning followed a symlink"
-  [ -L "$case_dir/data/task-x1/status.1.log" ] || fail "archive replaced an existing symlink"
+  [ -L "$(fm_task_data_dir "$case_dir/data" task-x1)/status.1.log" ] || fail "archive replaced an existing symlink"
   assert_absent "$case_dir/data/old/status.log" "expired status archive survived pruning"
   assert_present "$case_dir/data/old/report.md" "pruning removed other task data"
   assert_present "$case_dir/data/old/status.notes.log" "pruning removed an unowned filename"
@@ -5375,7 +5405,7 @@ test_status_archive_unsafe_paths_refuse() {
     run_teardown "$case_dir" > "$case_dir/stdout" 2> "$case_dir/stderr" || rc=$?
     if [ "$unsafe" = data ]; then
       expect_code 0 "$rc" "configured symlinked data root"
-      assert_grep 'done: complete' "$case_dir/outside/task-x1/status.log" "archive did not use physical data root"
+      assert_grep 'done: complete' "$case_dir/outside/${FM_TASK_DATA_SUBDIR}/${FM_TASK_DATA_NO_PROJECT}/task-x1/status.log" "archive did not use physical data root"
     elif [ "$unsafe" = children ]; then
       expect_code 0 "$rc" "pruning ignores symlinked children: $(cat "$case_dir/stderr")"
     else
@@ -5468,15 +5498,15 @@ test_status_archive_cursor_failure_retries_without_duplicate() {
   assert_present "$case_dir/state/task-x1.status" "cursor failure lost live history"
   cmp -s "$case_dir/cursor.malformed" "$case_dir/state/.status-presentation-cursor" \
     || fail "cursor failure changed presentation rows"
-  assert_absent "$case_dir/data/task-x1/status.log" "failed retirement left a duplicate archive"
+  assert_absent "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" "failed retirement left a duplicate archive"
   assert_present "$case_dir/state/task-x1.meta" "cursor failure removed task metadata"
   cp "$case_dir/cursor.before" "$case_dir/state/.status-presentation-cursor"
   rc=0
   run_teardown "$case_dir" > "$case_dir/retry.stdout" 2> "$case_dir/retry.stderr" || rc=$?
   expect_code 0 "$rc" "retry after cursor repair"
-  cmp -s "$case_dir/expected" "$case_dir/data/task-x1/status.log" || fail "retry archive lost history"
+  cmp -s "$case_dir/expected" "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" || fail "retry archive lost history"
   assert_absent "$case_dir/state/task-x1.status" "successful retry retained live status"
-  assert_absent "$case_dir/data/task-x1/status.1.log" "retry wrote a duplicate archive"
+  assert_absent "$(fm_task_data_dir "$case_dir/data" task-x1)/status.1.log" "retry wrote a duplicate archive"
   pass "cursor retirement failure removes its archive so retry publishes one history"
 }
 
@@ -5491,12 +5521,12 @@ test_status_archive_publish_and_cold_log_stay_inert() {
   expect_code 0 "$rc" "archive publication: $(cat "$case_dir/stderr")"
   assert_present "$case_dir/publish-entered" "fixture never attempted publication"
   [ ! -s "$case_dir/publish-signals" ] || fail "archival caused a spurious watcher wake"
-  assert_present "$case_dir/data/task-x1/status.log" "archive absent"
+  assert_present "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" "archive absent"
   for text in task-x1.status .task-x1.home-appends .seen-task-x1_status .hb-surfaced-task-x1 .task-x1.open-decisions-cursor; do
     assert_absent "$case_dir/state/$text" "retirement left live bookkeeping"
   done
   assert_no_grep 'task-x1' "$case_dir/state/.status-presentation-cursor" "retirement left presentation cursor"
-  printf 'blocked: archive must stay cold\n' >> "$case_dir/data/task-x1/status.log"
+  printf 'blocked: archive must stay cold\n' >> "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log"
   FM_STATE_OVERRIDE="$case_dir/state" FM_CONFIG_OVERRIDE="$case_dir/config" FM_DATA_OVERRIDE="$case_dir/data" \
     bash "$ROOT/bin/fm-wake-drain.sh" > "$case_dir/after" 2>> "$case_dir/drain.err" || fail "post-retirement presentation failed"
   for text in task-x1 'archive must stay cold' 'archived note'; do
@@ -5533,7 +5563,7 @@ SH
     FM_ARCHIVE_TEST_COMMAND="$(command -v "$operation")" run_teardown "$case_dir" > "$case_dir/stdout" 2> "$case_dir/stderr" || rc=$?
     expect_code 0 "$rc" "unrelated archive $operation failure aborted teardown"
     grep -E 'warning:.*unrelated-old' "$case_dir/stderr" >/dev/null || fail "pruning failure did not name its path"
-    assert_grep 'current history' "$case_dir/data/task-x1/status.log" "pruning failure lost current archive"
+    assert_grep 'current history' "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" "pruning failure lost current archive"
     assert_absent "$case_dir/state/task-x1.meta" "pruning failure retained current metadata"
     assert_present "$case_dir/data/unrelated-old/status.log" "failure fixture did not preserve expired archive"
   done
@@ -5559,6 +5589,7 @@ test_status_archive_missing_status_noop() {
   cmp -s "$case_dir/cursor.before" "$case_dir/state/.status-presentation-cursor" || fail "missing-status no-op rewrote neighboring cursor"
   assert_present "$case_dir/state/.status-presentation-lock" "missing-status no-op contended with presentation lock"
   assert_absent "$case_dir/data/task-x1" "missing-status no-op created empty archive"
+  assert_absent "$case_dir/data/tasks" "missing-status no-op created an empty grouped archive"
   pass "local missing-status retirement stays lock-free without creating an archive"
 }
 
@@ -5594,9 +5625,9 @@ test_status_archive_nested_secondmate_children() {
       assert_absent "$case_dir/outside/nested-sm" "child archive escaped through symlink"
     else
       expect_code 0 "$rc" "nested secondmate status archive: $(cat "$case_dir/stderr")"
-      assert_grep 'parent history' "$case_dir/data/task-x1/status.log" "parent history missing"
-      assert_grep 'child history' "$case_dir/data/task-x1/children/nested-sm/status.log" "child history missing"
-      assert_grep 'grandchild history' "$case_dir/data/task-x1/children/nested-sm/children/grandchild/status.log" "grandchild history missing"
+      assert_grep 'parent history' "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" "parent history missing"
+      assert_grep 'child history' "$(fm_task_data_dir "$case_dir/data" task-x1)/children/nested-sm/status.log" "child history missing"
+      assert_grep 'grandchild history' "$(fm_task_data_dir "$case_dir/data" task-x1)/children/nested-sm/children/grandchild/status.log" "grandchild history missing"
       assert_absent "$home" "forced retirement retained secondmate home"
     fi
   done
@@ -5606,6 +5637,7 @@ test_status_archive_nested_secondmate_children() {
 test_status_archive_opt_in
 test_status_archive_nested_secondmate_children
 test_status_archive_missing_status_noop
+test_status_archive_lands_in_grouped_task_folder
 test_status_archive_reuse_and_retention
 test_status_archive_unsafe_paths_refuse
 test_status_archive_failed_publish_preserves_presentation
