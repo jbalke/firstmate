@@ -316,7 +316,8 @@ test_check_fork_lineage_reaches_the_gate() {
 }
 
 # A fetch-only parent remote must not override gh's explicitly selected fork.
-# Without the selection marker the existing upstream/github/origin order holds.
+# Without the selection marker the existing upstream/github/origin order holds;
+# a marker the gate cannot place refuses rather than falling back to that order.
 test_check_gh_resolved_base_selects_fork() {
   local fork user_home fork_home out rc
   fork=$(make_lineage_root resolved-fork https://github.com/someone/firstmate-fork)
@@ -345,8 +346,8 @@ test_check_gh_resolved_base_selects_fork() {
   git -C "$fork" config remote.publishing.gh-resolved head
   out=$(check_as "$fork" "$fork_home" "$fork"); rc=$?
   expect_code 1 "$rc" "a non-base marker must not select the fork (got: $out)"
-  assert_contains "$out" "no publication authority for github.com/kunchenguid/firstmate" \
-    "a non-base marker must preserve upstream precedence"
+  assert_contains "$out" "gh set-default value 'head' on remote publishing of" \
+    "a marker the gate cannot place must refuse rather than fall back to remote name order"
 
   git -C "$fork" config remote.publishing.gh-resolved base
   git -C "$fork" remote set-url publishing "$TMP_ROOT/unreadable-target"
@@ -355,7 +356,7 @@ test_check_gh_resolved_base_selects_fork() {
   git -C "$fork" config --unset remote.publishing.url
   out=$(check_as "$fork" "$user_home" "$fork" upstream-consent github.com/kunchenguid/firstmate); rc=$?
   expect_code 1 "$rc" "a selected remote without a URL must not fall back to authorized upstream (got: $out)"
-  pass "fm-role.sh check: gh-resolved base selects the exact fork target, otherwise legacy precedence holds"
+  pass "fm-role.sh check: gh-resolved base selects the exact fork target, and no marker keeps legacy precedence"
 }
 
 # Lineage that cannot be determined refuses, and a firstmate-lineage project

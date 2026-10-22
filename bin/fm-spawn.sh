@@ -6298,8 +6298,15 @@ fi
 # statement: `env` would try to run `export` as a program. So the launch's
 # export statements are collected in LAUNCH_EXPORTS and joined in front of the
 # command only after every clear has been applied.
+#
+# The polytoken template opens with a marker-clearing `for ...; done;` loop
+# ahead of its own `env -u` command; `env` cannot run `for`, so the clear goes
+# after that loop, onto the command.
 spawn_clear_traceparent() {
-  LAUNCH="env -u TRACEPARENT $LAUNCH"
+  case "$LAUNCH" in
+    'for _fmv in '*'; done; '*) LAUNCH="${LAUNCH%%; done; *}; done; env -u TRACEPARENT ${LAUNCH#*; done; }" ;;
+    *) LAUNCH="env -u TRACEPARENT $LAUNCH" ;;
+  esac
 }
 
 LAUNCH_EXPORTS=

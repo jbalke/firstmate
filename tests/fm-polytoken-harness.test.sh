@@ -807,6 +807,7 @@ printf '%s\n' "$*" >>"${PTFAKE_TMUX_LOG:?}"
 case "$*" in
   *"#{pane_current_path}"*) printf '%s\n' "${PTFAKE_PANE_PATH:?}"; exit 0 ;;
   *"#{cursor_y}"*) printf '1\n'; exit 0 ;;
+  *"#{pane_current_command}"*) printf '%s\n' "${PTFAKE_PANE_COMMAND:-firstmate}"; exit 0 ;;
 esac
 # The window this spawn created, so exact tmux target membership checks see it
 # while it lives and lose it once it is closed.
@@ -884,7 +885,10 @@ BASE_PATH=${FM_TEST_BASE_PATH:-$NODE_BIN_DIR:/usr/bin:/bin:/usr/sbin:/sbin}
 
 run_polytoken_spawn() {
   local case_dir=$1 home=$2 proj=$3 wt=$4 fakebin=$5 id=$6
+  local -a args=("$id" "$proj" --harness polytoken --model zai/glm-5.3-flash --effort low --mode no-mistakes --yolo off)
   shift 6
+  # A relaunch takes the task id alone and reuses everything else from its record.
+  [ "${1:-}" != --relaunch ] || args=("$id" --model zai/glm-5.3-flash --effort low)
   HOME="$home" XDG_CONFIG_HOME="$home/.config" FM_ROOT_OVERRIDE='' FM_HOME="$home" \
     FM_STATE_OVERRIDE="${PTFAKE_STATE_DIR:-$home/state}" FM_DATA_OVERRIDE="$home/data" \
     FM_PROJECTS_OVERRIDE="$home/projects" FM_CONFIG_OVERRIDE="$home/config" \
@@ -899,7 +903,7 @@ run_polytoken_spawn() {
     FM_POLYTOKEN_READY_POLLS="${FM_POLYTOKEN_READY_POLLS:-40}" \
     FM_POLYTOKEN_POLL_INTERVAL="${FM_POLYTOKEN_POLL_INTERVAL:-0.1}" \
     PATH="$fakebin:$BASE_PATH" \
-    "$SPAWN" "$id" "$proj" --harness polytoken --model zai/glm-5.3-flash --effort low --mode no-mistakes --yolo off "$@" 2>&1
+    "$SPAWN" "${args[@]}" "$@" 2>&1
 }
 
 test_polytoken_launch_carries_the_hybrid_contract() {
@@ -978,6 +982,32 @@ test_polytoken_launch_carries_the_hybrid_contract() {
   assert_contains "$cfg" "default_permission_matcher: bypass" \
     "the mirrored worker config must enforce the unattended posture"
   pass "fm-spawn: the polytoken launch carries the hybrid contract end to end"
+}
+
+# A relaunch with trace context off clears the pane's prior carrier with
+# `env -u TRACEPARENT`, which must land on the polytoken command itself rather
+# than on the template's leading marker-clearing loop.
+test_polytoken_relaunch_clears_the_trace_carrier() {
+  local id rec out rc raw envlog
+  id="pt-relaunch-z9-$$"
+  rec=$(make_polytoken_spawn_case relaunch "$id")
+  read_polytoken_spawn_record "$rec"
+  out=$(run_polytoken_spawn "$CASE_DIR" "$HOME_DIR" "$PROJ_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id")
+  rc=$?
+  expect_code 0 "$rc" "the first polytoken spawn should succeed (output: $out)"
+  envlog="$CASE_DIR/polytoken-env.log"
+  : > "$CASE_DIR/launch-line.log"
+  rm -f "$envlog"
+  out=$(PTFAKE_PANE_COMMAND=zsh TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01 \
+    run_polytoken_spawn "$CASE_DIR" "$HOME_DIR" "$PROJ_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" --relaunch)
+  rc=$?
+  raw=$(cat "$CASE_DIR/launch-line.log")
+  assert_contains "$raw" "env -u TRACEPARENT" "the relaunch must clear the prior trace carrier"
+  [ -s "$envlog" ] || fail "the relaunched polytoken never ran: $(tail -3 "$CASE_DIR/launch-stdout.log" 2>/dev/null)"
+  expect_code 0 "$rc" "the polytoken relaunch should succeed (output: $out)"
+  ! grep -q '^TRACEPARENT=' "$envlog" || fail "the relaunched polytoken inherited the prior trace carrier"
+  ! grep -q '^CLAUDECODE=' "$envlog" || fail "the relaunch must still clear the inherited launcher marker"
+  pass "fm-spawn: a polytoken relaunch clears the trace carrier on the polytoken command"
 }
 
 test_polytoken_effort_maps_to_nearest_listed_level() {
@@ -1211,6 +1241,7 @@ test_polytoken_rest_interrupt_settles_the_turn
 test_polytoken_interrupt_close_spares_a_reopened_turn
 test_polytoken_turn_settled_reads_the_typed_sync_verdict
 test_polytoken_launch_carries_the_hybrid_contract
+test_polytoken_relaunch_clears_the_trace_carrier
 test_polytoken_effort_maps_to_nearest_listed_level
 test_polytoken_missing_axes_refuse_before_pane_creation
 test_polytoken_unlisted_model_refuses_before_pane_creation

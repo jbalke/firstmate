@@ -331,7 +331,7 @@ test_forge_external_renders_the_review_rail() {
   out=$(FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-ext-noadapter some-proj --mode direct-PR --forge external 2>&1); rc=$?
   expect_code 1 "$rc" "--forge external without an adapter must be refused"
   assert_contains "$out" "external-review.md" "the missing-adapter refusal did not name the file"
-  [ ! -e "$home/data/brief-ext-noadapter/brief.md" ] || fail "a refused external scaffold left a brief behind"
+  [ ! -e "$(fm_test_task_brief "$home" brief-ext-noadapter some-proj)" ] || fail "a refused external scaffold left a brief behind"
 
   printf '%s\n' 'Delivery contract: mode=direct-PR' > "$home/config/external-review.md"
   out=$(FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-ext-contract some-proj --mode direct-PR --forge external 2>&1); rc=$?
@@ -342,7 +342,7 @@ test_forge_external_renders_the_review_rail() {
   printf '%s\n' 'Run `review-tool upload --draft`.' > "$home/config/external-review.md"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-ext some-proj --mode direct-PR --forge external >/dev/null 2>&1 \
     || fail "--forge external should scaffold a direct-PR ship brief"
-  brief="$home/data/brief-ext/brief.md"
+  brief="$(fm_test_task_brief "$home" brief-ext some-proj)"
   grep -qx "Delivery contract: mode=direct-PR forge=external" "$brief" \
     || fail "--forge external must mark the delivery contract line for the spawn's registry check"
   # shellcheck disable=SC2016 # Backticks are literal generated brief text.
@@ -357,7 +357,7 @@ test_forge_external_renders_the_review_rail() {
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-ext-backup some-proj --mode direct-PR --forge external >/dev/null 2>&1 \
     || fail "--forge external with a backup should scaffold"
   # shellcheck disable=SC2016 # Backticks are literal generated brief text.
-  assert_grep '`git push backup HEAD:refs/heads/backup/brief-ext-backup`' "$home/data/brief-ext-backup/brief.md" \
+  assert_grep '`git push backup HEAD:refs/heads/backup/brief-ext-backup`' "$(fm_test_task_brief "$home" brief-ext-backup some-proj)" \
     "--forge external with a backup must name the durable copy"
 
   while IFS='|' read -r label args expect; do
@@ -366,7 +366,7 @@ test_forge_external_renders_the_review_rail() {
     out=$(FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-ext-bad some-proj $args 2>&1); rc=$?
     expect_code 1 "$rc" "$label must be refused"
     assert_contains "$out" "$expect" "$label was refused without its reason"
-    [ ! -e "$home/data/brief-ext-bad/brief.md" ] || fail "$label left a brief behind"
+    [ ! -e "$(fm_test_task_brief "$home" brief-ext-bad some-proj)" ] || fail "$label left a brief behind"
   done <<'ROWS'
 external on no-mistakes|--mode no-mistakes --forge external|ships direct-PR only for now
 external on local-only|--mode local-only --forge external|cannot ship mode=local-only
@@ -1323,7 +1323,7 @@ test_inbox_listing_command_is_safe_on_empty_inbox() {
   mkdir -p "$home/data" "$home/config"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-inbox-list some-proj --mode no-mistakes >/dev/null 2>&1 \
     || fail "fm-brief.sh ship scaffold exited non-zero"
-  brief="$home/data/brief-inbox-list/brief.md"
+  brief="$(fm_test_task_brief "$home" brief-inbox-list some-proj)"
   # shellcheck disable=SC2016
   cmd=$(sed -n 's/.*list them with `\(find [^`]*\)`.*/\1/p' "$brief" | head -1)
   [ -n "$cmd" ] || fail "the brief does not give a find-based inbox listing command"
@@ -1761,7 +1761,7 @@ test_crewmate_scaffolds_forbid_pool_administration() {
   [ "$ship_rule" = "$scout_rule" ] \
     || fail "ship and scout shared-infrastructure rules have drifted apart"
 
-  ship_cd_rule=$(awk '/^13\. Never start a shell command with/,/^$/' "$home/data/brief-pool-no-mistakes/brief.md")
+  ship_cd_rule=$(awk '/^13\. Never start a shell command with/,/^$/' "$(fm_test_task_brief "$home" brief-pool-no-mistakes some-proj)")
   scout_cd_rule=$(awk '/^13\. Never start a shell command with/,/^$/' "$brief")
   [ -n "$ship_cd_rule" ] || fail "ship brief emitted no leading-cd rule"
   [ "$ship_cd_rule" = "$scout_cd_rule" ] \
