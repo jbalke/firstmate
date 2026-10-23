@@ -719,7 +719,8 @@ case "${1:-}" in
     fm_pr_task_id_valid "$task" || fail 'invalid contribution task'
     jq_lib -ne --arg url "$url" '$url | supported_url and contains("/pull/")' >/dev/null \
       || fail 'enroll needs a canonical github.com PR URL'
-    acquire; read_saved
+    # write_record groups the record by the backlog row's project, read from input.
+    acquire; get_input; read_saved
     [ "$ERRORS" -eq 0 ] || fail "$ERRORS unreadable contribution record(s); enrollment is unverified"
     if jq -e --arg task "$task" --arg url "$url" 'any(.[] | select(.task == $task) | .records[]; .url == $url and .retired != null)' "$TMP/saved.json" >/dev/null; then
       fail 'contribution is retired for this task; enrollment refused'

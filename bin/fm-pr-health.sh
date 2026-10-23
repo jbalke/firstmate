@@ -9,9 +9,9 @@
 # reading or writing anything, and arm refuses (docs/configuration.md).
 #
 # Ownership is fm-contributions.sh owned: each task's recorded pr= and the
-# durable records in data/<task>/contributions.json. poll adds one source and
-# records each new URL through fm-contributions.sh enroll, so ownership
-# outlives the worker: the open PR whose head is a live task copy's current
+# durable contributions.json record in each task's data directory. poll adds
+# one source and records each new URL through fm-contributions.sh enroll, so
+# ownership outlives the worker: the open PR whose head is a live task copy's current
 # branch (fm_pr_number_from_branch). Drafts and adopted branches count. A PR
 # URL that merely appears in a status line is not owned, and a record the
 # captain retired is never re-enrolled, so retirement ends the monitor's
