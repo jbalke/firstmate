@@ -1,0 +1,233 @@
+FM_TEST_BEGIN 2026-10-23T10:17:59Z tests/fm-pr-health.test.sh family=pr-forge expected_gate_skip=none
+ok - UNKNOWN then DIRTY wakes once
+ok - DIRTY seen again at the same commits wakes nothing
+ok - a conflict notifies once per latest commit despite recovery or base movement
+ok - each required check that fails on an adopted draft wakes once per latest commit
+ok - a fallback notification does not hide a later required failure at the same commit
+ok - each check is judged by its newest run
+ok - a latest commit that moves between the two reads waits for the next pass
+ok - a red check on another home's PR wakes nothing in this home
+ok - a PR enrolled before any ready report, and one kept after cleanup, both still wake
+ok - an open PR that replaces a closed one on the same task branch is discovered
+ok - a green PR without a reviewer never notifies
+ok - a base with no required checks counts a failing reported check
+ok - a retired contribution is not reclaimed through the cached branch lookup
+ok - a retired contribution is not reclaimed by a fresh branch lookup
+ok - an unreadable durable record pauses the monitor once and keeps its fingerprints
+ok - nothing prints while nothing changed
+ok - a merged PR leaves the monitor
+ok - an absent flag leaves the home untouched
+ok - the watcher turns one conflict into one durable wake
+ok - check notifications survive cleanup and repeat only at a new latest commit
+ok - all owned PR reads start in one wave without rotating a backlog
+ok - all check pages contribute to required-check classification
+ok - GitLab ownership and branch discovery make no GitHub reads
+FM_TEST_END 2026-10-23T10:19:37Z tests/fm-pr-health.test.sh exit=0 duration_ms=98124 gate_skip=false
+FM_TEST_BEGIN 2026-10-23T10:19:37Z tests/fm-session-start.test.sh family=session-bootstrap expected_gate_skip=none
+ok - context digest distinguishes ABSENT, empty-but-present, and populated files
+ok - a lock refusal prints a loud read-only banner, skips every mutating step, and still completes the digest
+ok - session start stays read-only when lock ownership cannot be published
+ok - locked session start freezes trace context and lock refusal leaves it unchanged
+ok - concurrent session-lock acquisition admits exactly one live harness
+ok - digest sections are ordered safety-preamble first, live fleet state before curated memory
+ok - the read-once contract is stated once, ahead of the sources it governs
+ok - session start: configured and auto-detected Herdr homes never require tmux
+ok - session start: an absent recorded tmux window relaunches its Pi secondmate exactly once, off the blocking path
+ok - session start: a deferred relaunch is always reported, so the digest's stale endpoint record cannot stand
+ok - session start: inactive reconciliation runs after the digest and retains its durable wake
+ok - session start: an unreachable host delays a reported check, not the digest
+ok - session start: a deferred result the digest outran still reaches the agent as a wake
+ok - session start: a read-only session declares its skipped network checks rather than dropping them
+ok - session start: the tasks-axi compatibility verdict is computed once and reused
+ok - session start: an existing ambiguous Pi process prevents duplicate recovery
+ok - session start: transient tmux unreadability never licenses a relaunch
+ok - session start: the proven bare-shell recovery path remains intact
+ok - session start: a confirmed Herdr husk is closed and relaunched
+ok - status tail is bounded to the configured line count, with the full log path always printed
+ok - status tail lines are capped with a truncation marker while the full log stays reachable
+ok - orphan status logs are printed once with bounded tails
+ok - tmux endpoint liveness is reported per task: alive for a live window, dead for a gone one
+ok - herdr endpoint liveness is reported per task: alive, dead for exit 1, dead for any other probe status
+skip: /proc not readable (the read-death shape needs process ancestry)
+Terminated: 15
+ok - a hung per-task endpoint read hits its configured bound, reports the task, and leaves nothing stuck
+Terminated: 15
+ok - a padded-zero per-read bound falls back to the 10s default instead of removing the bound
+ok - the perl timeout fallback reports a signal death as a nonzero status
+skip: /proc not readable (the digest-death shape needs process ancestry)
+ok - fm-session-start.sh composes the real fm-lock.sh, fm-bootstrap.sh, and fm-wake-drain.sh output verbatim
+ok - locked Pi session start replays leading routine outcomes, preserves the captain barrier, and sweeps only dead leases
+ok - non-Pi session start neither sweeps nor replays Pi branch state
+ok - session start seeds an existing outcome store's absent display tail copy while away, moving no marker
+ok - compatible tasks-axi backlog rendering drops done rows and keeps every in-flight, held, and blocked row
+ok - the startup backlog bound cuts only dispatchable queued rows and discloses the remainder exactly
+ok - manual backlog rendering drops done rows, keeps every held or blocked title line, and bounds the rest
+ok - unavailable or incompatible tasks-axi falls back to compact manual backlog rendering
+ok - an empty fleet reports (none) for in-flight tasks and an absent AFK flag
+ok - session start emits X-mode cadence guidance in the harness supervision block
+ok - next step delegates watcher ownership to the AFK daemon
+ok - next step delegates watcher ownership to the daemon in quiet mode, distinctly from away mode
+ok - the AFK digest reads a quiet record as a present captain holding nothing, and an away record as hold-for-return
+ok - a legacy empty .afk flag (written before mode existed) still reads as away mode
+ok - session start emits exactly one detected harness block and reports Pi extension load state
+ok - session start preserves pi-signed primary identity while applying Pi extension guarantees
+ok - session start rejects stale Pi loaded markers
+ok - session start rejects a Pi watcher generation left in handoff
+ok - session start accepts current Pi markers written before lock acquisition
+ok - session start emits the omp block and reports omp extension load state
+ok - omp diagnostic keeps today's wording for the checkout home and names the establishable cause
+ok - session start accepts current omp markers written before lock acquisition
+ok - session start rejects Pi sessions missing the turn-end guard marker
+ok - session start rejects Pi loaded markers from previous sessions
+ok - the pure-Bash watchdog bounds session start, kills its hung grandchild, and emits the truncation contract
+ok - the portable timeout path force-kills a command that ignores TERM
+ok - a session start inside its budget prints no truncation banner
+ok - the runtime bound leaves enough ancestry headroom for a deeply nested session to take the lock
+ok - --reemit reprints the digest without repeating startup's mutating sweeps and still drains queued wakes
+ok - --reemit puts its read cue in the first 2000 characters and a normal start omits it
+ok - true-start AGENTS baselines stay immutable while every drifted Pi compact re-emits the current contract
+ok - read-only Pi compact refreshes against the rebuilding session identity without mutation
+ok - Codex reset sources do not claim an unavailable instruction-refresh channel
+ok - instruction baselines require SHA-256 and successful startup completion
+ok - --reemit re-verifies lock ownership and keeps repair ownership with whoever holds it
+# fm-session-start.test.sh: all assertions passed
+FM_TEST_END 2026-10-23T10:29:39Z tests/fm-session-start.test.sh exit=0 duration_ms=601277 gate_skip=false
+FM_TEST_BEGIN 2026-10-23T10:29:39Z tests/fm-capacity.test.sh family=standalone expected_gate_skip=none
+FM_TEST_BEGIN 2026-10-23T10:29:39Z tests/fm-dispatch-resolve.test.sh family=standalone expected_gate_skip=none
+ok - absent key is off: one stderr line, exit 0, no network call
+ok - TYPESAFE_API_KEY= in .env activates the tool; environment and config overrides work
+ok - clear: one rule Choice request, key on the fd header only, spendPriority argmax over every candidate
+ok - OpenRouter clear uses the same output contract and keeps its key out of argv and child environments
+ok - OpenRouter ambiguous, malformed, HTTP, and missing-model paths are handled
+ok - never-send list withholds the request on a match or a bad list, and never prints the value
+ok - rules snapshots and shell quoting preserve the profile protocol
+ok - no-rule fallback, Agy, Gemini, and documented configurations resolve
+ok - ambiguous: confidence below the fixed floor hands the decision back
+ok - per-rule confidence floors fall to the most probable runner-up that clears its own floor
+ok - only the brief's task sections and scout tag reach the model, with a whole-brief fallback
+ok - escalate: a rule declared approval: captain never yields a profile
+ok - rule floor: known shortfall falls through while unavailable evidence escalates
+ok - declared provider and profile floor evidence are applied in code
+ok - nonnumeric spendPriority evidence is never ranked
+ok - partial and missing quota evidence remain eligible but unranked
+ok - provider-wide and exact quota rows combine into one limiting candidate
+ok - default: no rule matched resolves among the default profiles
+ok - tie: equal spendPriority never breaks by array order
+ok - no rankable candidate: the tool escalates instead of guessing
+ok - native Codex binds to codex-home before default, independently of Pi accounts and row order
+ok - Pi native adapters bind to codex-home with existing fallbacks and schema 5 compatibility
+ok - schema 6: each candidate binds to its account row; schema 5 is unchanged
+ok - quota evidence comes from one quota-axi --json read, and its failure is an error outcome
+ok - API, transport, and response failures are error outcomes with exit 0
+ok - configuration errors exit 2 before any network call
+# all fm-dispatch-resolve tests passed
+FM_TEST_END 2026-10-23T10:30:05Z tests/fm-dispatch-resolve.test.sh exit=0 duration_ms=26420 gate_skip=false
+ok - absent config/lane-capacity reports counts and no target
+ok - the Constrained line is printed only when config/lane-capacity exists
+ok - a target yields open lanes, full, and never a negative count
+ok - cpu, memory, and disk pressure close every lane and are named
+ok - unavailable probes print unknown and do not constrain
+ok - a malformed target is reported, not guessed
+ok - keyed config lines parse, and unknown, repeated, or malformed lines are refused
+ok - a fresh beat replaces probes, and its warn level closes lanes with its reason
+ok - late beats count, and stale, missing, malformed, or foreign beats fall back to probes
+ok - several pressure files: worst level wins, first supplies memory, every disk counts
+ok - a beat with missing fields keeps its fields aligned and limits fall back to probes
+ok - the lane footprint memory rule applies only with min-avail-gb
+ok - limits close lanes with named reasons, and --admit exits 0, 75, or 1
+ok - publish is opt-in, private, throttled, records boots, and publishes an invalid config as invalid
+ok - captain presence and quota runway publish derived words only, unknown when unreadable
+ok - the watcher publishes lane facts only for an opted-in home
+ok - real host probes produce a well-formed report
+# all fm-capacity tests passed
+FM_TEST_END 2026-10-23T10:30:06Z tests/fm-capacity.test.sh exit=0 duration_ms=27621 gate_skip=false
+FM_TEST_BEGIN 2026-10-23T10:30:06Z tests/fm-contributions.test.sh family=snapshot-bearings expected_gate_skip=optional-binary
+ok - grouped contribution reads and writes take precedence and legacy remains readable
+ok - grouped contribution paths refuse symlinks at every new level
+ok - an unusable project hint groups under no-project instead of ending the poll
+ok - a task id the data layer cannot name owns nothing and costs no forge read
+ok - an unusable task id raises no captain wake and does not end the cycle
+ok - a trailing slash on the data root writes records and still refuses a symlinked root
+ok - only required-captain contributions are rows; other actors are counted
+ok - replaced-head verdict is stale and cannot create a captain requirement
+ok - unchecked ownership is disclosed and cannot prove silence
+ok - newest check with no verdict is distinct from passing and pending
+ok - new maintainer comment wakes once and stays pending until acknowledged
+ok - new maintainer review wakes once and stays pending until acknowledged
+ok - new maintainer inline wakes once and stays pending until acknowledged
+ok - ready-for-pr on a filed issue becomes a planning wake
+ok - a fresh open issue remains measured maintainer triage
+ok - an absent check lane remains missing across repeated observations
+ok - mixed freshness retains measured captain work and discloses the gap
+ok - malformed durable evidence cannot prove silence
+ok - a transient ready-for-pr label wakes and its exact acknowledgement survives replay
+ok - recorded judgment keeps its exact head and is stale immediately on a published replacement
+ok - verdict help and refusal name exactly the actors the command accepts
+ok - a current forge observation refreshes a verdict after a replacement
+ok - an unavailable current head leaves verdict freshness unknown
+ok - away yolo delivery is fleet work without granting merge authority
+actionable: PR https://github.com/o/r/pull/8 is registered but its ready line did not reach the parent channel (rc=3)
+ok - cross-home away yolo delivery is fleet work
+ok - retired ownership persists and unsupported forge remains visibly unmeasured
+ok - unsupported forge coverage is disclosed without inventing fleet work
+ok - held unsupported forge coverage remains unmeasured
+ok - unsupported ownership stays silent and unmeasured; legacy errors clear without fabricated evidence
+ok - legacy cleanup preserves unsupported ownership and supported missing-evidence failure in the same file
+ok - shared contribution signal wakes once while retaining both acknowledgements
+ok - watcher keeps observer diagnostics separate from contribution wakes
+ok - expired child unsupported-forge coverage remains unmeasured
+ok - watcher surfaces one newly durable contribution signal without re-ringing it
+ok - parent consumes measured child coverage and refuses expired child silence
+ok - unreadable pending signals refuse an empty-inbox claim
+ok - record task identity is the directory dirname/basename named
+ok - snapshot and pending create nothing in a home without state
+ok - budget exhausted mid-observation (exhaust) keeps the prior record and stays silent
+ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
+ok - a genuine forge failure inside the budget still records the error, its cause and wakes
+ok - one HTTP 500 is retried once and a successful retry stays healthy
+ok - two transient failures wake once and name the failed read in the record
+ok - an HTTP 404 is reported without retrying
+ok - real gh error shapes drive the intended retry decision and keep their error
+ok - a URL never inherits the previous URL read diagnostic
+jq: error (at /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-contributions.xsVSA7/after.json:1): null (null) cannot be matched, as it is not a string
+ok - a URL owned by two tasks is observed once and every owner receives the result
+ok - a merged or closed contribution settles once, is not re-read, and never wakes again
+ok - a late owner inherits a terminal observation without a forge read or wake
+ok - a retry converges every owner whose saved row is not terminal, keeping its own acknowledgement state
+ok - an open PR linked from a done task keeps being observed
+ok - a later URL waits when fewer than fifteen seconds remain for its observation
+ok - eight 3-second PR reads complete fresh within one 20-second poll cycle
+ok - a read killed at the five-second bound is budget refusal and stays silent
+ok - rotation preserves timed-out records and refreshes every slow PR on successive cycles
+ok - the effective budget is cut down to the watcher per-check bound with margin
+ok - generated checks enforce configured and inherited budgets at runtime
+ok - a genuinely unavailable forge records an error and wakes once per failure episode
+ok - a late owner does not restart a shared forge failure episode
+ok - retire stops the unavailable check, leaves rotation and restores complete coverage
+ok - a late owner settled beside a retired final record stays unretired and known
+ok - retire is idempotent and refuses non-captain, unknown, malformed and signal-bearing pairs
+ok - an acknowledged unanswered thread under a hold is raised again after a day, daily, until the author replies
+ok - a resolved thread with no reply counts as answered
+ok - only inline threads and reviews requesting changes with text, no author reply, resolution or later verdict are tracked as unanswered
+ok - the reply age is a validated seconds setting
+ok - a closed pull request stops raising its threads
+ok - the unanswered re-raise and the review-thread read stay off unless a reply age is configured
+ok - arm copies a configured reply age into the generated check
+ok - a many-review PR stores only classified review fields and stays readable
+FM_TEST_END 2026-10-23T10:36:33Z tests/fm-contributions.test.sh exit=0 duration_ms=386677 gate_skip=false
+FM_TEST_BEGIN 2026-10-23T10:36:33Z tests/fm-fleet-snapshot-contribution-input.test.sh family=unclassified expected_gate_skip=none
+ok - contribution-input propagates a failing jq assembly as a non-zero exit
+FM_TEST_END 2026-10-23T10:36:34Z tests/fm-fleet-snapshot-contribution-input.test.sh exit=0 duration_ms=843 gate_skip=false
+FM_TEST_SUMMARY total=6 failed=0 skipped_gate=0 duration_ms=1115470
+FM_TEST_SUMMARY_FAMILY family=pr-forge count=1 duration_ms=98124 failed=0
+FM_TEST_SUMMARY_FAMILY family=session-bootstrap count=1 duration_ms=601277 failed=0
+FM_TEST_SUMMARY_FAMILY family=snapshot-bearings count=1 duration_ms=386677 failed=0
+FM_TEST_SUMMARY_FAMILY family=standalone count=2 duration_ms=54041 failed=0
+FM_TEST_SUMMARY_FAMILY family=unclassified count=1 duration_ms=843 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-session-start.test.sh duration_ms=601277
+FM_TEST_SLOWEST rank=2 script=tests/fm-contributions.test.sh duration_ms=386677
+FM_TEST_SLOWEST rank=3 script=tests/fm-pr-health.test.sh duration_ms=98124
+FM_TEST_SLOWEST rank=4 script=tests/fm-capacity.test.sh duration_ms=27621
+FM_TEST_SLOWEST rank=5 script=tests/fm-dispatch-resolve.test.sh duration_ms=26420
+FM_TEST_SLOWEST rank=6 script=tests/fm-fleet-snapshot-contribution-input.test.sh duration_ms=843
+exit=0

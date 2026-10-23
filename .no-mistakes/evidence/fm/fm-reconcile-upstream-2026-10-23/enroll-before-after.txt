@@ -1,0 +1,29 @@
+=== PRE-FIX (87adf7b0 merge only): fm-contributions.sh enroll ship1 https://github.com/o/r/pull/8
+jq: error: Could not open file /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-contributions.0Tt10i/input.json: No such file or directory
+exit=2
+--- owned:
+[]
+exit=0
+--- records on disk:
+--- re-enroll (idempotent):
+jq: error: Could not open file /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-contributions.9e0KCM/input.json: No such file or directory
+exit=2
+
+=== HEAD c7ed6619: fm-contributions.sh enroll ship1 https://github.com/o/r/pull/8
+exit=0
+--- owned:
+[
+  {
+    "url": "https://github.com/o/r/pull/8",
+    "tasks": [
+      "ship1"
+    ],
+    "final": false
+  }
+]
+exit=0
+--- records on disk:
+  ./tasks/front-client/ship1/contributions.json
+{"task":"ship1","records":[{"url":"https://github.com/o/r/pull/8","kind":"pr"}]}
+--- re-enroll (idempotent):
+exit=0

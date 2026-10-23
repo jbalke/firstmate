@@ -1,0 +1,38 @@
+  This script never starts supervision itself.
+  The digest above is complete for this session start. The READ-ONCE CONTRACT
+  section near the top of it governs what may still be read from disk.
+  EXIT=0
+  As you asked, I didn't act on any of it. I didn't wait for the network checks to finish, didn't create the missing records and didn't spawn anything. The run did claim the session lock for this
+  temporary lab home and start the background network checks, because that's part of what the script does.
+✻ Cooked for 41s · done 11:20 AM
+❯ From the fm-session-start.sh output you already have (do not rerun anything), list every ===== section heading in order, and quote verbatim any line that reports an error, failure, missing or
+  outdated tool, or warning. Keep it compact.
+⏺ Captain, here are the ===== section headings in order:
+  1. SESSION START - /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.C2b1Ku
+  2. SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+  3. READ-ONCE CONTRACT
+  4. FLEET STATE
+  5. NETWORK CHECKS
+  6. CONTEXT
+  7. NEXT STEP
+  The first section has four ----- subsections: LOCK, HOME ROLE, BOOTSTRAP and WAKE QUEUE.
+  Errors, failures, or missing or outdated tools: none were reported. Bootstrap printed (silent - all good), and the script ended with EXIT=0. The supervision instructions do mention words like
+  "FAILED", but only to describe what such notices would look like, not as actual results.
+  Missing records: these are local data files, not tools. Each line reads ABSENT:
+  - data/backlog.md
+  - data/projects.md
+  - data/secondmates.md
+  - data/captain.md
+  - data/captain-shared.md
+  - data/learnings.md
+  Warning-like lines: these come from the background network checks, which hadn't finished yet:
+  - IN PROGRESS - the deferred network checks have not finished yet.
+  - NOT yet confirmed: GitHub authentication, dead-secondmate relaunch, secondmate convergence, pending handoff delivery, project clone refresh with its drift reporting, and inactive terminal-outcome
+    reconciliation.
+✻ Baked for 8s · done 11:22 AM
+Cache ██████████ 100% hit (71k cached) · warm 59:23 left [ Compact ]                                                                                                                                [-]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Run bin/fm-startup-network.sh report and show its output
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   ~/./w/6/01M5M45SQTNKYZCM3DPQNGAE21  c7ed6619  ⊘  Opus 5.5  🌕 7%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 1 agent
