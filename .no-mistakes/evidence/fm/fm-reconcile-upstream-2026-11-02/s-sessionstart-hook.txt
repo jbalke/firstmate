@@ -1,0 +1,3 @@
+$ echo {...SessionStart...} | FM_HOME=$LAB CLAUDE_PROJECT_DIR=$PWD bin/fm-sessionstart-run.sh
+exit=0
+pi-prereq exit=3 (3 = intentional gate/scope stand-down)

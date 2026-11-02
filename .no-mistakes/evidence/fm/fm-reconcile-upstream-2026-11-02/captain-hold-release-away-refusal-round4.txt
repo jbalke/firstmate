@@ -1,0 +1,22 @@
+$ fm-tasks-axi.sh add demo-widget
+ok: added demo-widget (ship, repo demo) -> Queued
+$ fm-captain-hold.sh hold demo-widget --reason "needs captain go/no-go"
+demo-widget
+rc=0
+  held: yes
+$ fm-afk-contract.sh enter (captain goes away)
+Away posture recorded at 2026-11-02T15:47:19Z: hold-for-return only. No phone channel is configured; anything that needs you waits for your return. No away instructions were recorded; the away session acts on standing authority only, and anything that needs you waits for your return. Destructive, irreversible, and security-sensitive actions are never pre-authorizable, whatever the words say. Expected return: not given. Spend cap: 4 concurrent workers.
+$ fm-captain-hold.sh answer demo-widget --decision-file go.txt --release   (while away)
+fm-captain-hold: task demo-widget stays held: the away-posture record exists, and a captain hold is released only by the captain in an attended session; retry --release after the return archives the record
+rc=1
+  held: yes
+$ printf "demo-widget	go		release" | fm-captain-hold.sh answers --any-origin --source lab   (while away)
+refused: demo-widget (the away-posture record exists, and a captain hold is released only by the captain in an attended session; retry --release after the return archives the record)
+answers: closed=0 skipped=1
+rc=1
+  held: yes
+$ rm state/.afk-contract (captain back, attended)
+$ fm-captain-hold.sh answer demo-widget --decision-file go.txt --release   (attended)
+released: demo-widget
+rc=0
+  held: no

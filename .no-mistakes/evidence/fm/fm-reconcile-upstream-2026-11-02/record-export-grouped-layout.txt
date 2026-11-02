@@ -1,0 +1,42 @@
+umask 077
+=== source tree ===
+./legacy-t3/brief.md
+./projects.md
+./tasks/alpha/alpha-t1/brief.md
+./tasks/alpha/alpha-t1/notes.txt
+./tasks/alpha/alpha-t1/report.md
+./tasks/alpha/alpha-t1/status.2026-11-01.log
+./tasks/beta/beta-t2/brief.md
+=== sync 1 ===
+sync rc=0
+--- exported live tree (perm octal path) ---
+drwxr-x--- 750 .
+drwxr-x--- 750 ./data
+drwxr-x--- 750 ./data/legacy-t3
+-rw-r----- 640 ./data/legacy-t3/brief.md
+-rw-r----- 640 ./data/projects.md
+drwxr-x--- 750 ./data/tasks
+drwxr-x--- 750 ./data/tasks/alpha
+drwxr-x--- 750 ./data/tasks/alpha/alpha-t1
+-rw-r----- 640 ./data/tasks/alpha/alpha-t1/brief.md
+-rw-r----- 640 ./data/tasks/alpha/alpha-t1/report.md
+-rw-r----- 640 ./data/tasks/alpha/alpha-t1/status.2026-11-01.log
+drwxr-x--- 750 ./data/tasks/beta
+drwxr-x--- 750 ./data/tasks/beta/beta-t2
+-rw-r----- 640 ./data/tasks/beta/beta-t2/brief.md
+--- grouped report content ---
+report grouped
+=== retraction: remove beta/beta-t2, sync 2 ===
+sync rc=0
+./data/legacy-t3/brief.md
+./data/projects.md
+./data/tasks/alpha/alpha-t1/brief.md
+./data/tasks/alpha/alpha-t1/report.md
+./data/tasks/alpha/alpha-t1/status.2026-11-01.log
+=== adversarial: symlinked project dir and symlinked task dir pointing outside home ===
+sync rc=0
+no symlinked content exported
+=== adversarial: unsafe project dir name ===
+error: unsafe task project directory in record export allowlist: .hidden
+sync rc=1
+live still points at: .live-generations/g1793630766521217000.81842.bd7e6994f15d46118ef2ea84dc79bae3

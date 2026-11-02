@@ -1,0 +1,6 @@
+== tmanual (/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.neMDLz/data/tasks/demo/tmanual/brief.md)
+83:8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline skips its ci step here, so follow the PR's checks only with the bounded `pr checks --watch` command your Definition of done names, until you can report checks green.
+== tauto (/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.neMDLz/data/tasks/demo/tauto/brief.md)
+83:8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green.
+== Definition of done lines naming pr checks --watch in tmanual brief:
+83:8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline skips its ci step here, so follow the PR's checks only with the bounded `pr checks --watch` command your Definition of done names, until you can report checks green.

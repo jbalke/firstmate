@@ -1,0 +1,50 @@
+$ tasks-axi add demo-widget ...
+ok: added demo-widget (ship, repo demo) -> Queued
+task:
+  id: demo-widget
+  title: Ship the demo widget
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: demo
+  priority: "-"
+  created: 2026-11-02
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start demo-widget` to move it to in flight
+  - Run `tasks-axi block demo-widget --by <other>` to record a dependency
+$ fm-captain-hold.sh hold demo-widget
+demo-widget
+rc=0
+$ fm-afk-contract.sh enter (captain goes away)
+Away posture recorded at 2026-11-02T15:36:58Z: hold-for-return only. No phone channel is configured; anything that needs you waits for your return. Your away instructions are recorded verbatim; the away session will carry them out where it can, and anything it is unsure of, or that needs you, waits for your return. Destructive, irreversible, and security-sensitive actions are never pre-authorizable, whatever the words say. Expected return: not given. Spend cap: 4 concurrent workers.
+Away posture (recorded):
+  entered: 2026-11-02T15:36:58Z
+  expected return: not given
+  spend cap: 4 concurrent workers
+  reach: hold-for-return only. No phone channel is configured; anything that needs you waits for your return.
+  your words (verbatim):
+    merge green work
+rc=0
+$ fm-captain-hold.sh answer demo-widget --release   (while away)
+fm-captain-hold: task demo-widget stays held: the away-posture record exists, and a captain hold is released only by the captain in an attended session; retry --release after the return archives the record
+rc=1
+  held: yes
+$ printf "demo-widget	go		release" | fm-captain-hold.sh answers (while away)
+refused: demo-widget (the away-posture record exists, and a captain hold is released only by the captain in an attended session; retry --release after the return archives the record)
+answers: closed=0 skipped=1
+rc=1
+$ rm state/.afk-contract (captain back, attended)
+$ fm-captain-hold.sh answer demo-widget --release   (attended)
+released: demo-widget
+rc=0
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 4cd0e21a9a0795a14ec9aa5f0e7d1abff0492565770e43eafdf1e3e8afed1f33\nResolution mode: released\n\nCaptain decision:\ngo"

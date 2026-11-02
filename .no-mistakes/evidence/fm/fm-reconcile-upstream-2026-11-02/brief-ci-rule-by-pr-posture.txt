@@ -1,0 +1,26 @@
+=== fm-brief.sh nm-manual demo --mode no-mistakes --pr manual ===
+scaffolded: /private/tmp/fm-lab-brief-01M6E94/home/data/tasks/demo/nm-manual/brief.md (ship, mode=no-mistakes pr=manual; replace {TASK} and {FIRSTMATE_SPEC})
+rc=0
+brief: data/tasks/demo/nm-manual/brief.md
+83:8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline skips its ci step here, so follow the PR's checks only with the bounded `pr checks --watch` command your Definition of done names, until you can report checks green.
+-- DoD lines mentioning checks watch:
+83:8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline skips its ci step here, so follow the PR's checks only with the bounded `pr checks --watch` command your Definition of done names, until you can report checks green.
+=== fm-brief.sh nm-auto demo --mode no-mistakes --pr auto ===
+scaffolded: /private/tmp/fm-lab-brief-01M6E94/home/data/tasks/demo/nm-auto/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+rc=0
+brief: data/tasks/demo/nm-auto/brief.md
+83:8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green.
+-- DoD lines mentioning checks watch:
+=== fm-brief.sh nm-default demo --mode no-mistakes ===
+scaffolded: /private/tmp/fm-lab-brief-01M6E94/home/data/tasks/demo/nm-default/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+rc=0
+brief: data/tasks/demo/nm-default/brief.md
+83:8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green.
+-- DoD lines mentioning checks watch:
+=== fm-brief.sh dpr-manual demo --mode direct-PR --pr manual ===
+error: fm-brief.sh --pr: pr=manual ships mode=no-mistakes only - direct-PR already leaves the PR text to the worker and local-only opens no PR
+rc=1
+brief: 
+grep: : No such file or directory
+-- DoD lines mentioning checks watch:
+grep: : No such file or directory

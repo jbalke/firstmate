@@ -1,0 +1,16 @@
+ ▐▛███▛█   Claude Code v2.1.316
+▝▜██████▀  Opus 5.5 with medium effort · Claude Team
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/6b5c7015552c/01M6E94GPEDN3E0V8XHNR8BQ85
+  ⎿  SessionStart:startup hook error
+  ⎿  Failed to run: prompt-type hooks are not supported for SessionStart events (no conversation context is available). Use a command-type hook instead.
+❯ Hi. Do your normal session startup for this home, then tell me in two lines: which FM_HOME you are using and what the fleet currently looks like. Do not spawn any tasks.
+  Ran 3 shell commands
+⏺ Captain, startup is done and all checks passed. I'm using FM_HOME /private/tmp/fm-lab-primary-01M6E94, a temporary lab home, and I hold its session lock.
+  The fleet is empty: no work under way, no queued notifications, no backlog, no projects, no second mates and no captain preferences recorded yet. Nothing was spawned.
+✻ Cogitated for 16s · done 2:58 PM
+Cache ███████░░░ 74% hit (272k cached) · warm 59:52 left [ Compact ]                                                                                                                                [-]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   ~/./w/6/01M6E94GPEDN3E0V8XHNR8BQ85  f3121f7f  !⊘  @+3 -1  Opus 5.5  🌕 7%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 1 agent

@@ -1,0 +1,30 @@
+# Adversarial 1: symlinked project dir and symlinked task dir inside data/tasks
+lrwx------@ - johnbalke  2 Nov 14:07 evilproj -> /private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-lab.rCg5CK.outside/proj
+lrwx------@ - johnbalke  2 Nov 14:07 evil-task -> /private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-lab.rCg5CK.outside/proj/leak
+exit=0
+./data/legacy1/brief.md
+./data/legacy1/status.log
+./data/projects.md
+./data/tasks/demo/nm-auto/brief.md
+./data/tasks/demo/nm-manual/brief.md
+./data/tasks/demo/nm-manual/status-20261101.log
+./data/tasks/demo/nm-manual/status.log
+./data/tasks/demo/sc1/brief.md
+./data/tasks/demo/sc1/report.md
+no outside content exported
+
+# Adversarial 2: retraction - remove a grouped status log and resync
+exit=0
+./data/legacy1/brief.md
+./data/legacy1/status.log
+./data/projects.md
+./data/tasks/demo/nm-auto/brief.md
+./data/tasks/demo/nm-manual/brief.md
+./data/tasks/demo/nm-manual/status-20261101.log
+./data/tasks/demo/sc1/brief.md
+./data/tasks/demo/sc1/report.md
+
+# Adversarial 3: unsafe-named grouped task dir (leading dot) is ignored or refused, never exported
+error: unsafe task directory in record export allowlist: .hidden
+exit=1
+(end .hidden listing)

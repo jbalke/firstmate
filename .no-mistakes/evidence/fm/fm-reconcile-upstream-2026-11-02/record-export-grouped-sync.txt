@@ -1,0 +1,15 @@
+sync rc=0
+750 .
+640 ./.firstmate-record-export-root.v1.json
+750 ./.live-generations
+750 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c
+750 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data
+750 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/t-flat
+640 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/t-flat/brief.md
+750 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/tasks
+750 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/tasks/projA
+750 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/tasks/projA/t-grouped
+640 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/tasks/projA/t-grouped/brief.md
+640 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/tasks/projA/t-grouped/report.md
+640 ./.live-generations/g1793633733338954000.13230.d621bb656a114559a6527f3973b40d0c/data/tasks/projA/t-grouped/status.log
+700 ./live

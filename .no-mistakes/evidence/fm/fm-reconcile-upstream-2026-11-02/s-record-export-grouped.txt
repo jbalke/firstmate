@@ -1,0 +1,27 @@
+$ umask
+077
+(canonical paths: macOS /var is a symlink, which the exporter's no-follow traversal correctly refuses)
+$ FM_HOME=$LAB bin/fm-record-export.sh sync
+exit=0
+
+$ files under $EXPORT/live (sorted)
+./data/legacy1/brief.md
+./data/legacy1/status.log
+./data/projects.md
+./data/tasks/demo/nm-auto/brief.md
+./data/tasks/demo/nm-manual/brief.md
+./data/tasks/demo/nm-manual/status-20261101.log
+./data/tasks/demo/nm-manual/status.log
+./data/tasks/demo/sc1/brief.md
+./data/tasks/demo/sc1/report.md
+
+$ modes of exporter-owned dirs
+live -> .live-generations/g1793628404310254000.81771.da07f419a70f48b88fb919c758e2e8f0
+750 .live-generations
+750 .live-generations/g1793628404310254000.81771.da07f419a70f48b88fb919c758e2e8f0
+750 .live-generations/g1793628404310254000.81771.da07f419a70f48b88fb919c758e2e8f0/data
+750 .live-generations/g1793628404310254000.81771.da07f419a70f48b88fb919c758e2e8f0/data/tasks
+750 .live-generations/g1793628404310254000.81771.da07f419a70f48b88fb919c758e2e8f0/data/tasks/demo
+750 .live-generations/g1793628404310254000.81771.da07f419a70f48b88fb919c758e2e8f0/data/tasks/demo/nm-manual
+750 .live-generations/g1793628404310254000.81771.da07f419a70f48b88fb919c758e2e8f0/data/legacy1
+640 (file) status.log

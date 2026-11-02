@@ -1,0 +1,15 @@
+error: required record export archive source is missing: state/t-grouped.meta
+archive rc=1
+750 .
+640 ./.firstmate-record-export-root.v1.json
+700 ./live
+archive rc=0
+750 .
+640 ./.firstmate-record-export-root.v1.json
+750 ./archive
+750 ./archive/t-grouped
+750 ./archive/t-grouped/g1
+640 ./archive/t-grouped/g1/manifest.v1.json
+640 ./archive/t-grouped/g1/meta
+640 ./archive/t-grouped/g1/status
+700 ./live

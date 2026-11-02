@@ -1,0 +1,5 @@
+fm-captain-hold-lifecycle rc=0 984s ok - an answered captain call archived to a user-configured location still satisfies the completion gate
+fm-pr-state rc=0 3s ok - argument and lookup refusals exit nonzero
+fm-backend-rex rc=0 63s ok - rex: validation progress reads captured no-mistakes status by column name
+fm-watch-arm rc=0 432s ok - watch-arm: the OpenCode arm plugin decides with the shared supervision predicate
+fm-quota-choose rc=0 9s # all fm-quota-choose tests passed

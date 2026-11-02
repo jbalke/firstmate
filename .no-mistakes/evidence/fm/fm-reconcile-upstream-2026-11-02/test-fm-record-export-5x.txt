@@ -1,0 +1,9 @@
+run 1 rc=0 25 ok; 
+run 2 rc=1 16 ok; not ok - archive committed while a source changed during capture
+run 3 rc=0 25 ok; 
+run 4 rc=0 25 ok; 
+run 5 rc=1 10 ok; not ok - destination-race fixture never observed a staged snapshot
+idle run 1 rc=0 25 ok; 
+idle run 2 rc=1 16 ok; not ok - archive committed while a source changed during capture
+idle run 3 rc=0 25 ok; 
+idle run 4 rc=0 25 ok; 

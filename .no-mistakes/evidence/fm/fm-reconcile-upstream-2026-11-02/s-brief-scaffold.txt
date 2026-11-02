@@ -1,0 +1,29 @@
+$ fm-brief.sh nm-manual demo --mode no-mistakes --pr manual
+scaffolded: /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.rCg5CK/data/tasks/demo/nm-manual/brief.md (ship, mode=no-mistakes pr=manual; replace {TASK} and {FIRSTMATE_SPEC})
+$ fm-brief.sh nm-auto demo --mode no-mistakes
+scaffolded: /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.rCg5CK/data/tasks/demo/nm-auto/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+$ fm-brief.sh sc1 demo --scout
+scaffolded: /var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.rCg5CK/data/tasks/demo/sc1/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+
+$ find data
+data
+data/tasks
+data/tasks/demo
+data/tasks/demo/nm-auto
+data/tasks/demo/nm-auto/brief.md
+data/tasks/demo/nm-auto/task.meta
+data/tasks/demo/nm-manual
+data/tasks/demo/nm-manual/brief.md
+data/tasks/demo/nm-manual/task.meta
+data/tasks/demo/sc1
+data/tasks/demo/sc1/brief.md
+data/tasks/demo/sc1/task.meta
+
+== rule 8 in nm-manual brief
+8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline skips its ci step here, so follow the PR's checks only with the bounded `pr checks --watch` command your Definition of done names, until you can report checks green.
+
+== rule 8 in nm-auto brief
+8. Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green.
+
+== scout rule 2
+2. Stay inside this worktree; the only files you may write outside it are the report, saved evidence beside it under `/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.rCg5CK/data/tasks/demo/sc1/`, the status file, and your instruction inbox acknowledgements, all described below, except for the task's empty-inventory attestation through `fm-captain-hold.sh complete --none`, exactly as specified under Definition of done.

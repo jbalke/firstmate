@@ -1,0 +1,15 @@
+== run 1
+ok - teardown archive refuses malformed generations, unknown artifacts, symlinks, and non-regular files
+ok - record export retention mirrors 30 completed days and prunes only owned committed generations
+ok - presentation, wake, classification, and snapshot readers leave the export root cold
+ALL TESTS PASSED
+== run 2
+ok - teardown archive retries idempotently and reused task IDs stay separated by spawn_gen
+ok - teardown archive retry accepts sources already retired after a committed capture
+ok - teardown archive rejects a corrupt committed manifest
+not ok - archive committed while a source changed during capture
+== run 3
+ok - teardown archive refuses malformed generations, unknown artifacts, symlinks, and non-regular files
+ok - record export retention mirrors 30 completed days and prunes only owned committed generations
+ok - presentation, wake, classification, and snapshot readers leave the export root cold
+ALL TESTS PASSED

@@ -1,0 +1,24 @@
+== adversarial: symlinked brief.md in grouped task + symlinked project dir
+error: data/tasks/projB/t-evil/brief.md is not a regular non-symlink file
+sync rc=1
+TOPSECRET copies in export root:        0
+projA
+
+/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-exp.ioWx0X/root/live/data/tasks/projA:
+t-grouped
+
+/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-exp.ioWx0X/root/live/data/tasks/projA/t-grouped:
+brief.md
+report.md
+status.log
+== symlinked brief removed, projLink symlink still present
+sync rc=0
+projA
+
+/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-exp.ioWx0X/root/live/data/tasks/projA:
+t-grouped
+
+/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-exp.ioWx0X/root/live/data/tasks/projA/t-grouped:
+brief.md
+report.md
+status.log

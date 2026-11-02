@@ -1,0 +1,4 @@
+ok - configured remote-home teardown commits its archive before deleting live records
+ok - configured remote-home teardown preserves every source when archive publication fails
+ALL TESTS PASSED
+remote rc=0

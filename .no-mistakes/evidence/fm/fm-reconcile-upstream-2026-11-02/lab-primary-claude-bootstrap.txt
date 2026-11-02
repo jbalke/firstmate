@@ -1,0 +1,18 @@
+ ▐▛███▛█   Claude Code v2.1.316
+▝▜██████▀  Opus 5.5 with medium effort · Claude Team
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/6b5c7015552c/01M6E94GPEDN3E0V8XHNR8BQ85
+  ⎿  SessionStart:startup hook error
+  ⎿  Failed to run: prompt-type hooks are not supported for SessionStart events (no conversation context is available). Use a command-type hook instead.
+❯ Lab smoke test only: run echo FM_HOME=$FM_HOME; bin/fm-bootstrap.sh; echo bootstrap_rc=$? once, show me the last 15 lines of its output, and do nothing else (no spawns, no edits).
+  Ran 1 shell command
+⏺ Captain, the bootstrap ran once and finished cleanly with exit code 0. It printed nothing of its own, which means it found nothing to report. Here is the full output, only 2 lines in total:
+  FM_HOME=/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-lab.HXOA9f/home
+  bootstrap_rc=0
+  The home it used was the temporary lab home. I did nothing else: no spawns and no edits.
+✻ Brewed for 8s · done 3:40 PM
+Cache ██████░░░░ 59% hit (126k cached) · warm 59:45 left [ Compact ]                                                                                                                                [-]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ run bin/fm-session-start.sh once and show the digest
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   ~/./w/6/01M6E94GPEDN3E0V8XHNR8BQ85  0a03e710  ⊘  Opus 5.5  🌕 6%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 1 agent
