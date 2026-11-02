@@ -17,7 +17,7 @@ TMP_ROOT=$(fm_test_tmproot fm-spawn-manual-pr-text)
 # scaffolded with the flags. Sets CASE_DIR, HOME_DIR, PROJECT_DIR, POOL_DIR,
 # FAKEBIN_DIR.
 make_case() {
-  local name=$1 id=$2 tokens=$3 content
+  local name=$1 id=$2 tokens=$3 content brief
   shift 3
   CASE_DIR="$TMP_ROOT/$name"
   HOME_DIR="$CASE_DIR/home"
@@ -35,10 +35,11 @@ make_case() {
   git -C "$PROJECT_DIR" worktree add --quiet --detach "$POOL_DIR" "$(git -C "$PROJECT_DIR" rev-parse HEAD)"
   FM_HOME="$HOME_DIR" "$BRIEF" "$id" project --mode no-mistakes "$@" >/dev/null \
     || fail "the brief for $id should scaffold"
-  content=$(cat "$HOME_DIR/data/$id/brief.md")
+  brief=$(fm_test_task_brief "$HOME_DIR" "$id") || fail "could not resolve the $id brief"
+  content=$(cat "$brief")
   content=${content//'{TASK}'/Write the PR text by hand.}
   content=${content//'{FIRSTMATE_SPEC}'/Exercise the spawn path.}
-  printf '%s\n' "$content" > "$HOME_DIR/data/$id/brief.md"
+  printf '%s\n' "$content" > "$brief"
 }
 
 run_spawn() {  # <id> <args...>

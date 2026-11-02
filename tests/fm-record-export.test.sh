@@ -43,8 +43,12 @@ test_sync_copies_only_the_v1_allowlist() {
   home=$(make_home sync-allowlist)
   export_root="$TMP_ROOT/export-allowlist"
   printf '%s\n' "$export_root" > "$home/config/record-export-root"
-  mkdir -p "$home/data/task-a" "$home/data/unrelated" \
+  mkdir -p "$home/data/task-a" "$home/data/unrelated" "$home/data/tasks/proj-a/task-b" \
     "$home/state/task-a.inbox/handled" "$home/state/other.inbox/handled"
+  # The fork's grouped task layout exports at its live path beside the flat one.
+  printf 'grouped brief\n' > "$home/data/tasks/proj-a/task-b/brief.md"
+  printf 'grouped status\n' > "$home/data/tasks/proj-a/task-b/status.log"
+  printf 'do not copy\n' > "$home/data/tasks/proj-a/task-b/notes.txt"
   printf 'projects\n' > "$home/data/projects.md"
   printf 'backlog\n' > "$home/data/backlog.md"
   printf 'done archive\n' > "$home/data/done-archive.md"
@@ -67,12 +71,13 @@ test_sync_copies_only_the_v1_allowlist() {
   for rel in \
     data/projects.md data/backlog.md data/done-archive.md \
     data/task-a/brief.md data/task-a/report.md data/task-a/status.log data/task-a/status.1.log \
+    data/tasks/proj-a/task-b/brief.md data/tasks/proj-a/task-b/status.log \
     state/fleet-ledger.jsonl state/task-a.meta state/task-a.status \
     state/task-a.inbox/001.msg state/task-a.inbox/handled/002.msg; do
     cmp -s "$home/$rel" "$export_root/live/$rel" || fail "sync did not copy $rel byte-exact"
     [ "$(mode_of "$export_root/live/$rel")" = 640 ] || fail "sync did not set mode 0640 on $rel"
   done
-  for rel in data/task-a/notes.txt data/unrelated/private.md \
+  for rel in data/task-a/notes.txt data/unrelated/private.md data/tasks/proj-a/task-b/notes.txt \
     state/task-a.inbox/.ring-state state/task-a.inbox/not-a-record state/other.inbox/.ring-state; do
     assert_absent "$export_root/live/$rel" "sync copied non-allowlisted $rel"
   done

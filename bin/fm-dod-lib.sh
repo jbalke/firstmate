@@ -98,9 +98,10 @@
 # The shared trailer carries the repo-artifact rules (no decision attributed to a
 # person or role, no untracked agent config or skill file named) for every ship
 # mode, plus the no-open-question-queue rule for the two modes that open a PR.
-# fm_ci_rule <no-mistakes|direct-PR|local-only|scout> owns the CI-following rule
-# that belongs with each contract, so the brief path and the promotion path state
-# it from one place and cannot drift: a worker whose numbered rules ban every wait
+# fm_ci_rule <no-mistakes|direct-PR|local-only|scout> [<pr>] owns the CI-following
+# rule that belongs with each contract (a pr=manual no-mistakes contract follows
+# its own PR checks because its run skips the ci step), so the brief path and
+# the promotion path state it from one place and cannot drift: a worker whose numbered rules ban every wait
 # on checks while its Definition of done requires `done: PR {url} checks green`
 # stops before the pipeline's own monitor phase and the crew state diverges.
 # This file is the one owner of the no-mistakes `--intent` contract: only the
@@ -430,9 +431,16 @@ fm_ask_user_escalation_block() {  # <task-data-dir>
 EOF
 }
 
-fm_ci_rule() {  # <no-mistakes|direct-PR|local-only|scout>
+fm_ci_rule() {  # <no-mistakes|direct-PR|local-only|scout> [<pr>]
   case "$1" in
     no-mistakes)
+      # A pr=manual run skips the pipeline's ci step, so its worker follows the
+      # PR's checks itself through the bounded watch its Definition of done names.
+      if [ "${2:-auto}" = manual ]; then
+        # shellcheck disable=SC2016 # Backticks are literal generated Markdown.
+        echo 'Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline skips its ci step here, so follow the PR'"'"'s checks only with the bounded `pr checks --watch` command your Definition of done names, until you can report checks green.'
+        return 0
+      fi
       echo "Never build your own CI-watching loop: no sleep-waiting on checks, no re-reading a settled check set. The pipeline's own monitor phase is how you follow CI, and you stay with it until you can report checks green." ;;
     direct-PR|local-only|scout)
       echo "Never poll CI, sleep-wait on checks, or re-read a settled check set; firstmate already watches every task PR." ;;

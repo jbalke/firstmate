@@ -320,7 +320,7 @@ TASK_DIR=$(fm_task_data_ensure_dir "$DATA" "$ID") || {
   echo "error: could not create durable task data directory for $ID" >&2
   exit 1
 }
-CI_RULE=$(fm_ci_rule "$MODE") || exit 1
+CI_RULE=$(fm_ci_rule "$MODE" "$PR_TEXT") || exit 1
 INSTRUCTIONS="$TASK_DIR/ship-instructions.md"
 PROMOTION_ASK_USER_BLOCK=
 if [ "$MODE" = no-mistakes ]; then

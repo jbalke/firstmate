@@ -366,32 +366,69 @@ def add_source(sources: list[Source], parent_fd: int, name: str, relative: str, 
     sources.append(Source(relative, fd, info))
 
 
+# The fork groups task data as data/tasks/<project>/<id>/ (bin/fm-task-data-lib.sh);
+# legacy flat data/<id>/ folders stay readable. Both export at their live paths.
+TASK_DATA_SUBDIR = "tasks"
+
+
+def add_task_records(sources: list[Source], parent_fd: int, task: str, prefix: str) -> None:
+    try:
+        info = os.stat(task, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    if not stat.S_ISDIR(info.st_mode):
+        return
+    task_fd = open_directory_at(parent_fd, task, f"data task directory {prefix}/{task}")
+    try:
+        names = set(os.listdir(task_fd))
+        candidates = [name for name in ("brief.md", "report.md") if name in names]
+        candidates.extend(sorted(name for name in names if name.startswith("status") and name.endswith(".log")))
+        if not candidates:
+            return
+        safe_component(task, "task directory in record export allowlist")
+        for name in candidates:
+            safe_component(name, "data record name")
+            add_source(sources, task_fd, name, f"{prefix}/{task}/{name}", f"{prefix}/{task}/{name}")
+    finally:
+        os.close(task_fd)
+
+
+def collect_grouped_sources(data_fd: int, sources: list[Source]) -> None:
+    try:
+        info = os.stat(TASK_DATA_SUBDIR, dir_fd=data_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    if not stat.S_ISDIR(info.st_mode):
+        return
+    tasks_fd = open_directory_at(data_fd, TASK_DATA_SUBDIR, f"data/{TASK_DATA_SUBDIR}")
+    try:
+        for project in sorted(os.listdir(tasks_fd)):
+            try:
+                project_info = os.stat(project, dir_fd=tasks_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISDIR(project_info.st_mode):
+                continue
+            safe_component(project, "task project directory in record export allowlist")
+            project_fd = open_directory_at(tasks_fd, project, f"data/{TASK_DATA_SUBDIR}/{project}")
+            try:
+                for task in sorted(os.listdir(project_fd)):
+                    add_task_records(sources, project_fd, task, f"data/{TASK_DATA_SUBDIR}/{project}")
+            finally:
+                os.close(project_fd)
+    finally:
+        os.close(tasks_fd)
+
+
 def collect_data_sources(data_fd: int) -> list[Source]:
     sources: list[Source] = []
     for name in ("projects.md", "backlog.md", "done-archive.md"):
         add_source(sources, data_fd, name, f"data/{name}", f"data/{name}")
     for task in sorted(os.listdir(data_fd)):
-        if task in {"projects.md", "backlog.md", "done-archive.md"}:
+        if task in {"projects.md", "backlog.md", "done-archive.md", TASK_DATA_SUBDIR}:
             continue
-        try:
-            info = os.stat(task, dir_fd=data_fd, follow_symlinks=False)
-        except FileNotFoundError:
-            continue
-        if not stat.S_ISDIR(info.st_mode):
-            continue
-        task_fd = open_directory_at(data_fd, task, f"data task directory {task}")
-        try:
-            names = set(os.listdir(task_fd))
-            candidates = [name for name in ("brief.md", "report.md") if name in names]
-            candidates.extend(sorted(name for name in names if name.startswith("status") and name.endswith(".log")))
-            if not candidates:
-                continue
-            safe_component(task, "task directory in record export allowlist")
-            for name in candidates:
-                safe_component(name, "data record name")
-                add_source(sources, task_fd, name, f"data/{task}/{name}", f"data/{task}/{name}")
-        finally:
-            os.close(task_fd)
+        add_task_records(sources, data_fd, task, "data")
+    collect_grouped_sources(data_fd, sources)
     return sources
 
 
@@ -526,6 +563,8 @@ def live_directory_allowed(relative: str) -> bool:
     parts = relative.split("/")
     if len(parts) == 2 and parts[0] == "data":
         return bool(SAFE_COMPONENT.fullmatch(parts[1]))
+    if 3 <= len(parts) <= 4 and parts[:2] == ["data", TASK_DATA_SUBDIR]:
+        return all(SAFE_COMPONENT.fullmatch(part) for part in parts[2:])
     if len(parts) == 2 and parts[0] == "state" and parts[1].endswith(".inbox"):
         return bool(SAFE_COMPONENT.fullmatch(parts[1][: -len(".inbox")]))
     if len(parts) == 3 and parts[0] == "state" and parts[1].endswith(".inbox") \
@@ -538,9 +577,11 @@ def live_file_allowed(relative: str) -> bool:
     if relative in {"data/projects.md", "data/backlog.md", "data/done-archive.md", "state/fleet-ledger.jsonl"}:
         return True
     parts = relative.split("/")
-    if len(parts) == 3 and parts[0] == "data" and SAFE_COMPONENT.fullmatch(parts[1]):
-        return parts[2] in {"brief.md", "report.md"} \
-            or (parts[2].startswith("status") and parts[2].endswith(".log") and SAFE_COMPONENT.fullmatch(parts[2]))
+    grouped = len(parts) == 5 and parts[:2] == ["data", TASK_DATA_SUBDIR] \
+        and all(SAFE_COMPONENT.fullmatch(part) for part in parts[2:4])
+    if grouped or (len(parts) == 3 and parts[0] == "data" and SAFE_COMPONENT.fullmatch(parts[1])):
+        return parts[-1] in {"brief.md", "report.md"} \
+            or (parts[-1].startswith("status") and parts[-1].endswith(".log") and SAFE_COMPONENT.fullmatch(parts[-1]))
     if len(parts) == 2 and parts[0] == "state":
         if parts[1].endswith(".meta"):
             return bool(SAFE_COMPONENT.fullmatch(parts[1][: -len(".meta")]))
@@ -1018,6 +1059,8 @@ def archive_task(home: str, config: str, data: str, state: str, task: str) -> No
                 stage_name = f".archive-stage-{os.getpid()}-{uuid.uuid4().hex}"
                 os.mkdir(stage_name, 0o750, dir_fd=task_fd)
                 stage_fd = open_directory_at(task_fd, stage_name, "record export archive staging generation")
+                # The mkdir mode is masked by the umask; set it as ensure_directory_at does.
+                os.fchmod(stage_fd, 0o750)
                 try:
                     entries = [copy_archive_source(source, stage_fd) for source in sources]
                     write_archive_manifest(stage_fd, task, spawn_gen, entries)
@@ -1087,6 +1130,8 @@ def sync_records(home: str, config: str, data: str, state: str) -> None:
             stage_name = f".stage-{os.getpid()}-{uuid.uuid4().hex}"
             os.mkdir(stage_name, 0o750, dir_fd=generations_fd)
             stage_fd = open_directory_at(generations_fd, stage_name, "record export live staging generation")
+            # The mkdir mode is masked by the umask; set it as ensure_directory_at does.
+            os.fchmod(stage_fd, 0o750)
             try:
                 for source in sources:
                     copy_source(source, stage_fd)

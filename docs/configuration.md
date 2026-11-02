@@ -895,6 +895,7 @@ Run `bin/fm-record-export.sh sync` to publish the currently present allowlisted 
 ```text
 data/{projects.md,backlog.md,done-archive.md}
 data/<task>/{brief.md,report.md,status*.log}
+data/tasks/<project>/<task>/{brief.md,report.md,status*.log}
 state/fleet-ledger.jsonl
 state/<task>.{meta,status}
 state/<task>.inbox/{,handled/}NNN.msg

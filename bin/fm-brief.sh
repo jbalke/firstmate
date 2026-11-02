@@ -550,7 +550,7 @@ INBOX_SECTION=${INBOX_SECTION%$'\n'}
 # same owner when promotion changes the contract a scout is running under.
 CI_RULE=
 case "$KIND" in
-  ship) CI_RULE="8. $(fm_ci_rule "$MODE")" ;;
+  ship) CI_RULE="8. $(fm_ci_rule "$MODE" "$PR_TEXT")" ;;
   scout) CI_RULE="8. $(fm_ci_rule scout)" ;;
 esac
 IFS= read -r -d '' CONTEXT_RULES <<'EOF' || true
@@ -796,7 +796,7 @@ The report is the only thing that survives, so anything worth keeping must be in
 
 # Rules
 1. Never push to any remote and never open a PR.
-2. Stay inside this worktree; the only files you may write outside it are the report, saved evidence beside it under \`$TASK_DIR/\`, the status file, and your instruction inbox acknowledgements, all described below, plus the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none\`, exactly as specified under Definition of done.
+2. Stay inside this worktree; the only files you may write outside it are the report, saved evidence beside it under \`$TASK_DIR/\`, the status file, and your instruction inbox acknowledgements, all described below, except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none\`, exactly as specified under Definition of done.
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`$STATUS_APPEND\`

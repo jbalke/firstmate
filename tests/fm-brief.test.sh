@@ -1144,7 +1144,7 @@ test_scout_completion_write_exception_is_task_scoped() {
   for id in inventory-alpha inventory-beta; do
     FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" sample --scout >/dev/null \
       || fail "scout completion scaffold failed"
-    brief="$home/data/$id/brief.md"
+    brief=$(fm_test_task_brief "$home" "$id") || fail "could not resolve the $id brief"
     command="FM_HOME='$home' bash '$ROOT/bin/fm-captain-hold.sh' complete '$id' --none"
     assert_grep "except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none\`, exactly as specified under Definition of done." "$brief" \
       "scout outside-write rule did not name its exact completion gate"
@@ -1453,7 +1453,7 @@ test_inbox_guidance_explains_marked_body_terminator() {
           || fail "secondmate scaffold failed"
         ;;
     esac
-    brief="$home/data/$id/brief.md"
+    brief=$(fm_test_task_brief "$home" "$id") || fail "could not resolve the $id brief"
     assert_grep 'fm_task_inbox_body' "$brief" "$kind scaffold omitted the format-aware inbox reader"
     assert_grep 'body-terminator=1' "$brief" "$kind scaffold omitted the body terminator marker"
     assert_grep 'not part of the logical message body' "$brief" "$kind scaffold omitted the synthetic terminator meaning"
