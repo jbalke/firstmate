@@ -479,14 +479,16 @@ test_archive_refuses_a_corrupt_committed_manifest() {
     run_export "$home" archive-task task-a > "$home/first.out" 2> "$home/first.err" || rc=$?
     expect_code 0 "$rc" "initial archive for $case_name manifest case"
     manifest="$export_root/archive/task-a/committed-generation/manifest.v1.json"
+    # perl, not GNU-only sed one-line append or 0,/re/ addresses, so BSD hosts corrupt the manifest too.
     case "$case_name" in
       wrong-task) sed 's/"task": "task-a"/"task": "another-task"/' "$manifest" > "$home/manifest.tmp" ;;
       trailing-garbage) cp "$manifest" "$home/manifest.tmp"; printf 'not-json\n' >> "$home/manifest.tmp" ;;
-      duplicate-key) sed '/"captured_at":/a\  "captured_at": "2000-01-01T00:00:00Z",' "$manifest" > "$home/manifest.tmp" ;;
+      duplicate-key) perl -pe '$_ .= qq{  "captured_at": "2000-01-01T00:00:00Z",\n} if /"captured_at":/' "$manifest" > "$home/manifest.tmp" ;;
       wrong-type) sed 's/"captured_at": "[^"]*"/"captured_at": 1/' "$manifest" > "$home/manifest.tmp" ;;
-      extra-root) sed '/"complete": true/a\  "unexpected": true,' "$manifest" > "$home/manifest.tmp" ;;
-      extra-entry) sed '0,/"sha256": "[^"]*"/s//& , "unexpected": true/' "$manifest" > "$home/manifest.tmp" ;;
+      extra-root) perl -pe '$_ .= qq{  "unexpected": true,\n} if /"complete": true/' "$manifest" > "$home/manifest.tmp" ;;
+      extra-entry) perl -pe '$done ||= s/"sha256": "[^"]*"/$& , "unexpected": true/' "$manifest" > "$home/manifest.tmp" ;;
     esac
+    ! cmp -s "$home/manifest.tmp" "$manifest" || fail "$case_name fixture left the manifest unchanged"
     mv "$home/manifest.tmp" "$manifest"
     rc=0
     run_export "$home" archive-task task-a > "$home/retry.out" 2> "$home/retry.err" || rc=$?
@@ -573,7 +575,7 @@ test_archive_retry_removes_stale_files_from_a_partial_generation() {
 }
 
 test_archive_revalidates_sources_immediately_before_publication() {
-  local home export_root archive archive_pid rc=0 wait_count=0 index
+  local home export_root archive archive_pid rc=0 wait_count=0 index first
   home=$(make_home archive-final-revalidate)
   export_root="$TMP_ROOT/export-archive-final-revalidate"
   printf '%s\n' "$export_root" > "$home/config/record-export-root"
@@ -588,15 +590,18 @@ test_archive_revalidates_sources_immediately_before_publication() {
     index=$((index + 1))
   done
 
+  # The exporter removes entries in os.listdir order, which is hash order on
+  # APFS, so watch the first entry it will remove rather than the lexical first.
+  first=$(python3 -c 'import os, sys; print(os.listdir(sys.argv[1])[0])' "$archive/inbox")
   run_export "$home" archive-task task-a > "$home/archive.out" 2> "$home/archive.err" &
   archive_pid=$!
-  while [ -e "$archive/inbox/00000.msg" ]; do
+  while [ -e "$archive/inbox/$first" ]; do
     kill -0 "$archive_pid" 2>/dev/null || break
     wait_count=$((wait_count + 1))
     [ "$wait_count" -le 1000 ] || break
     sleep 0.01
   done
-  [ ! -e "$archive/inbox/00000.msg" ] \
+  [ ! -e "$archive/inbox/$first" ] \
     || { wait "$archive_pid" || true; fail "archive did not begin replacing its stale partial generation"; }
   printf 'changed after final comparison\n' >> "$home/state/task-a.status"
   wait "$archive_pid" || rc=$?
