@@ -3244,10 +3244,12 @@ case "$ARG3" in
 esac
 
 case "$DISPATCH_OVERRIDE" in *[![:print:]]*) echo 'error: --dispatch-override must be a printable reason' >&2; exit 1 ;; esac
-DISPATCH_RECORD="$DATA/$ID/dispatch-resolution.json"
+# The task's data folder, grouped or flat (bin/fm-task-data-lib.sh owns it).
+DISPATCH_TASK_DIR=$(fm_task_data_find "$DATA" "$ID") || DISPATCH_TASK_DIR="$DATA/$ID"
+DISPATCH_RECORD="$DISPATCH_TASK_DIR/dispatch-resolution.json"
 if [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ -f "$CONFIG/crew-dispatch.json" ]; then
   if [ ! -e "$DISPATCH_RECORD" ]; then
-    echo "error: config/crew-dispatch.json is active and task $ID has no recorded dispatch resolution; run bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name> first" >&2
+    echo "error: config/crew-dispatch.json is active and task $ID has no recorded dispatch resolution; run bin/fm-dispatch-resolve.sh $DISPATCH_TASK_DIR/brief.md --project <name> first" >&2
     exit 1
   fi
   dispatch_fields=$(jq -r --arg id "$ID" '
@@ -3256,7 +3258,7 @@ if [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ -f "$CONFIG/crew-disp
     | .status, (.profile.harness // ""), (.profile.model // ""), (.profile.effort // "")' "$DISPATCH_RECORD" 2>/dev/null) || dispatch_fields=
   { read -r dispatch_status; read -r selected_harness; read -r selected_model; read -r selected_effort; } <<<"$dispatch_fields" || true
   if [ -z "$dispatch_status" ]; then
-    echo "error: malformed dispatch resolution $DISPATCH_RECORD for task $ID; rerun bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name>" >&2
+    echo "error: malformed dispatch resolution $DISPATCH_RECORD for task $ID; rerun bin/fm-dispatch-resolve.sh $DISPATCH_TASK_DIR/brief.md --project <name>" >&2
     exit 1
   fi
   if [ "$dispatch_status" = clear ] && [ -z "$DISPATCH_OVERRIDE" ] \
@@ -7700,6 +7702,7 @@ fi
 # Like CLAUDE_CONFIG_DIR above, FM_HOME cannot be left to pane inheritance:
 # every worker gets its home explicitly, or its bin/*.sh scripts fall back to
 # their own code root as the home.
+LAUNCH_EXPORTS=
 if [ "$KIND" = secondmate ]; then
   sq_home=$(shell_quote "$PROJ_ABS")
   sq_primary_home=$(shell_quote "$FM_HOME")
@@ -7724,7 +7727,7 @@ if [ "$KIND" = secondmate ]; then
   LAUNCH="FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME=$sq_primary_home FM_HOME=$sq_home FM_TRACE_CONTEXT=$SPAWN_TRACE_EFFECTIVE FM_SUPERVISION_MODEL=$supervision_model $LAUNCH"
 else
   # A ship or scout works for the active home itself.
-  LAUNCH="export FM_HOME=$(shell_quote "$FM_HOME"); $LAUNCH"
+  LAUNCH_EXPORTS="export FM_HOME=$(shell_quote "$FM_HOME"); $LAUNCH_EXPORTS"
 fi
 # spawn_clear_traceparent: prefix the launch command with a shell-AGNOSTIC clear
 # of any TRACEPARENT the reused pane shell still exports, so the replacement
@@ -7752,7 +7755,6 @@ spawn_clear_traceparent() {
   esac
 }
 
-LAUNCH_EXPORTS=
 # Implement the launch-delivery contract in this script's header. The full
 # home-identity hash isolates equal task ids across homes, and the spawn token in
 # the final filename keeps a buffered source line bound to this incarnation.
@@ -7840,9 +7842,6 @@ else
       ;;
   esac
 fi
-LAUNCH="$(shell_quote "$FM_ROOT/bin/fm-osc7501.sh") arm --task $(shell_quote "$ID") --harness $(shell_quote "$HARNESS") --backend $(shell_quote "$BACKEND") --kind $(shell_quote "$KIND") --state $(shell_quote "$STATE_REAL") --config $(shell_quote "$CONFIG") --target $(shell_quote "$T") --agent-bin $(shell_quote "$OSC7501_AGENT_BIN") >/dev/null || true
-$LAUNCH
-$(shell_quote "$FM_ROOT/bin/fm-osc7501.sh") disarm --state $(shell_quote "$STATE_REAL") >/dev/null 2>/dev/null || true"
 if [ "$LAVISH_AXI_HOST_CONFIG_PRESENT" = 1 ]; then
   LAUNCH_EXPORTS="export LAVISH_AXI_HOST=$(shell_quote "$LAVISH_AXI_HOST"); $LAUNCH_EXPORTS"
 fi
@@ -7967,6 +7966,11 @@ if [ -n "$SPAWN_TRACEPARENT" ]; then
   fi
 fi
 fi
+# The reporter frame wraps the agent command only after every TRACEPARENT clear
+# above, so each `env -u` prefix lands on the agent, not on the reporter.
+LAUNCH="$(shell_quote "$FM_ROOT/bin/fm-osc7501.sh") arm --task $(shell_quote "$ID") --harness $(shell_quote "$HARNESS") --backend $(shell_quote "$BACKEND") --kind $(shell_quote "$KIND") --state $(shell_quote "$STATE_REAL") --config $(shell_quote "$CONFIG") --target $(shell_quote "$T") --agent-bin $(shell_quote "$OSC7501_AGENT_BIN") >/dev/null || true
+$LAUNCH
+$(shell_quote "$FM_ROOT/bin/fm-osc7501.sh") disarm --state $(shell_quote "$STATE_REAL") >/dev/null 2>/dev/null || true"
 LAUNCH="$LAUNCH_EXPORTS$LAUNCH"
 if [ "$LAUNCH_ENV_ENABLED" = 1 ]; then
   LAUNCH_ENV_PREFIX='/usr/bin/env -i'

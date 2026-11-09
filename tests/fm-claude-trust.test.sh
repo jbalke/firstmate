@@ -626,10 +626,11 @@ test_refused_spawn_leaves_no_task_state() {
 }
 
 # Resolve the final prompt argument using the same shell argument splitting the
-# pane sees after the leading export statements.
+# pane sees after the leading export statements. The reporter frame comes off
+# first, because the Git configuration prefix can sit ahead of the arm line.
 claude_launch_doorbell() {  # <launch command>
   local command
-  command=$(fm_test_launch_command "$1")
+  command=$(fm_test_launch_command "$(fm_test_launch_unframe "$1")")
   (
     eval "set -- $command"
     printf '%s' "${!#}"

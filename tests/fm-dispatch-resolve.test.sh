@@ -1413,6 +1413,19 @@ TYPESAFE_API_KEY=$KEY run code out err "$TMP_ROOT/data/pager-fix/brief.md" --pro
 assert_absent "$TMP_ROOT/data/pager-fix/dispatch-resolution.json" "a data/<id>/ directory outside the configured data root writes no task record"
 pass "task record: the configured data root, including FM_DATA_OVERRIDE, decides where the record goes"
 
+# A scaffolded brief lives in the project-grouped folder bin/fm-task-data-lib.sh
+# resolves, data/tasks/<project>/<id>/; fm-spawn.sh reads the record there.
+GROUPED_DIR="$HOME_DIR/data/tasks/pager/grouped-fix"
+mkdir -p "$GROUPED_DIR"
+cp "$BRIEF" "$GROUPED_DIR/brief.md"
+reset_log
+write_response "$RESPONSE" rule_4 0.9
+TYPESAFE_API_KEY=$KEY run code out err "$GROUPED_DIR/brief.md" --project pager
+assert_equals 'grouped-fix clear cursor' \
+  "$(jq -r '"\(.task) \(.status) \(.profile.harness)"' "$GROUPED_DIR/dispatch-resolution.json")" \
+  "a brief in the grouped task data folder records its decision beside it"
+pass "task record: a grouped task data folder records its decision beside the brief"
+
 # --- per-rule confidence floor ------------------------------------------------
 write_floor_response() {  # <path> <choice> <confidence> <rule_1> <rule_2> <rule_3> <rule_4> <default>
   cat > "$1" <<JSON

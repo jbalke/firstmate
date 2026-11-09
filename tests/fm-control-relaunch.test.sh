@@ -624,6 +624,8 @@ test_disabled_relaunch_clears_prior_trace_context() {
     || fail "disabled relaunch must remove the prior trace carrier from metadata"
   grep -Eq '(^|; )env -u TRACEPARENT .*claude' "$dir/fake/literal" \
     || fail "disabled relaunch must clear the pane carrier before replacement launch"
+  ! grep -q 'env -u TRACEPARENT [^ ]*fm-osc7501\.sh' "$dir/fake/literal" \
+    || fail "the relaunch clear must reach the agent, not the status reporter"
   ! grep -q 'unset TRACEPARENT' "$dir/fake/literal" \
     || fail "the pane carrier clear must not depend on a shell builtin the login shell may lack"
   ! grep -q '^export TRACEPARENT=' "$dir/fake/literal" \

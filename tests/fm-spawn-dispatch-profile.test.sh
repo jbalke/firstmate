@@ -106,16 +106,18 @@ enable_dispatch_profile() {
     > "$home/config/crew-dispatch.json"
 }
 
-# Writes the task record bin/fm-dispatch-resolve.sh leaves in data/<id>/ (its
-# documented shape: task, status, and profile with null for an unset axis).
+# Writes the task record bin/fm-dispatch-resolve.sh leaves in the task's data
+# folder (its documented shape: task, status, and profile with null for an
+# unset axis).
 record_dispatch() {  # <home> <id> <status> [<harness> <model> <effort>]
-  local home=$1 id=$2 status=$3
-  mkdir -p "$home/data/$id"
+  local home=$1 id=$2 status=$3 dir
+  dir=$(fm_test_task_dir "$home" "$id") || return 1
+  mkdir -p "$dir"
   jq -cn --arg id "$id" --arg status "$status" --arg h "${4:-}" --arg m "${5:-}" --arg e "${6:-}" '
     def opt: if . == "" then null else . end;
     {task: $id, status: $status,
      profile: (if $status == "clear" then {harness: $h, model: ($m | opt), effort: ($e | opt)} else null end)}' \
-    > "$home/data/$id/dispatch-resolution.json"
+    > "$dir/dispatch-resolution.json"
 }
 
 make_seeded_secondmate_home() {
@@ -517,7 +519,12 @@ test_recorded_dispatch_selection_allows_matching_flags() {
   rec=$(make_spawn_case profile-selected-match claude "$id")
   read_case_record "$rec"
   enable_dispatch_profile "$HOME_DIR"
+  # A scaffolded task lives in the project-grouped data folder.
+  mkdir -p "$HOME_DIR/data/tasks/project"
+  mv "$HOME_DIR/data/$id" "$HOME_DIR/data/tasks/project/$id"
   record_dispatch "$HOME_DIR" "$id" clear codex gpt-5 high
+  [ -f "$HOME_DIR/data/tasks/project/$id/dispatch-resolution.json" ] \
+    || fail "the fixture should record the selection in the grouped folder"
 
   out=$(run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
     "$id" "$PROJ_DIR" --harness codex --model gpt-5 --effort high)
@@ -525,7 +532,7 @@ test_recorded_dispatch_selection_allows_matching_flags() {
   expect_code 0 "$status" "flags equal to the recorded selection should launch: $out"
   assert_meta_profile "$HOME_DIR/state/$id.meta" codex gpt-5 high
   assert_no_grep 'dispatch_override=' "$HOME_DIR/state/$id.meta" "a matching launch should record no override"
-  pass "a recorded dispatch selection allows the matching launch flags"
+  pass "a recorded dispatch selection in the grouped task folder allows the matching launch flags"
 }
 
 test_recorded_dispatch_selection_allows_recorded_override() {
