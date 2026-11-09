@@ -1,0 +1,46 @@
+capacity: free_lanes=6 reason=ok lanes=2 target=16 secondmates=0 load1=3.38 cores=12 mem_free_pct=72 disk_free_mb=33201 mode=auto budget=8
+Lanes: 2 running here, 2 on this machine; auto budget 8 (6 open, bound by cpu).
+Per lane: 2 GB, 1 core, 3 GB disk (default until 5 lanes are measured).
+Host: load 3.38 on 12 cores, memory free 72%, disk free 33201 MB.
+rc=0
+admit rc=0
+{
+  "lanes": 3,
+  "budget": {
+    "lanes": 8,
+    "open": 6,
+    "raw": 6,
+    "machine_lanes": 2,
+    "by": {
+      "memory": 7,
+      "cpu": 6,
+      "disk": 7,
+      "ceiling": 14
+    },
+    "binding": "cpu",
+    "young": 0,
+    "damped": false,
+    "notes": []
+  },
+  "vitals": {
+    "load5": 3.59,
+    "psi": {
+      "cpu_some10": null,
+      "mem_some10": null,
+      "mem_some60": null,
+      "mem_full10": null,
+      "io_full10": null,
+      "io_full60": null
+    },
+    "swapin_total": 40979751,
+    "swap_in_pps": null,
+    "vm_pressure_level": 1,
+    "thermal": "ok",
+    "battery_pct": 100,
+    "on_ac": true,
+    "wsl": false,
+    "windows": false,
+    "host": null,
+    "gpu": [
+      {
+        "name": "Apple M4 Pro",

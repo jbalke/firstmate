@@ -1,0 +1,60 @@
+
+ ▐▛███▛█   Claude Code v2.1.319
+▝▜██████▀  Opus 5.5 with medium effort · Claude Team
+ ▝▝   ▝▝   ~/.treehouse/demo-b08adb/1/demo
+
+⚠ 1 MCP server needs authentication · run /mcp
+  ⎿  SessionStart:startup hook error
+  ⎿  Failed to run: prompt-type hooks are not supported for SessionStart events (no conversation context is available). Use a command-type hook instead.                                                                    
+
+❯ : Firstmate operational input waiting: read '/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-lab.ETStZp/state/operational-inbox/1794249996-4c14b76a6eac07e9.msg' and handle its contents as Firstmate         
+  operational input.                                                                                                                                                                                                        
+
+⏺ Writing report and attest empty captain inventory
+  ⎿  $ D=/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T//fm-lab.ETStZp/data/tasks/demo/lab-scout                                                   
+     ls -A /Users/johnbalke/.treehouse/demo-b08adb/1/demo/.claude                                                                                                
+     cat > "$D/report.md" <<'EOF'
+     # lab-scout report: demo repository root
+     ## What I did
+     - `ls -la /Users/johnbalke/.treehouse/demo-b08adb/1/demo` (w…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+· Seasoning… (19s · ↓ 1.2k tokens)                                
+● full  $0.00  0s                                                                                                                                                                         Review  Audit  Board  Details [-]
+                                                                                                                                                                                                                          
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   ~/./d/1/demo  3cf672f  ⊘_  Opus 5.5  🌕 5%
+  ⏵⏵ bypass permissions on (shift+tab to cycle)               

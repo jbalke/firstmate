@@ -1,0 +1,60 @@
+
+ ▐▛███▛█   Claude Code v2.1.319
+▝▜██████▀  Opus 5.5 with medium effort · Claude Team
+ ▝▝   ▝▝   ~/.treehouse/demo-b08adb/2/demo
+
+  ⎿  SessionStart:startup hook error
+  ⎿  Failed to run: prompt-type hooks are not supported for SessionStart events (no conversation context is available). Use a command-type hook instead.                                                                    
+
+❯ : Firstmate operational input waiting: read '/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-lab.ETStZp/state/operational-inbox/1794250235-efcc5945a69ee837.msg' and handle its contents as Firstmate         
+  operational input.                                                                                                                                                                                                        
+
+  Showing recent status lines          
+  ⎿  $ tail -3 '/private/var/folders/kc/90bft43x3sj0s76yp56ylh7c0000gn/T/fm-lab.ETStZp/state/lab-scout2.status' 2>&1                                                          
+                                                                                                                                        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+✢ Hyperspacing… (14s · ↓ 806 tokens · thought for 1s)                                 
+● full  $0.00  0s                                                                                                                                                                         Review  Audit  Board  Details [-]
+                                                                                                                                                      Advisor Tool (experimental) is on and may use more tokens · /advisor
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   ~/./d/2/demo  3cf672f  ⊘_  Opus 5.5  🌕 5%
+  ⏵⏵ bypass permissions on (shift+tab to cycle)               
