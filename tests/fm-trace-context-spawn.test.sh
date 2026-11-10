@@ -388,6 +388,9 @@ test_unsafe_delivery_refuses_to_append_launch() {
 # cannot run `export` as a program.
 assert_launch_clear_is_shell_agnostic() {  # <launch-log>
   local log=$1 line command
+  # The clear must reach the agent, not the status reporter framed around it.
+  ! grep -q 'env -u TRACEPARENT [^ ]*fm-osc7501\.sh' "$log" \
+    || fail "the TRACEPARENT clear prefixes the status reporter instead of the agent: $(cat "$log")"
   line=$(grep -m1 'TRACEPARENT.*claude' "$log") \
     || fail "no launch command carrying a TRACEPARENT clear was emitted"
   command=$(fm_test_launch_command "$line")
