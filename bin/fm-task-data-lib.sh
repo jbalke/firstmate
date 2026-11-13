@@ -121,6 +121,18 @@ fm_task_data_dir() {  # <data-root> <task-id> [project]
   printf '%s\n' "$data/$FM_TASK_DATA_SUBDIR/$slug/$id"
 }
 
+# Succeed when every component of <dir> strictly below <data-root> is absent or
+# a real directory, never a symlink, so a write cannot be redirected out of the
+# data root. The data root itself may be a link.
+fm_task_data_dir_unlinked() {  # <data-root> <dir>
+  local data=$1 path=$2
+  case "$path" in "$data"/*) ;; *) return 1 ;; esac
+  while [ "$path" != "$data" ]; do
+    if [ -L "$path" ] || { [ -e "$path" ] && [ ! -d "$path" ]; }; then return 1; fi
+    path=${path%/*}
+  done
+}
+
 # fm_task_data_dir, then create the directory.
 fm_task_data_ensure_dir() {  # <data-root> <task-id> [project]
   local dir
