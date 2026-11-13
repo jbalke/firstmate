@@ -287,6 +287,10 @@ SH
   printf '%s\n' 'kind=ship' > "$case_dir/home/state/nested/task.meta"
   printf '%s\n' 'failed [at=1]: fixture orphan' > "$case_dir/home/state/orphan.status"
   touch -t 202001010000 "$case_dir/home/state/orphan.status"
+  # An orphan whose task already has a project-grouped data folder.
+  mkdir -p "$case_dir/home/data/tasks/demo/grouped-orphan"
+  printf '%s\n' 'failed [at=1]: grouped orphan' > "$case_dir/home/state/grouped-orphan.status"
+  touch -t 202001010000 "$case_dir/home/state/grouped-orphan.status"
   printf '%s\n' 'pr=https://example.test/pull/42' > "$case_dir/home/state/first.meta"
   printf '%s\n' 'pr=https://example.test/pull/99' > "$case_dir/home/state/middle.meta"
   printf '%s\n' 'pr=https://example.test/pull/42' > "$case_dir/home/state/second.meta"
@@ -316,7 +320,12 @@ test_record_hygiene_archives_old_orphan_status() {
   assert_contains "$out" 'RECORD_HYGIENE: duplicate PR https://example.test/pull/42 in records: first, second' \
     "bootstrap did not report duplicate PR references"
   assert_not_contains "$out" 'linked' "bootstrap read symlinked metadata"
-  [ -f "$case_dir/home/data/orphan/status.log" ] || fail "bootstrap did not archive the orphan status log"
+  # Orphans archive into the task's data folder (bin/fm-task-data-lib.sh): an
+  # existing grouped folder, otherwise the no-project group, never a new flat one.
+  [ -f "$case_dir/home/data/tasks/_none/orphan/status.log" ] || fail "bootstrap did not archive the orphan status log in the no-project group"
+  [ -f "$case_dir/home/data/tasks/demo/grouped-orphan/status.log" ] || fail "bootstrap did not archive the orphan status log in its existing grouped folder"
+  [ ! -e "$case_dir/home/data/orphan" ] && [ ! -e "$case_dir/home/data/grouped-orphan" ] \
+    || fail "bootstrap archived an orphan status log in a flat data folder"
   [ ! -e "$case_dir/home/state/orphan.status" ] || fail "archived orphan status log remained in state"
   [ ! -e "$case_dir/home/state/.meta-orphan.lock" ] && [ ! -L "$case_dir/home/state/.meta-orphan.lock" ] \
     || fail "successful archive left its metadata lock behind"
@@ -1876,7 +1885,7 @@ test_record_hygiene_old_orphan_skips_held_metadata_lock() {
   assert_contains "$out" 'RECORD_HYGIENE: status log without metadata older than 24 hours: orphan' \
     "bootstrap did not scan the orphan status log while its metadata lock was held"
   [ -f "$case_dir/home/state/orphan.status" ] || fail "bootstrap moved orphan status while metadata lock was held"
-  [ ! -e "$case_dir/home/data/orphan" ] || fail "bootstrap archived orphan status while metadata lock was held"
+  [ ! -e "$case_dir/home/data/orphan" ] && [ ! -e "$case_dir/home/data/tasks/_none/orphan" ] || fail "bootstrap archived orphan status while metadata lock was held"
   [ -d "$lock" ] || fail "bootstrap removed another holder's metadata lock"
   pass "bootstrap skips archiving while the task metadata lock is held"
 }
@@ -1909,7 +1918,7 @@ test_record_hygiene_old_orphan_survives_spawn_publication() {
   ' _ "$ROOT" "$case_dir/home" 2>&1) || fail "record hygiene pass failed: $out"
   [ -f "$case_dir/home/state/orphan.meta" ] || fail "fixture did not publish metadata during the scan"
   [ -f "$case_dir/home/state/orphan.status" ] || fail "record hygiene archived a status log whose metadata a spawn just published"
-  [ ! -e "$case_dir/home/data/orphan" ] || fail "record hygiene created an archive for a just-published worker"
+  [ ! -e "$case_dir/home/data/orphan" ] && [ ! -e "$case_dir/home/data/tasks/_none/orphan" ] || fail "record hygiene created an archive for a just-published worker"
   pass "record hygiene keeps a status log whose metadata is published before the move"
 }
 test_record_hygiene_old_orphan_skips_held_metadata_lock

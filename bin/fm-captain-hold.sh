@@ -209,7 +209,8 @@
 #
 # With config/hold-pr-settle present, pr-policy declares which forge events
 # answer this particular hold. It adds the structured PR link and atomically
-# records data/<task>/hold-pr-policy.json: schema fm-hold-pr.v1, task, url, on,
+# records hold-pr-policy.json in the task's data folder (bin/fm-task-data-lib.sh):
+# schema fm-hold-pr.v1, task, url, on,
 # action, fingerprint (SHA-256 of the shown reason, title without its structured
 # links, hold-set timestamp and resolution count), occurrence.
 # `close` asserts the task contains only the decision; `release` preserves
@@ -1121,7 +1122,7 @@ verify_entry_durable() {  # <origin-or-empty> <entry>; prints "<id> <how> <origi
 
 command_hold() {
   local id=${1:-} title='' reason='' repo='' origin='' until='' show state existing_title body='' hold_kind hold_set occurrence
-  local existing_hold_kind='' existing_held='' preserve_hold_set=0 stored_reason original_body='' hold_status=0
+  local existing_hold_kind='' existing_held='' preserve_hold_set=0 stored_reason original_body='' hold_status=0 policy_dir
   [ "$#" -ge 1 ] || { usage >&2; exit 2; }
   shift
   while [ "$#" -gt 0 ]; do
@@ -1192,7 +1193,7 @@ command_hold() {
     fi
   fi
   # A repeated hold may ask a different question even if it keeps its timestamp.
-  rm -f -- "$DATA/$id/hold-pr-policy.json"
+  if policy_dir=$(fm_task_data_find "$DATA" "$id"); then rm -f -- "$policy_dir/hold-pr-policy.json"; fi
   # Publish the timestamp before the captain-hold annotation. A concurrent
   # snapshot may see the harmless stamp by itself, but can never see a newly
   # held task without the timestamp that defines this hold lifecycle's age.
@@ -1859,8 +1860,9 @@ command_pr_policy() {
   task_show_or_fail "$id" "task $id disappeared while declaring its PR policy"
   fingerprint=$(pr_hold_fingerprint "$show")
   occurrence=$(( $(resolution_record_count "$(show_field "$show" body)") + 1 ))
-  dir="$DATA/$id"
-  [ ! -L "$dir" ] || fail 'PR policy directory is a symlink'
+  # The task's own data folder, so contributions.json and the policy share it.
+  dir=$(fm_task_data_dir "$DATA" "$id") || fail "no usable data folder for $id"
+  fm_task_data_dir_unlinked "$DATA" "$dir" || fail 'PR policy directory is a symlink'
   mkdir -p "$dir"
   [ ! -L "$dir/hold-pr-policy.json" ] || fail 'PR policy is a symlink'
   [ ! -e "$dir/hold-pr-policy.json" ] || [ -f "$dir/hold-pr-policy.json" ] || fail 'PR policy is not a regular file'
@@ -1873,11 +1875,12 @@ command_pr_policy() {
 }
 
 command_settle_pr() {
-  local id=${1:-} url=${2:-} policy record show body event action mode occurrence observed fingerprint evidence
+  local id=${1:-} url=${2:-} dir policy record show body event action mode occurrence observed fingerprint evidence
   [ "$#" -eq 2 ] || { usage >&2; exit 2; }
   [ -f "$CONFIG/hold-pr-settle" ] || return 0
   validate_slug task-id "$id"
-  policy="$DATA/$id/hold-pr-policy.json"
+  dir=$(fm_task_data_find "$DATA" "$id") || return 0
+  policy="$dir/hold-pr-policy.json"
   [ -f "$policy" ] || return 0
   # An answer can hold this lock for minutes while it waits on the away record;
   # the poll that calls this is cut after 30 seconds, so a busy task defers.
@@ -1885,14 +1888,14 @@ command_settle_pr() {
   fm_lock_acquire_wait_bounded "$CAPTAIN_CONTROL_LOCK" 1 2>/dev/null || return 0
   CAPTAIN_CONTROL_LOCK_HELD=1
   [ -f "$policy" ] || return 0
-  [ ! -L "$DATA/$id" ] && [ ! -L "$policy" ] || fail 'unsafe PR policy path'
+  fm_task_data_dir_unlinked "$DATA" "$dir" && [ ! -L "$policy" ] || fail 'unsafe PR policy path'
   jq -e --arg task "$id" '.schema == "fm-hold-pr.v1" and .task == $task
     and (.on | IN("merged","closed","terminal")) and (.action | IN("close","release"))
     and (.fingerprint | test("^[a-f0-9]{64}$"))
     and (.occurrence | type == "number" and . > 0 and floor == .)' "$policy" >/dev/null \
     || fail "invalid PR settlement policy for $id"
   [ "$(jq -r .url "$policy")" = "$url" ] || return 0
-  record="$DATA/$id/contributions.json"
+  record="$dir/contributions.json"
   [ -f "$record" ] && [ ! -L "$record" ] || return 0
   jq -L "$SCRIPT_DIR" -e --arg task "$id" 'include "fm-contributions"; valid_record and .task == $task' "$record" >/dev/null \
     || fail "invalid forge evidence for $id"

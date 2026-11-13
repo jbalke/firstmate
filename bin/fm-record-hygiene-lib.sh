@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 record_hygiene_report() {
-  local file id output now cutoff archive dir pr seen_prs prior n file_mtime read_timeout read_status exclude
+  local file id output now cutoff archive dir pr seen_prs prior n file_mtime read_timeout read_status exclude owned
   read_timeout=${FM_RECORD_HYGIENE_READ_TIMEOUT:-10}
   case "$read_timeout" in ''|*[!0-9]*|0) read_timeout=10 ;; esac
   seen_prs=
@@ -35,8 +35,14 @@ record_hygiene_report() {
               # shellcheck disable=SC2153 # DATA is set by the sourcing script (fm-bootstrap.sh).
               mkdir -p -- "$DATA" || { fm_lock_release "$lock"; continue; }
               dir=$(CDPATH='' cd -- "$DATA" && pwd -P) || { fm_lock_release "$lock"; continue; }
-              dir="$dir/$id"
-              if { [ ! -e "$dir" ] && [ ! -L "$dir" ]; } || { [ -d "$dir" ] && [ ! -L "$dir" ]; }; then
+              # The task's own data folder (bin/fm-task-data-lib.sh): an existing
+              # grouped or legacy folder, otherwise the no-project group, so one
+              # task's records never split across two locations.
+              # shellcheck source=bin/fm-task-data-lib.sh
+              command -v fm_task_data_dir >/dev/null 2>&1 || . "$SCRIPT_DIR/fm-task-data-lib.sh"
+              owned=$(fm_task_data_dir "$dir" "$id") || { fm_lock_release "$lock"; continue; }
+              if fm_task_data_dir_unlinked "$dir" "$owned"; then
+                dir=$owned
                 mkdir -p -- "$dir" || { fm_lock_release "$lock"; continue; }
                 archive="$dir/status.log"
                 n=0

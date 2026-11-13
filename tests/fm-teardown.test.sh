@@ -5967,11 +5967,11 @@ test_record_hygiene_archive_survives_status_archive_prune() {
     . "$SCRIPT_DIR/fm-record-hygiene-lib.sh"
     record_hygiene_report
   ' _ "$ROOT" "$case_dir" > "$case_dir/hygiene.out" 2>&1 || fail "record hygiene archive pass failed: $(cat "$case_dir/hygiene.out")"
-  assert_present "$case_dir/data/orphan-x2/status.log" "record hygiene did not archive the orphan status log"
+  assert_present "$(fm_task_data_dir "$case_dir/data" orphan-x2)/status.log" "record hygiene did not archive the orphan status log"
   run_teardown "$case_dir" > "$case_dir/stdout" 2> "$case_dir/stderr" || rc=$?
   expect_code 0 "$rc" "status-archive teardown after record hygiene: $(cat "$case_dir/stderr")"
-  assert_present "$case_dir/data/task-x1/status.log" "status-archive teardown did not archive its own task"
-  assert_present "$case_dir/data/orphan-x2/status.log" "teardown pruned a status log record hygiene just archived"
+  assert_present "$(fm_task_data_dir "$case_dir/data" task-x1)/status.log" "status-archive teardown did not archive its own task"
+  assert_present "$(fm_task_data_dir "$case_dir/data" orphan-x2)/status.log" "teardown pruned a status log record hygiene just archived"
   pass "a status log archived by record hygiene survives the next status-archive teardown"
 }
 

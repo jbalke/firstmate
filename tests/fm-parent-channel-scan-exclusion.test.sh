@@ -328,9 +328,11 @@ test_record_hygiene_skips_remote_parent_channel() {
   out=$(record_hygiene_run "$dir/home" 0) || fail "mutating record hygiene scan failed"
   case "$out" in *parent-replies*) fail "remote parent channel was reported: $out" ;; esac
   [ -f "$dir/home/state/parent-replies.status" ] || fail "remote parent channel was archived"
-  [ ! -e "$dir/home/data/parent-replies" ] || fail "remote parent channel left an archive dir"
-  [ -f "$dir/home/data/real-task/status.log" ] && [ ! -e "$dir/home/state/real-task.status" ] \
-    || fail "the genuine orphan status log must be archived by the mutating pass"
+  [ ! -e "$dir/home/data/parent-replies" ] && [ ! -e "$dir/home/data/tasks/_none/parent-replies" ] \
+    || fail "remote parent channel left an archive dir"
+  [ -f "$dir/home/data/tasks/_none/real-task/status.log" ] && [ ! -e "$dir/home/state/real-task.status" ] \
+    && [ ! -e "$dir/home/data/real-task" ] \
+    || fail "the genuine orphan status log must be archived in the no-project task data folder"
   pass "record hygiene reports and archives orphans but leaves a remote mate's parent channel in place"
 }
 

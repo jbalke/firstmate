@@ -592,11 +592,13 @@ publish_pending() { # task canonical-url record-file
 }
 
 terminal_hold_event() { # task canonical-url
-  local task=$1 url=$2 policy="$DATA/$1/hold-pr-policy.json" err
+  local task=$1 url=$2 dir policy err
   [ -f "$CONFIG/hold-pr-settle" ] || return 0
+  dir=$(fm_task_data_find "$DATA" "$task") || return 0
+  policy="$dir/hold-pr-policy.json"
   jq -e --arg url "$url" '.records[] | select(.url == $url and .kind == "pr"
     and .error == null and .retired == null and (.observation.state | IN("merged","closed")))' \
-    "$DATA/$task/contributions.json" > "$TMP/terminal.json" || return 0
+    "$dir/contributions.json" > "$TMP/terminal.json" || return 0
   if [ -f "$policy" ]; then
     # The watcher discards a check's stderr, so the cause rides the poll line.
     if err=$("$SCRIPT_DIR/fm-captain-hold.sh" settle-pr "$task" "$url" 2>&1 >/dev/null); then
@@ -699,7 +701,7 @@ poll() {
         for task in "${row[@]:2}"; do
           case "${row[0]}:$unreported" in
             final:*|*$'\n'"$task"$'\t'"${row[1]}"$'\n'*) ;;
-            *) [ -f "$DATA/$task/hold-pr-policy.json" ] || continue ;;
+            *) [ -f "$(fm_task_data_find "$DATA" "$task" || true)/hold-pr-policy.json" ] || continue ;;
           esac
           terminal_hold_event "$task" "${row[1]}"
         done
