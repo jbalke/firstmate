@@ -1,0 +1,41 @@
+== lab primary pane (claude in fm-lab tmux) ==
+ ▐▛███▛█   Claude Code v2.1.323
+▝▜██████▀  Opus 5.5 with medium effort · Claude Team
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/6b5c7015552c/01M7AP7KF9RVJKVJ29TMGK0XT0
+  ⎿  SessionStart:startup hook error
+  ⎿  Failed to run: prompt-type hooks are not supported for SessionStart events (no conversation context is available). Use a command-type hook instead.
+❯ Run bin/fm-session-start.sh once now (session start per AGENTS.md section 3) and show me the RECORD_HYGIENE lines from its output. Do nothing else.
+  Ran 1 shell command
+⏺ Captain, I ran the session start script once. It finished cleanly, and these are the three RECORD_HYGIENE lines it printed:
+  RECORD_HYGIENE: status log without metadata older than 24 hours: grp1
+  RECORD_HYGIENE: status log without metadata older than 24 hours: linked3
+  RECORD_HYGIENE: status log without metadata older than 24 hours: orph1
+  Each line means a task (grp1, linked3, orph1) left a status log more than 24 hours ago, and that task has no record in this home. As you asked, I didn't act on them or on anything else in the
+  output. The full output is saved at /tmp/fm-session-start.out.
+✻ Baked for 14s · done 2:56 PM
+Cache █████░░░░░ 50% hit (129k cached) · warm 59:25 left [ Compact ]                                                                                                                                [-]
+● full  $0.54  last $0.54  15s                                                                                                                                        Review  Audit  Board  Details
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ show me the full output
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   ~/./w/6/01M7AP7KF9RVJKVJ29TMGK0XT0  cacc95a7  ⊘  Opus 5.5  🌕 6%
+  ⏵⏵ auto mode on (shift+tab to cycle)
+
+== seeded before: state/{orph1,grp1,linked3}.status (mtime 2026-11-10, no .meta); data/tasks/webapp/grp1/ exists; data/tasks/legacyproj -> $LAB/outside (symlink) with outside/linked3/
+== after session start ==
+$LAB/state/linked3.status
+$LAB/data
+$LAB/outside
+$LAB/data/tasks
+$LAB/outside/linked3
+$LAB/data/tasks/webapp
+$LAB/data/tasks/legacyproj
+$LAB/data/tasks/_none
+$LAB/data/tasks/webapp/grp1
+$LAB/data/tasks/_none/orph1
+$LAB/data/tasks/webapp/grp1/report.md
+$LAB/data/tasks/webapp/grp1/status.log
+$LAB/data/tasks/_none/orph1/status.log
+drwxr-xr-x@ - johnbalke 13 Nov 14:56 _none
+lrwxr-xr-x@ - johnbalke 13 Nov 14:54 legacyproj -> $LAB/outside
+drwxr-xr-x@ - johnbalke 13 Nov 14:54 webapp
