@@ -1,0 +1,13 @@
+# Real Claude-shaped PreToolUse payloads piped to the shipped hook in a disposable genuine primary home (plain checkout + lab FM_HOME)
+Agent -> DENY (exit 2): blocked tool: Agent, delegation-shaped on "agent"
+CronCreate -> ALLOW (exit 0)
+CronDelete -> ALLOW (exit 0)
+CronList -> ALLOW (exit 0)
+ScheduleWakeup -> DENY (exit 2): blocked tool: ScheduleWakeup, delegation-shaped on "schedul"
+RemoteCronCreate -> DENY (exit 2): blocked tool: RemoteCronCreate, delegation-shaped on "cron"
+CronCreateAgent -> DENY (exit 2): blocked tool: CronCreateAgent, delegation-shaped on "agent"
+CronDeleteWorktree -> DENY (exit 2): blocked tool: CronDeleteWorktree, delegation-shaped on "cron"
+TaskCreate -> ALLOW (exit 0)
+
+# Escape hatch untouched: FM_ALLOW_SUBAGENT unset above; with FM_ALLOW_SUBAGENT=1:
+Agent -> exit 0
