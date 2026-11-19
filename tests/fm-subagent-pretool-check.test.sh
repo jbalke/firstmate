@@ -33,6 +33,8 @@ PRESERVED_TOOLS='Bash Edit Read Write Skill ToolSearch WebFetch WebSearch Notebo
 # Session-local todo-list tools. They match a delegation stem but create no
 # runnable work, so the guard's plan-only exclusion must allow them.
 PLAN_ONLY_TOOLS='TaskCreate TaskUpdate'
+SESSION_TIMER_TOOLS='CronCreate CronDelete'
+SESSION_TIMER_NEAR_MISSES='RemoteCronCreate CronCreateAgent CronDeleteWorktree CronCreator Cron CronSchedule'
 
 # Names the plan-only exclusion must NOT release. Five of them contain a
 # plan-only name as a substring and would be let through by a substring rather
@@ -81,6 +83,7 @@ test_guard_denies_every_currently_known_delegation_tool() {
     case "$tool" in
       TaskOutput|TaskStop|TaskGet|TaskList|CronList) continue ;;
       TaskCreate|TaskUpdate) continue ;;
+      CronCreate|CronDelete) continue ;;
     esac
     expect_deny "known delegation tool" "$tool"
   done
@@ -132,6 +135,19 @@ test_plan_only_exclusion_is_exact_name() {
     expect_deny "plan-only near miss" "$tool"
   done
   pass "the plan-only exclusion releases exactly two names and nothing that merely contains them"
+}
+
+test_guard_allows_session_timer_tools() {
+  # A session-scoped prompt timer dies with the session and fires into the same
+  # primary turn loop: no agent, no worktree, no durable schedule.
+  local tool
+  for tool in $SESSION_TIMER_TOOLS; do
+    expect_allow "session timer tool" "$tool"
+  done
+  for tool in $SESSION_TIMER_NEAR_MISSES; do
+    expect_deny "session timer near miss" "$tool"
+  done
+  pass "the session-timer exclusion releases exactly two names and nothing that merely contains them"
 }
 
 test_guard_never_classifies_mcp_tools() {
@@ -281,6 +297,7 @@ test_guard_denies_hypothetical_future_tools
 test_guard_allows_ordinary_and_observe_only_tools
 test_guard_allows_session_local_todo_tools
 test_plan_only_exclusion_is_exact_name
+test_guard_allows_session_timer_tools
 test_guard_never_classifies_mcp_tools
 test_deny_message_defers_to_intake_classification
 test_escape_hatch_allows_deliberate_use

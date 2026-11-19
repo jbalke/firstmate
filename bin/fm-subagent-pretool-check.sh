@@ -78,6 +78,13 @@ OBSERVE_ONLY_TOOLS='taskoutput taskstop taskget tasklist cronlist bashoutput kil
 # widen by accident.
 PLAN_ONLY_TOOLS='taskcreate taskupdate'
 
+# Exact lowercase tool names that match the cron stem but only arm or disarm a
+# session-scoped prompt timer (the harness /loop command). The timer dies with
+# the session and fires back into the same primary turn loop, so it creates no
+# unrecorded agent, no worktree, and no durable schedule. Exact-name like the
+# lists above: RemoteCronCreate, CronCreateAgent and ScheduleWakeup stay denied.
+SESSION_TIMER_TOOLS='croncreate crondelete'
+
 TOOL=""
 TOOL_SET=0
 CLAUDE_MODE=0
@@ -158,7 +165,7 @@ case "$TOOL" in
   mcp__*) exit 0 ;;
 esac
 
-for allowed in $OBSERVE_ONLY_TOOLS $PLAN_ONLY_TOOLS; do
+for allowed in $OBSERVE_ONLY_TOOLS $PLAN_ONLY_TOOLS $SESSION_TIMER_TOOLS; do
   [ "$NORMALIZED" != "$allowed" ] || exit 0
 done
 
